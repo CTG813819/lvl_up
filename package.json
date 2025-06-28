@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@octokit/rest": "^22.0.0",
+    "simple-git": "^3.28.0"
+  }
+}
