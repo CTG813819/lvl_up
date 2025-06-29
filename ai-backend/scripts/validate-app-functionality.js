@@ -455,4 +455,3 @@ if (require.main === module) {
 }
 
 module.exports = { AppFunctionalityValidator }; 
-module.exports = { validateAppFunctionality, validationResults }; 

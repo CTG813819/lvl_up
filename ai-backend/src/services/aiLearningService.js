@@ -32,7 +32,7 @@ class AILearningService {
     patterns.rejected = this.extractPatterns(rejected);
     
     // Identify common mistakes
-    patterns.commonMistakes = this.identifyCommonMistakes(rejected);
+    patterns.commonMistakes = this.identifyCommonMistakes(aiType);
     
     // Identify success patterns
     patterns.successPatterns = this.identifySuccessPatterns(approved);
@@ -83,10 +83,33 @@ class AILearningService {
       }).sort({ timestamp: -1 }).limit(50);
       
       const mistakeCounts = {};
+      const flutterSpecificMistakes = {};
       
       rejectedProposals.forEach(proposal => {
         if (proposal.userFeedbackReason) {
           const reason = proposal.userFeedbackReason.toLowerCase();
+          const testOutput = proposal.testOutput ? proposal.testOutput.toLowerCase() : '';
+          
+          // Flutter/Dart specific mistake patterns
+          if (reason.includes('flutter sdk') || testOutput.includes('flutter sdk')) {
+            flutterSpecificMistakes['flutter_sdk_issue'] = (flutterSpecificMistakes['flutter_sdk_issue'] || 0) + 1;
+          }
+          
+          if (reason.includes('dart pub') || testOutput.includes('dart pub')) {
+            flutterSpecificMistakes['dart_pub_usage'] = (flutterSpecificMistakes['dart_pub_usage'] || 0) + 1;
+          }
+          
+          if (reason.includes('flutter_test') || testOutput.includes('flutter_test')) {
+            flutterSpecificMistakes['flutter_test_dependency'] = (flutterSpecificMistakes['flutter_test_dependency'] || 0) + 1;
+          }
+          
+          if (reason.includes('image decoder') || testOutput.includes('image decoder')) {
+            flutterSpecificMistakes['image_decoder_issue'] = (flutterSpecificMistakes['image_decoder_issue'] || 0) + 1;
+          }
+          
+          if (reason.includes('version solving') || testOutput.includes('version solving')) {
+            flutterSpecificMistakes['version_solving_failed'] = (flutterSpecificMistakes['version_solving_failed'] || 0) + 1;
+          }
           
           // Extract key phrases that indicate mistakes
           const mistakePhrases = [
@@ -96,7 +119,6 @@ class AILearningService {
             'readability', 'style', 'formatting',
             // Test failure patterns
             'test failed', 'tests failed', 'compilation error', 'syntax error',
-            'flutter sdk', 'dart pub', 'version solving failed', 'dependency',
             'import error', 'undefined', 'null safety', 'type error',
             'build failed', 'compile error', 'runtime error'
           ];
@@ -110,15 +132,41 @@ class AILearningService {
       });
       
       // Convert to array and sort by frequency
-      const mistakes = Object.entries(mistakeCounts)
+      const generalMistakes = Object.entries(mistakeCounts)
         .map(([mistake, count]) => ({ mistake, count, frequency: count / rejectedProposals.length }))
         .sort((a, b) => b.count - a.count);
       
-      return mistakes;
+      // Convert Flutter-specific mistakes to array
+      const flutterMistakes = Object.entries(flutterSpecificMistakes)
+        .map(([mistake, count]) => ({ 
+          mistake, 
+          count, 
+          frequency: count / rejectedProposals.length,
+          type: 'flutter_specific',
+          solution: this.getFlutterMistakeSolution(mistake)
+        }))
+        .sort((a, b) => b.count - a.count);
+      
+      return [...flutterMistakes, ...generalMistakes];
     } catch (error) {
       console.error('[AI_LEARNING_SERVICE] Error identifying common mistakes:', error);
       return [];
     }
+  }
+
+  /**
+   * Get specific solutions for Flutter/Dart mistakes
+   */
+  static getFlutterMistakeSolution(mistakeType) {
+    const solutions = {
+      'flutter_sdk_issue': 'Ensure Flutter SDK is properly installed and in PATH. Use `flutter doctor` to verify installation.',
+      'dart_pub_usage': 'Use `flutter pub` instead of `dart pub` for Flutter projects. Only use `dart pub` for pure Dart projects.',
+      'flutter_test_dependency': 'Add flutter_test to dev_dependencies in pubspec.yaml, not dependencies.',
+      'image_decoder_issue': 'This is a known Android emulator issue. Use real device for testing or add proper image handling.',
+      'version_solving_failed': 'Check pubspec.yaml for conflicting dependencies. Use `flutter pub deps` to analyze dependency tree.'
+    };
+    
+    return solutions[mistakeType] || 'Review the specific error and consult Flutter documentation.';
   }
 
   /**
@@ -158,18 +206,30 @@ class AILearningService {
   }
 
   /**
-   * Generate learning context for AI
+   * Generate learning context for AI with Flutter-specific knowledge
    */
   static async generateLearningContext(aiType) {
     const patterns = await this.analyzeFeedbackPatterns(aiType);
     
-    let context = `Based on recent feedback for ${aiType} AI:\n\n`;
+    let context = `Based on recent feedback for ${aiType} AI in this Flutter/Dart project:\n\n`;
+    
+    // Add Flutter project context
+    context += "FLUTTER PROJECT CONTEXT:\n";
+    context += "- This is a Flutter/Dart project, not a pure Dart project\n";
+    context += "- Always use 'flutter pub' instead of 'dart pub'\n";
+    context += "- Add flutter_test to dev_dependencies, not dependencies\n";
+    context += "- Image decoder warnings are normal in Android emulator\n";
+    context += "- Check pubspec.yaml for dependency conflicts\n\n";
     
     // Add common mistakes to avoid
     if (patterns.commonMistakes.length > 0) {
       context += "AVOID these common mistakes:\n";
       patterns.commonMistakes.slice(0, 5).forEach(mistake => {
-        context += `- ${mistake.mistake} (${Math.round(mistake.frequency * 100)}% of rejections)\n`;
+        if (mistake.type === 'flutter_specific') {
+          context += `- ${mistake.mistake}: ${mistake.solution}\n`;
+        } else {
+          context += `- ${mistake.mistake} (${Math.round(mistake.frequency * 100)}% of rejections)\n`;
+        }
       });
       context += "\n";
     }

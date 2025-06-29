@@ -1,6 +1,7 @@
 const OpenAI = require('openai');
 const DeduplicationService = require('./deduplicationService');
 const AILearningService = require('./aiLearningService');
+const Proposal = require('../models/proposal');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -200,66 +201,56 @@ function normalizeImprovementType(type) {
 }
 
 async function createProposalWithDeduplication(aiType, filePath, codeBefore, codeAfter, reasoning, improvementType) {
-  console.log(`[AI_SERVICES] Creating proposal with deduplication for ${aiType} on ${filePath}`);
-  
-  // Validate required fields
-  if (!codeAfter || codeAfter.trim() === '') {
-    console.log(`[AI_SERVICES] ❌ Missing or empty codeAfter for ${filePath}, cannot create proposal`);
+  if (aiType === 'Conquest') {
+    // Skip deduplication/throttling for Conquest (handled elsewhere)
+    // ... existing code ...
+  }
+
+  // Throttling: limit to 15 pending proposals per AI
+  const pendingCount = await Proposal.countDocuments({ aiType, status: 'pending' });
+  if (pendingCount >= 15) {
+    console.log(`[AI_SERVICES] Throttling: ${aiType} has ${pendingCount} pending proposals, skipping new proposal.`);
     return {
-      isDuplicate: false,
-      proposal: null,
-      error: 'Missing codeAfter'
+      isDuplicate: true,
+      error: 'Throttling: too many pending proposals',
+      proposal: null
     };
   }
-  
-  if (!codeBefore || codeBefore.trim() === '') {
-    console.log(`[AI_SERVICES] ❌ Missing or empty codeBefore for ${filePath}, cannot create proposal`);
-    return {
-      isDuplicate: false,
-      proposal: null,
-      error: 'Missing codeBefore'
-    };
-  }
-  
-  if (!filePath) {
-    console.log(`[AI_SERVICES] ❌ Missing filePath, cannot create proposal`);
-    return {
-      isDuplicate: false,
-      proposal: null,
-      error: 'Missing filePath'
-    };
-  }
-  
-  console.log(`[AI_SERVICES] Validating proposal data:`);
-  console.log(`[AI_SERVICES] - codeBefore length: ${codeBefore.length}`);
-  console.log(`[AI_SERVICES] - codeAfter length: ${codeAfter.length}`);
-  console.log(`[AI_SERVICES] - filePath: ${filePath}`);
-  console.log(`[AI_SERVICES] - aiType: ${aiType}`);
-  console.log(`[AI_SERVICES] - improvementType: ${improvementType}`);
-  
-  // Check for duplicates
+
+  // Deduplication: check for duplicates (already implemented)
   const duplicateCheck = await DeduplicationService.checkDuplicates(aiType, filePath, codeBefore, codeAfter);
-  
-  if (duplicateCheck.isDuplicate) {
-    console.log(`[AI_SERVICES] ⚠️ Duplicate detected: ${duplicateCheck.type} (similarity: ${duplicateCheck.similarity})`);
-    
-    // If it's a semantic duplicate with high similarity, mark it as duplicate
-    if (duplicateCheck.similarity >= 0.9) {
-      return {
-        isDuplicate: true,
-        originalProposal: duplicateCheck.proposal,
-        similarity: duplicateCheck.similarity
-      };
-    }
-    
-    // For lower similarity, we might still create the proposal but with a note
-    console.log(`[AI_SERVICES] Creating proposal despite similarity (${duplicateCheck.similarity})`);
+  if (duplicateCheck.isDuplicate && duplicateCheck.similarity >= 0.9) {
+    return {
+      isDuplicate: true,
+      originalProposal: duplicateCheck.proposal,
+      similarity: duplicateCheck.similarity
+    };
   }
-  
+
+  // Quality control: keep only the best proposal per file/type/AI
+  const best = await Proposal.findOne({
+    aiType,
+    filePath,
+    improvementType,
+    status: 'pending'
+  }).sort({ confidence: -1, diffScore: -1 });
+  // If a better or equal proposal exists, skip
+  if (best && best.confidence >= 0.99) {
+    return {
+      isDuplicate: true,
+      originalProposal: best,
+      similarity: 1.0
+    };
+  }
+  // If this is better, remove the old one
+  if (best && best.confidence < 0.99) {
+    await Proposal.deleteOne({ _id: best._id });
+  }
+
   // Generate hashes for the proposal
   const codeHash = DeduplicationService.generateCodeHash(codeBefore, codeAfter);
   const semanticHash = DeduplicationService.generateSemanticHash(codeBefore + codeAfter);
-  
+
   // Create proposal object with all required fields
   const proposal = {
     aiType,
@@ -273,15 +264,25 @@ async function createProposalWithDeduplication(aiType, filePath, codeBefore, cod
     diffScore: duplicateCheck.isDuplicate ? duplicateCheck.similarity : 0,
     duplicateOf: duplicateCheck.isDuplicate ? duplicateCheck.proposal._id : null
   };
-  
-  console.log(`[AI_SERVICES] Created proposal object with all required fields`);
-  
+
   // Apply AI learning
   const enhancedProposal = await AILearningService.applyLearning(proposal, aiType);
-  
+
+  // Save proposal
+  const savedProposal = await Proposal.create(enhancedProposal);
+
+  // Update Codex and learning dashboard (asynchronously)
+  setImmediate(() => {
+    try {
+      AILearningService.updateCodexAndDashboard(aiType);
+    } catch (e) {
+      console.error('[AI_SERVICES] Error updating Codex/dashboard:', e);
+    }
+  });
+
   return {
     isDuplicate: false,
-    proposal: enhancedProposal
+    proposal: savedProposal
   };
 }
 

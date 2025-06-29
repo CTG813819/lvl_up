@@ -3,7 +3,7 @@ const router = express.Router();
 const Proposal = require('../models/proposal');
 const { OpenAI } = require('openai');
 const { runSandboxExperiment } = require('../services/sandboxService');
-const AIQuotaService = require('../services/aiQuotaService');
+const { AIQuotaService } = require('../services/aiQuotaService');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -165,4 +165,39 @@ class Example {
   }
 });
 
+// Status endpoint for Sandbox AI
+router.get('/status', async (req, res) => {
+  try {
+    // Get recent proposals from Sandbox
+    const recentProposals = await Proposal.find({ aiType: 'Sandbox' })
+      .sort({ createdAt: -1 })
+      .limit(5);
+    
+    // Get quota status
+    const quotaStatus = await AIQuotaService.getQuotaStatus('Sandbox');
+    
+    res.json({
+      success: true,
+      data: {
+        aiType: 'Sandbox',
+        status: 'active',
+        isLearning: quotaStatus.isLearning || false,
+        recentProposals: recentProposals.length,
+        quotaStatus: quotaStatus,
+        lastActivity: recentProposals[0]?.createdAt || null,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('[SANDBOX_ROUTE] Error getting status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get Sandbox AI status'
+    });
+  }
+});
+
 module.exports = router;
+
+console.log('[SANDBOX_ROUTER] 🚀 Sandbox router loaded');
+console.log('[SANDBOX_ROUTER] 📍 Available routes:', router.stack.map(r => r.route?.path).filter(Boolean));

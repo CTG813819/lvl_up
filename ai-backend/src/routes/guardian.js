@@ -3,7 +3,7 @@ const router = express.Router();
 const Proposal = require('../models/proposal');
 const { OpenAI } = require('openai');
 const { runGuardianExperiment } = require('../services/guardianService');
-const AIQuotaService = require('../services/aiQuotaService');
+const { AIQuotaService } = require('../services/aiQuotaService');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -165,4 +165,39 @@ class Example {
   }
 });
 
+// Status endpoint for Guardian AI
+router.get('/status', async (req, res) => {
+  try {
+    // Get recent proposals from Guardian
+    const recentProposals = await Proposal.find({ aiType: 'Guardian' })
+      .sort({ createdAt: -1 })
+      .limit(5);
+    
+    // Get quota status
+    const quotaStatus = await AIQuotaService.getQuotaStatus('Guardian');
+    
+    res.json({
+      success: true,
+      data: {
+        aiType: 'Guardian',
+        status: 'active',
+        isLearning: quotaStatus.isLearning || false,
+        recentProposals: recentProposals.length,
+        quotaStatus: quotaStatus,
+        lastActivity: recentProposals[0]?.createdAt || null,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('[GUARDIAN_ROUTE] Error getting status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get Guardian AI status'
+    });
+  }
+});
+
 module.exports = router;
+
+console.log('[GUARDIAN_ROUTER] 🚀 Guardian router loaded');
+console.log('[GUARDIAN_ROUTER] 📍 Available routes:', router.stack.map(r => r.route?.path).filter(Boolean));

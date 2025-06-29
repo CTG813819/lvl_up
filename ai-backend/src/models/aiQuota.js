@@ -171,28 +171,4 @@ aiQuotaSchema.methods.updateSuccessRate = function(successRate) {
   return this.save();
 };
 
-// Method to reset quota and learning state
-aiQuotaSchema.methods.resetQuota = function() {
-  this.currentQuota = 50;
-  this.proposalsSent = 0;
-  this.proposalsProcessed = 0;
-  this.learningCycles = 0;
-  this.isLearning = false;
-  this.learningStartTime = null;
-  this.canSendProposals = true;
-  this.quotaResetDate = new Date();
-  this.learningEffectiveness = 0;
-  this.successRate = 0;
-  this.currentPhase = 'proposing';
-  this.phaseProgress = {
-    proposing: 0,
-    testing: 0,
-    learning: 0
-  };
-  this.cycleActive = false;
-  this.lastActive = null;
-  
-  return this.save();
-};
-
 module.exports = mongoose.model('AIQuota', aiQuotaSchema); 

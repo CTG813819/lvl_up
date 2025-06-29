@@ -5,6 +5,9 @@ const AILearningService = require('../services/aiLearningService');
 const DeduplicationService = require('../services/deduplicationService');
 const { AIQuotaService } = require('../services/aiQuotaService');
 const Learning = require('../models/learning');
+const gitService = require('../services/gitService');
+const apkBuildService = require('../services/apkBuildService');
+const { io } = require('../index');
 
 // Create a new proposal (AI submits)
 router.post('/', async (req, res) => {
@@ -258,50 +261,6 @@ router.post('/reset-learning/:aiType', async (req, res) => {
     });
   } catch (error) {
     console.error(`[PROPOSALS] ❌ Error resetting learning state:`, error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Reset quota and learning state for an AI
-router.post('/reset-quota/:aiType', async (req, res) => {
-  try {
-    const { aiType } = req.params;
-    
-    if (!['Imperium', 'Sandbox', 'Guardian'].includes(aiType)) {
-      return res.status(400).json({ error: 'Invalid AI type' });
-    }
-    
-    console.log(`[PROPOSALS] 🔄 Resetting quota and learning state for ${aiType}...`);
-    
-    // Reset quota and learning state
-    const { AIQuotaService } = require('../services/aiQuotaService');
-    await AIQuotaService.resetQuota(aiType);
-    
-    // Reset learning state
-    const AILearningService = require('../services/aiLearningService');
-    AILearningService.setLearningState(aiType, false);
-    
-    // Store a reset event
-    await Learning.create({
-      aiType,
-      status: 'learning-completed',
-      feedbackReason: 'Manual quota and learning state reset',
-      learningKey: 'manual_quota_reset',
-      learningValue: 'Quota and learning state manually reset by user',
-      filePath: 'system',
-      improvementType: 'system'
-    });
-    
-    console.log(`[PROPOSALS] ✅ Quota and learning state reset for ${aiType}`);
-    
-    res.json({ 
-      message: `Quota and learning state reset for ${aiType}`,
-      aiType,
-      canSendProposals: true,
-      isLearning: false
-    });
-  } catch (error) {
-    console.error(`[PROPOSALS] ❌ Error resetting quota:`, error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -573,6 +532,155 @@ router.get('/internet-learning-status', async (req, res) => {
   } catch (error) {
     console.error(`[PROPOSALS] Error getting internet learning status:`, error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Update proposal status
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, userFeedbackReason } = req.body;
+    
+    const proposal = await Proposal.findByIdAndUpdate(
+      id,
+      { 
+        status,
+        userFeedbackReason,
+        userFeedbackTime: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    // Emit status update event
+    io.emit('proposal:status-updated', {
+      proposalId: id,
+      status,
+      userFeedbackReason,
+      timestamp: new Date()
+    });
+    
+    // If proposal is approved or test-passed, trigger APK build
+    if (status === 'approved' || status === 'test-passed') {
+      console.log(`[PROPOSALS_ROUTE] 🏗️ Triggering APK build for approved proposal: ${id}`);
+      
+      // Trigger APK build asynchronously
+      apkBuildService.buildAPKAfterProposal(id)
+        .then(buildResult => {
+          console.log(`[PROPOSALS_ROUTE] ✅ APK build completed for proposal ${id}:`, buildResult.success);
+          
+          // Emit APK build event
+          io.emit('proposal:apk-built', {
+            proposalId: id,
+            success: buildResult.success,
+            apkPath: buildResult.apkPath,
+            apkSize: buildResult.apkSize,
+            buildTime: buildResult.buildTime
+          });
+        })
+        .catch(error => {
+          console.error(`[PROPOSALS_ROUTE] ❌ APK build failed for proposal ${id}:`, error.message);
+          
+          // Emit APK build failure event
+          io.emit('proposal:apk-build-failed', {
+            proposalId: id,
+            error: error.message
+          });
+        });
+    }
+    
+    // Update AI learning data
+    await AILearningService.updateLearningData(proposal.aiType, {
+      proposalId: id,
+      status,
+      userFeedbackReason,
+      filePath: proposal.filePath,
+      improvementType: proposal.improvementType
+    });
+    
+    res.json(proposal);
+  } catch (error) {
+    console.error('[PROPOSALS_ROUTE] Error updating proposal status:', error);
+    res.status(500).json({ error: 'Failed to update proposal status' });
+  }
+});
+
+// Get APK build status for a proposal
+router.get('/:id/apk-status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const proposal = await Proposal.findById(id);
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    const apkStatus = await apkBuildService.getCurrentAPKStatus();
+    
+    res.json({
+      proposalId: id,
+      proposalStatus: proposal.status,
+      apkBuildInfo: proposal.apkBuildInfo || null,
+      currentAPKStatus: apkStatus
+    });
+  } catch (error) {
+    console.error('[PROPOSALS_ROUTE] Error getting APK status:', error);
+    res.status(500).json({ error: 'Failed to get APK status' });
+  }
+});
+
+// Trigger APK build manually
+router.post('/:id/build-apk', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const proposal = await Proposal.findById(id);
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    console.log(`[PROPOSALS_ROUTE] 🏗️ Manually triggering APK build for proposal: ${id}`);
+    
+    // Trigger APK build
+    const buildResult = await apkBuildService.buildAPKAfterProposal(id);
+    
+    res.json({
+      proposalId: id,
+      buildResult,
+      message: buildResult.success ? 'APK build started successfully' : 'APK build failed'
+    });
+  } catch (error) {
+    console.error('[PROPOSALS_ROUTE] Error triggering APK build:', error);
+    res.status(500).json({ error: 'Failed to trigger APK build' });
+  }
+});
+
+// Get APK build history
+router.get('/apk-build-history', async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    
+    const buildHistory = await apkBuildService.getAPKBuildHistory(parseInt(days));
+    
+    res.json(buildHistory);
+  } catch (error) {
+    console.error('[PROPOSALS_ROUTE] Error getting APK build history:', error);
+    res.status(500).json({ error: 'Failed to get APK build history' });
+  }
+});
+
+// Clean old APK builds
+router.post('/clean-apk-builds', async (req, res) => {
+  try {
+    await apkBuildService.cleanOldAPKBuilds();
+    
+    res.json({ message: 'Old APK builds cleaned successfully' });
+  } catch (error) {
+    console.error('[PROPOSALS_ROUTE] Error cleaning APK builds:', error);
+    res.status(500).json({ error: 'Failed to clean APK builds' });
   }
 });
 

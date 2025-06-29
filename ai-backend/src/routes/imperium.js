@@ -3,7 +3,7 @@ const router = express.Router();
 const Proposal = require('../models/proposal');
 const { OpenAI } = require('openai');
 const { runImperiumExperiment } = require('../services/imperiumService');
-const AIQuotaService = require('../services/aiQuotaService');
+const { AIQuotaService } = require('../services/aiQuotaService');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -213,4 +213,39 @@ class Example {
   }
 });
 
+// Status endpoint for Imperium AI
+router.get('/status', async (req, res) => {
+  try {
+    // Get recent proposals from Imperium
+    const recentProposals = await Proposal.find({ aiType: 'Imperium' })
+      .sort({ createdAt: -1 })
+      .limit(5);
+    
+    // Get quota status
+    const quotaStatus = await AIQuotaService.getQuotaStatus('Imperium');
+    
+    res.json({
+      success: true,
+      data: {
+        aiType: 'Imperium',
+        status: 'active',
+        isLearning: quotaStatus.isLearning || false,
+        recentProposals: recentProposals.length,
+        quotaStatus: quotaStatus,
+        lastActivity: recentProposals[0]?.createdAt || null,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('[IMPERIUM_ROUTE] Error getting status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get Imperium AI status'
+    });
+  }
+});
+
 module.exports = router;
+
+console.log('[IMPERIUM_ROUTER] 🚀 Imperium router loaded');
+console.log('[IMPERIUM_ROUTER] 📍 Available routes:', router.stack.map(r => r.route?.path).filter(Boolean));
