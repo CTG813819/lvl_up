@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class NetworkConfig {
-  // AWS EC2 Backend URL
+  // AWS EC2 Backend URL (for production)
   static const String baseUrl = 'http://44.204.184.21:4000';
   
-  // Local Development URL (uncomment for local testing)
-  // static const String baseUrl = 'http://localhost:4000';
+  // Local Development Backend URL (for development)
+  static const String localBaseUrl = 'http://192.168.1.118:4000';
   
   // API Endpoints
   static const String apiUrl = '$baseUrl/api';
@@ -23,72 +23,15 @@ class NetworkConfig {
   static const Duration retryDelay = Duration(seconds: 2);
   
   /// Get the appropriate backend URL based on platform and environment
-  static String get backendUrl {
-    if (kIsWeb) {
-      // Web platform - use AWS
-      return baseUrl;
-    } else if (Platform.isAndroid) {
-      // Android platform - check if running on emulator
-      if (_isEmulator()) {
-        return 'http://10.0.2.2:4000'; // Android emulator
-      } else {
-        // Physical device - use AWS
-        return baseUrl;
-      }
-    } else if (Platform.isIOS) {
-      // iOS platform - use localhost for simulator, AWS for device
-      if (_isSimulator()) {
-        return 'http://localhost:4000'; // iOS simulator
-      } else {
-        return baseUrl; // Physical iOS device
-      }
-    }
-    
-    // Default fallback to AWS
-    return baseUrl;
-  }
-  
-  /// Check if running on Android emulator
-  static bool _isEmulator() {
-    try {
-      // Check for common emulator indicators
-      final androidId = Platform.environment['ANDROID_ID'];
-      final buildFingerprint = Platform.environment['BUILD_FINGERPRINT'];
-      
-      if (androidId != null && androidId.contains('generic')) {
-        return true;
-      }
-      
-      if (buildFingerprint != null && 
-          (buildFingerprint.contains('generic') || 
-           buildFingerprint.contains('sdk') ||
-           buildFingerprint.contains('emulator'))) {
-        return true;
-      }
-      
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  /// Check if running on iOS simulator
-  static bool _isSimulator() {
-    try {
-      // Check for iOS simulator indicators
-      final deviceName = Platform.environment['SIMULATOR_DEVICE_NAME'];
-      return deviceName != null;
-    } catch (e) {
-      return false;
-    }
-  }
+  static String get backendUrl => baseUrl;
   
   /// Get all possible backend URLs for testing
   static List<String> get allBackendUrls => [
-    baseUrl, // AWS
-    'http://localhost:4000', // Local development
     'http://10.0.2.2:4000', // Android emulator
     'http://192.168.1.118:4000', // Local network
+    'http://localhost:4000', // Local development
+    'http://127.0.0.1:4000', // Local development
+    baseUrl, // AWS (for production)
   ];
   
   /// Test connectivity to all backend URLs
@@ -98,9 +41,12 @@ class NetworkConfig {
     for (final url in allBackendUrls) {
       try {
         final client = HttpClient();
-        final request = await client.getUrl(Uri.parse('$url/api/health'));
+        client.connectionTimeout = const Duration(seconds: 5);
+        // Try to connect to the base URL instead of a specific endpoint
+        final request = await client.getUrl(Uri.parse(url));
         final response = await request.close();
-        results[url] = response.statusCode == 200;
+        results[url] = response.statusCode < 500; // Accept any non-server error
+        client.close();
       } catch (e) {
         results[url] = false;
       }
@@ -116,11 +62,39 @@ class NetworkConfig {
     // Return the first working URL
     for (final entry in connectivityResults.entries) {
       if (entry.value) {
+        print('[NETWORK] Using backend: ${entry.key}');
         return entry.key;
       }
     }
     
     // Fallback to default
+    print('[NETWORK] No working backend found, using default: $backendUrl');
+    return backendUrl;
+  }
+  
+  /// Get a working backend URL with retry logic
+  static Future<String> getWorkingBackendUrl() async {
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        final url = await getBestBackendUrl();
+        final client = HttpClient();
+        client.connectionTimeout = const Duration(seconds: 10);
+        // Try to connect to the base URL instead of a specific endpoint
+        final request = await client.getUrl(Uri.parse(url));
+        final response = await request.close();
+        client.close();
+        
+        if (response.statusCode < 500) { // Accept any non-server error
+          return url;
+        }
+      } catch (e) {
+        print('[NETWORK] Retry $i failed: $e');
+        if (i < maxRetries - 1) {
+          await Future.delayed(retryDelay);
+        }
+      }
+    }
+    
     return backendUrl;
   }
 } 
