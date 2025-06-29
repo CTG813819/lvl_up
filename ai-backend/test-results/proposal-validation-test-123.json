@@ -1,0 +1,62 @@
+{
+  "proposalId": "test-123",
+  "aiType": "Imperium",
+  "approved": false,
+  "timestamp": "2025-06-29T07:26:54.073Z",
+  "results": [
+    {
+      "test": "Structure Validation",
+      "passed": true,
+      "details": "All required fields present",
+      "timestamp": "2025-06-29T07:26:54.072Z"
+    },
+    {
+      "test": "AI Type Validation",
+      "passed": true,
+      "details": "Valid AI type: Imperium",
+      "timestamp": "2025-06-29T07:26:54.072Z"
+    },
+    {
+      "test": "File Path Validation",
+      "passed": true,
+      "details": "Skipped - no file path provided",
+      "timestamp": "2025-06-29T07:26:54.072Z"
+    },
+    {
+      "test": "Code Changes Validation",
+      "passed": true,
+      "details": "Skipped - no code provided",
+      "timestamp": "2025-06-29T07:26:54.073Z"
+    },
+    {
+      "test": "AI Permissions",
+      "passed": true,
+      "details": "Imperium has full access",
+      "timestamp": "2025-06-29T07:26:54.073Z"
+    },
+    {
+      "test": "Approval Status",
+      "passed": true,
+      "details": "Proposal not approved",
+      "timestamp": "2025-06-29T07:26:54.073Z"
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    {
+      "message": "No file path provided for validation",
+      "timestamp": "2025-06-29T07:26:54.072Z"
+    },
+    {
+      "message": "No code changes provided for validation",
+      "timestamp": "2025-06-29T07:26:54.073Z"
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "errorCount": 0,
+    "warningCount": 2
+  }
+}

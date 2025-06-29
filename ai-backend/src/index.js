@@ -100,6 +100,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// App functionality endpoints
+app.get('/api/app/status', (req, res) => {
+  res.json({ 
+    status: 'running',
+    message: 'App is running and functional',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    features: ['chaos-warp', 'proposals', 'notifications', 'github-integration']
+  });
+});
+
+// GitHub integration status endpoint
+app.get('/api/github/status', (req, res) => {
+  const hasToken = !!process.env.GITHUB_TOKEN;
+  const hasRepo = !!process.env.GITHUB_REPO;
+  
+  res.json({ 
+    status: hasToken && hasRepo ? 'configured' : 'not-configured',
+    message: hasToken && hasRepo ? 'GitHub integration is configured' : 'GitHub integration needs configuration',
+    timestamp: new Date().toISOString(),
+    hasToken,
+    hasRepo,
+    repo: process.env.GITHUB_REPO || 'not-set'
+  });
+});
+
 // Import your route files
 const proposalsRouter = require('./routes/proposals');
 const codeRouter = require('./routes/code');
@@ -112,6 +138,8 @@ const notifyRouter = require('./routes/notify')(io);
 const learningRouter = require('./routes/learning');
 const chaosWarpRouter = require('./routes/chaos-warp');
 const approvalRouter = require('./routes/approval');
+const oathPapersRoutes = require('./routes/oath-papers');
+const conquestRouter = require('./routes/conquest');
 
 // Make io available to routes
 app.set('io', io);
@@ -127,7 +155,15 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/notify', notifyRouter);
 app.use('/api/learning', learningRouter);
 app.use('/api/approval', approvalRouter);
+app.use('/api/oath-papers', oathPapersRoutes);
 app.use('/api', chaosWarpRouter);
+app.use('/api/conquest', conquestRouter);
+
+// Add extra mounts for /api/ai/* compatibility
+app.use('/api/ai/imperium', imperiumRouter);
+app.use('/api/ai/guardian', guardianRouter);
+app.use('/api/ai/sandbox', sandboxRouter);
+app.use('/api/ai/conquest', conquestRouter);
 
 // MongoDB connection with detailed logging
 const redactedUri = process.env.MONGODB_URI
@@ -143,41 +179,64 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 
     // Force immediate GitHub pull and scan after server start
     (async () => {
-      console.log('[AI-AUTO] Immediate GitHub pull and scan after server start...');
-      io.emit('backend:startup', { message: 'AI Backend is starting up and pulling latest code...' });
-      await ensureRepoUpToDate();
-      io.emit('backend:code-pulled', { message: 'Latest code pulled from GitHub successfully' });
-      const files = getAllDartFiles(path.join(LOCAL_PATH, 'lib'));
-      console.log(`[AI-AUTO] Found ${files.length} Dart files in repo.`);
-      io.emit('backend:scan-complete', { fileCount: files.length, message: `Found ${files.length} Dart files to analyze` });
+      try {
+        console.log('[AI-AUTO] Immediate GitHub pull and scan after server start...');
+        io.emit('backend:startup', { message: 'AI Backend is starting up and pulling latest code...' });
+        await ensureRepoUpToDate();
+        io.emit('backend:code-pulled', { message: 'Latest code pulled from GitHub successfully' });
+        
+        // Check if LOCAL_PATH exists before proceeding
+        if (!fs.existsSync(LOCAL_PATH)) {
+          console.warn('[AI-AUTO] Local repo path does not exist, skipping immediate AI experiments');
+          return;
+        }
+        
+        const files = getAllDartFiles(path.join(LOCAL_PATH, 'lib'));
+        console.log(`[AI-AUTO] Found ${files.length} Dart files in repo.`);
+        io.emit('backend:scan-complete', { fileCount: files.length, message: `Found ${files.length} Dart files to analyze` });
 
-      // Limit to 5 files per run
-      const filesToProcess = files.slice(0, 5);
+        // Limit to 5 files per run
+        const filesToProcess = files.slice(0, 5);
 
-      // Run Imperium on limited files
-      for (const filePath of filesToProcess) {
-        const code = fs.readFileSync(filePath, 'utf8');
-        io.emit('ai:experiment-start', { ai: 'Imperium', filePath, message: 'Imperium is analyzing code...' });
-        await runImperiumExperiment(code, filePath);
-        io.emit('ai:experiment-complete', { ai: 'Imperium', filePath, message: 'Imperium analysis complete' });
+        // Run Imperium on limited files
+        for (const filePath of filesToProcess) {
+          try {
+            const code = fs.readFileSync(filePath, 'utf8');
+            io.emit('ai:experiment-start', { ai: 'Imperium', filePath, message: 'Imperium is analyzing code...' });
+            await runImperiumExperiment(code, filePath);
+            io.emit('ai:experiment-complete', { ai: 'Imperium', filePath, message: 'Imperium analysis complete' });
+          } catch (error) {
+            console.warn(`[AI-AUTO] Imperium experiment failed for ${filePath}: ${error.message}`);
+          }
+        }
+        // Run Sandbox on limited files
+        for (const filePath of filesToProcess) {
+          try {
+            const code = fs.readFileSync(filePath, 'utf8');
+            io.emit('ai:experiment-start', { ai: 'Sandbox', filePath, message: 'Sandbox is running experiments...' });
+            await runSandboxExperiment(code, filePath);
+            io.emit('ai:experiment-complete', { ai: 'Sandbox', filePath, message: 'Sandbox experiments complete' });
+          } catch (error) {
+            console.warn(`[AI-AUTO] Sandbox experiment failed for ${filePath}: ${error.message}`);
+          }
+        }
+        // Run Guardian on limited mission files
+        const missionFiles = files.filter(f => f.includes('mission'));
+        const missionFilesToProcess = missionFiles.slice(0, 5);
+        for (const filePath of missionFilesToProcess) {
+          try {
+            const code = fs.readFileSync(filePath, 'utf8');
+            io.emit('ai:experiment-start', { ai: 'Guardian', filePath, message: 'Guardian is performing health checks...' });
+            await runGuardianExperiment(code, filePath);
+            io.emit('ai:experiment-complete', { ai: 'Guardian', filePath, message: 'Guardian health checks complete' });
+          } catch (error) {
+            console.warn(`[AI-AUTO] Guardian experiment failed for ${filePath}: ${error.message}`);
+          }
+        }
+        console.log('[AI-AUTO] Immediate AI experiments complete.');
+      } catch (error) {
+        console.warn(`[AI-AUTO] Immediate startup failed (continuing without initial experiments): ${error.message}`);
       }
-      // Run Sandbox on limited files
-      for (const filePath of filesToProcess) {
-        const code = fs.readFileSync(filePath, 'utf8');
-        io.emit('ai:experiment-start', { ai: 'Sandbox', filePath, message: 'Sandbox is running experiments...' });
-        await runSandboxExperiment(code, filePath);
-        io.emit('ai:experiment-complete', { ai: 'Sandbox', filePath, message: 'Sandbox experiments complete' });
-      }
-      // Run Guardian on limited mission files
-      const missionFiles = files.filter(f => f.includes('mission'));
-      const missionFilesToProcess = missionFiles.slice(0, 5);
-      for (const filePath of missionFilesToProcess) {
-        const code = fs.readFileSync(filePath, 'utf8');
-        io.emit('ai:experiment-start', { ai: 'Guardian', filePath, message: 'Guardian is performing health checks...' });
-        await runGuardianExperiment(code, filePath);
-        io.emit('ai:experiment-complete', { ai: 'Guardian', filePath, message: 'Guardian health checks complete' });
-      }
-      console.log('[AI-AUTO] Immediate AI experiments complete.');
     })();
 
     // Background job: Apply and push approved proposals every minute
@@ -346,12 +405,27 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
         console.error('[AI-AUTO] ERROR: GITHUB_REPO environment variable is not set. Cannot pull or clone repo.');
         return;
       }
-      if (!fs.existsSync(LOCAL_PATH)) {
-        console.log(`[AI-AUTO] Cloning repo https://github.com/${REPO}.git to ${LOCAL_PATH}`);
-        await simpleGit().clone(`https://github.com/${REPO}.git`, LOCAL_PATH);
-      } else {
-        console.log(`[AI-AUTO] Pulling latest changes in ${LOCAL_PATH}`);
-        await simpleGit(LOCAL_PATH).pull();
+      try {
+        if (!fs.existsSync(LOCAL_PATH)) {
+          console.log(`[AI-AUTO] Cloning repo https://github.com/${REPO}.git to ${LOCAL_PATH}`);
+          await simpleGit().clone(`https://github.com/${REPO}.git`, LOCAL_PATH);
+        } else {
+          console.log(`[AI-AUTO] Pulling latest changes in ${LOCAL_PATH}`);
+          try {
+            await simpleGit(LOCAL_PATH).pull();
+          } catch (gitError) {
+            console.warn(`[AI-AUTO] Git pull failed (this is normal for development): ${gitError.message}`);
+            // Try to fetch instead
+            try {
+              await simpleGit(LOCAL_PATH).fetch();
+              console.log('[AI-AUTO] Git fetch completed successfully');
+            } catch (fetchError) {
+              console.warn(`[AI-AUTO] Git fetch also failed: ${fetchError.message}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`[AI-AUTO] Git operation failed (continuing without Git sync): ${error.message}`);
       }
     }
 

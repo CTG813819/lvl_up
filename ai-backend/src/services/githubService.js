@@ -551,10 +551,85 @@ async function getRepositoryStatus() {
   }
 }
 
+/**
+ * Create a new repository for Conquest AI apps
+ */
+async function createRepository(repoName, description) {
+  try {
+    console.log(`[GITHUB] 🚀 Creating new repository: ${repoName}`);
+    
+    if (!octokit) {
+      const { Octokit } = await import('@octokit/rest');
+      octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+    }
+    
+    // Create the repository
+    const repo = await octokit.repos.createForAuthenticatedUser({
+      name: repoName,
+      description: description || 'App built by Conquest AI',
+      private: false,
+      auto_init: true,
+      gitignore_template: 'Flutter',
+      license_template: 'mit'
+    });
+    
+    console.log(`[GITHUB] ✅ Repository created successfully: ${repo.data.html_url}`);
+    
+    return repo.data.html_url;
+    
+  } catch (error) {
+    console.error(`[GITHUB] ❌ Error creating repository:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Push code to a repository
+ */
+async function pushToRepository(appDir, repoUrl) {
+  try {
+    console.log(`[GITHUB] 📤 Pushing code to repository: ${repoUrl}`);
+    
+    // Extract owner and repo name from URL
+    const urlParts = repoUrl.split('/');
+    const repoName = urlParts[urlParts.length - 1];
+    const owner = urlParts[urlParts.length - 2];
+    
+    // Initialize git in the app directory
+    const git = simpleGit(appDir);
+    
+    // Add all files
+    await git.add('.');
+    
+    // Commit the changes
+    await git.commit('Initial app build by Conquest AI');
+    
+    // Add the remote repository
+    await git.addRemote('origin', repoUrl);
+    
+    // Push to the repository
+    await git.push('origin', 'main');
+    
+    console.log(`[GITHUB] ✅ Code pushed successfully to: ${repoUrl}`);
+    
+    return {
+      success: true,
+      repoUrl,
+      message: 'Code pushed successfully'
+    };
+    
+  } catch (error) {
+    console.error(`[GITHUB] ❌ Error pushing to repository:`, error);
+    throw error;
+  }
+}
+
 module.exports = { 
   applyProposalAndPR, 
   pushAICodeUpdates, 
   mergeAILearningPR, 
   getRepositoryStatus,
-  closePR
+  closePR,
+  createRepository,
+  pushToRepository
 };

@@ -1,0 +1,78 @@
+{
+  "proposalId": "test-001",
+  "aiType": "Imperium",
+  "approved": true,
+  "timestamp": "2025-06-29T07:17:24.183Z",
+  "results": [
+    {
+      "test": "Structure Validation",
+      "passed": true,
+      "details": "All required fields present",
+      "timestamp": "2025-06-29T07:17:24.178Z"
+    },
+    {
+      "test": "AI Type Validation",
+      "passed": true,
+      "details": "Valid AI type: Imperium",
+      "timestamp": "2025-06-29T07:17:24.179Z"
+    },
+    {
+      "test": "File Extension Validation",
+      "passed": true,
+      "details": "Valid extension: .dart",
+      "timestamp": "2025-06-29T07:17:24.180Z"
+    },
+    {
+      "test": "File Existence",
+      "passed": false,
+      "details": "File not found: lib/main.dart",
+      "timestamp": "2025-06-29T07:17:24.180Z"
+    },
+    {
+      "test": "Code Changes Validation",
+      "passed": true,
+      "details": "Skipped - no code provided",
+      "timestamp": "2025-06-29T07:17:24.181Z"
+    },
+    {
+      "test": "AI Permissions",
+      "passed": true,
+      "details": "Imperium has full access",
+      "timestamp": "2025-06-29T07:17:24.181Z"
+    },
+    {
+      "test": "Approval Status",
+      "passed": true,
+      "details": "Proposal approved",
+      "timestamp": "2025-06-29T07:17:24.181Z"
+    },
+    {
+      "test": "Approved Proposal Validation",
+      "passed": false,
+      "details": "No code changes for approved proposal",
+      "timestamp": "2025-06-29T07:17:24.181Z"
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    {
+      "message": "File not found: lib/main.dart",
+      "timestamp": "2025-06-29T07:17:24.180Z"
+    },
+    {
+      "message": "No code changes provided for validation",
+      "timestamp": "2025-06-29T07:17:24.180Z"
+    },
+    {
+      "message": "Approved proposal without code changes - may cause issues",
+      "timestamp": "2025-06-29T07:17:24.181Z"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 6,
+    "failed": 2,
+    "errorCount": 0,
+    "warningCount": 3
+  }
+}

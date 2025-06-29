@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const GitHubService = require('./githubService');
 const BuildService = require('./buildService');
+const axios = require('axios');
 
 /**
  * User Approval Service
@@ -97,6 +98,30 @@ class ApprovalService {
       // Merge the PR
       console.log(`[APPROVAL] 🔄 Merging PR: ${approval.prNumber}`);
       await GitHubService.mergeAILearningPR(approval.prUrl);
+
+      // If not Imperium, trigger workflow_dispatch for APK build
+      if (approval.aiType !== 'Imperium') {
+        const githubToken = process.env.GITHUB_TOKEN;
+        const repo = process.env.GITHUB_REPO;
+        const [owner, repoName] = repo.split('/');
+        const workflow = 'ci-cd-pipeline.yml';
+        const url = `https://api.github.com/repos/${owner}/${repoName}/actions/workflows/${workflow}/dispatches`;
+        await axios.post(url, {
+          ref: 'main',
+          inputs: {
+            aiType: approval.aiType,
+            proposalId: approval.proposalId,
+            approved: 'true',
+            branch: 'main'
+          }
+        }, {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        console.log(`[APPROVAL] 🚀 Triggered GitHub Actions workflow_dispatch for APK build after approval.`);
+      }
       
       // Build the app if tests pass
       console.log(`[APPROVAL] 🏗️ Building app after approval`);

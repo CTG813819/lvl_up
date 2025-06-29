@@ -1,0 +1,75 @@
+{
+  "proposalId": "test-003",
+  "aiType": "Imperium",
+  "timestamp": "2025-06-29T07:23:22.231Z",
+  "results": [
+    {
+      "test": "Proposal Retrieval",
+      "passed": true,
+      "details": "API working, 29 proposals found",
+      "timestamp": "2025-06-29T07:23:21.826Z"
+    },
+    {
+      "test": "Chaos/Warp Status",
+      "passed": true,
+      "details": "Status: OPERATIONAL HOURS (AI allowed)",
+      "timestamp": "2025-06-29T07:23:21.830Z"
+    },
+    {
+      "test": "Proposal Creation Under Chaos/Warp",
+      "passed": true,
+      "details": "AI operations allowed",
+      "timestamp": "2025-06-29T07:23:21.830Z"
+    },
+    {
+      "test": "GitHub Integration",
+      "passed": true,
+      "details": "GitHub connected: undefined",
+      "timestamp": "2025-06-29T07:23:21.832Z"
+    },
+    {
+      "test": "Database Integration",
+      "passed": true,
+      "details": "Database accessible",
+      "timestamp": "2025-06-29T07:23:22.211Z"
+    },
+    {
+      "test": "Notification Integration",
+      "passed": false,
+      "details": "Notifications not available: <!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/notifications/test</pre>\n</body>\n</html>\n",
+      "timestamp": "2025-06-29T07:23:22.214Z"
+    },
+    {
+      "test": "App Functionality Integration",
+      "passed": true,
+      "details": "App status: running",
+      "timestamp": "2025-06-29T07:23:22.216Z"
+    },
+    {
+      "test": "Error Handling",
+      "passed": true,
+      "details": "Proper error responses",
+      "timestamp": "2025-06-29T07:23:22.218Z"
+    },
+    {
+      "test": "Proposal Creation",
+      "passed": false,
+      "details": "Creation failed: [object Object]",
+      "timestamp": "2025-06-29T07:23:22.230Z"
+    }
+  ],
+  "issues": [
+    {
+      "message": "Notification system not available - users may not be notified of proposal updates",
+      "severity": "WARNING",
+      "timestamp": "2025-06-29T07:23:22.214Z"
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 7,
+    "failed": 2,
+    "errorCount": 0,
+    "warningCount": 1
+  }
+}

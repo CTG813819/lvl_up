@@ -877,6 +877,341 @@ class AILearningService {
       await this.cleanupOldData();
     }
   }
+
+  /**
+   * Process oath paper with enhanced learning capabilities
+   * @param {Object} oathPaper - The oath paper data
+   * @returns {Promise<Object>} Learning results
+   */
+  async processOathPaper(oathPaper) {
+    console.log('[AI_LEARNING_SERVICE] 🧠 Processing oath paper:', oathPaper.subject);
+    
+    try {
+      // Extract keywords from description and code
+      const keywords = await this.extractKeywords(oathPaper);
+      console.log('[AI_LEARNING_SERVICE] 🔍 Extracted keywords:', keywords);
+      
+      // Search internet for additional information
+      const searchResults = await this.searchInternet(keywords, oathPaper.tags);
+      console.log('[AI_LEARNING_SERVICE] 🌐 Internet search results:', searchResults.length);
+      
+      // Learn from combined data
+      const learningResult = await this.learnFromCombinedData(oathPaper, keywords, searchResults);
+      
+      // Update AI capabilities
+      await this.updateAICapabilities(oathPaper.targetAI, keywords, searchResults);
+      
+      // Push to Git if specified
+      let gitResult = null;
+      if (oathPaper.gitIntegration) {
+        gitResult = await this.pushToGit(oathPaper, keywords, searchResults);
+      }
+      
+      console.log('[AI_LEARNING_SERVICE] ✅ Oath paper processing completed');
+      
+      return {
+        success: true,
+        keywords,
+        searchResults,
+        learningResult,
+        gitResult,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[AI_LEARNING_SERVICE] ❌ Error processing oath paper:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract keywords from oath paper content
+   * @param {Object} oathPaper - The oath paper data
+   * @returns {Promise<Array>} Extracted keywords
+   */
+  async extractKeywords(oathPaper) {
+    const keywords = new Set();
+    
+    // Add user-provided tags
+    if (oathPaper.tags && Array.isArray(oathPaper.tags)) {
+      oathPaper.tags.forEach(tag => keywords.add(tag.toLowerCase()));
+    }
+    
+    // Extract from description
+    if (oathPaper.description) {
+      const descriptionKeywords = await this.extractKeywordsFromText(oathPaper.description);
+      descriptionKeywords.forEach(keyword => keywords.add(keyword));
+    }
+    
+    // Extract from code
+    if (oathPaper.code) {
+      const codeKeywords = await this.extractKeywordsFromCode(oathPaper.code);
+      codeKeywords.forEach(keyword => keywords.add(keyword));
+    }
+    
+    return Array.from(keywords);
+  }
+
+  /**
+   * Extract keywords from text using NLP techniques
+   * @param {string} text - The text to analyze
+   * @returns {Promise<Array>} Extracted keywords
+   */
+  async extractKeywordsFromText(text) {
+    // Simple keyword extraction - in production, use proper NLP libraries
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3)
+      .filter(word => !this.commonWords.has(word));
+    
+    // Count frequency and return top keywords
+    const wordCount = {};
+    words.forEach(word => {
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    });
+    
+    const sortedWords = Object.entries(wordCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10)
+      .map(([word]) => word);
+    
+    return sortedWords;
+  }
+
+  /**
+   * Extract keywords from code
+   * @param {string} code - The code to analyze
+   * @returns {Promise<Array>} Extracted keywords
+   */
+  async extractKeywordsFromCode(code) {
+    const keywords = new Set();
+    
+    // Extract function names, class names, and important identifiers
+    const functionMatches = code.match(/def\s+(\w+)/g) || [];
+    const classMatches = code.match(/class\s+(\w+)/g) || [];
+    const importMatches = code.match(/import\s+(\w+)/g) || [];
+    const variableMatches = code.match(/(\w+)\s*=/g) || [];
+    
+    functionMatches.forEach(match => {
+      const name = match.replace(/def\s+/, '');
+      keywords.add(name);
+    });
+    
+    classMatches.forEach(match => {
+      const name = match.replace(/class\s+/, '');
+      keywords.add(name);
+    });
+    
+    importMatches.forEach(match => {
+      const name = match.replace(/import\s+/, '');
+      keywords.add(name);
+    });
+    
+    variableMatches.forEach(match => {
+      const name = match.replace(/\s*=.*/, '');
+      keywords.add(name);
+    });
+    
+    return Array.from(keywords);
+  }
+
+  /**
+   * Search internet for additional information
+   * @param {Array} keywords - Extracted keywords
+   * @param {Array} tags - User-provided tags
+   * @returns {Promise<Array>} Search results
+   */
+  async searchInternet(keywords, tags) {
+    const searchResults = [];
+    const searchTerms = [...keywords, ...tags].slice(0, 5); // Limit to top 5 terms
+    
+    for (const term of searchTerms) {
+      try {
+        const result = await this.performWebSearch(term);
+        searchResults.push(...result);
+      } catch (error) {
+        console.warn(`[AI_LEARNING_SERVICE] ⚠️ Search failed for term "${term}":`, error.message);
+      }
+    }
+    
+    return searchResults;
+  }
+
+  /**
+   * Perform web search (placeholder for real search API integration)
+   * @param {string} term - Search term
+   * @returns {Promise<Array>} Search results
+   */
+  async performWebSearch(term) {
+    // This would integrate with a real search API (Google, Bing, etc.)
+    // For now, return mock results
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    
+    return [
+      {
+        title: `Search result for ${term}`,
+        url: `https://example.com/${term}`,
+        snippet: `Information about ${term} from the internet`,
+        relevance: 0.8,
+      }
+    ];
+  }
+
+  /**
+   * Learn from combined data (oath paper + internet search)
+   * @param {Object} oathPaper - The oath paper data
+   * @param {Array} keywords - Extracted keywords
+   * @param {Array} searchResults - Internet search results
+   * @returns {Promise<Object>} Learning result
+   */
+  async learnFromCombinedData(oathPaper, keywords, searchResults) {
+    const learningEntry = {
+      type: 'oath_paper_learning',
+      subject: oathPaper.subject,
+      keywords,
+      searchResults,
+      targetAI: oathPaper.targetAI,
+      aiWeights: oathPaper.aiWeights,
+      timestamp: new Date().toISOString(),
+      learningData: {
+        description: oathPaper.description,
+        code: oathPaper.code,
+        tags: oathPaper.tags,
+        extractedKeywords: keywords,
+        internetSources: searchResults.length,
+      },
+    };
+    
+    // Save to learning data
+    await this.saveLearningData(learningEntry);
+    
+    console.log('[AI_LEARNING_SERVICE] 📚 Learning data updated');
+    return learningEntry;
+  }
+
+  /**
+   * Update AI capabilities based on learned information
+   * @param {string} targetAI - Target AI type
+   * @param {Array} keywords - Extracted keywords
+   * @param {Array} searchResults - Internet search results
+   * @returns {Promise<void>}
+   */
+  async updateAICapabilities(targetAI, keywords, searchResults) {
+    const aiTypes = targetAI ? [targetAI] : ['Imperium', 'Sandbox', 'Guardian'];
+    
+    for (const aiType of aiTypes) {
+      // Update capabilities in the learning data
+      if (!this.learningData[aiType]) {
+        this.learningData[aiType] = {};
+      }
+      
+      if (!this.learningData[aiType].capabilities) {
+        this.learningData[aiType].capabilities = [];
+      }
+      
+      if (!this.learningData[aiType].recentLearning) {
+        this.learningData[aiType].recentLearning = [];
+      }
+      
+      // Add new capabilities
+      for (const keyword of keywords.slice(0, 5)) {
+        if (!this.learningData[aiType].capabilities.includes(keyword)) {
+          this.learningData[aiType].capabilities.push(keyword);
+        }
+      }
+      
+      // Add recent learning entry
+      this.learningData[aiType].recentLearning.unshift({
+        type: 'oath_paper',
+        keywords: keywords.slice(0, 3),
+        sources: searchResults.length,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Keep only recent entries
+      if (this.learningData[aiType].recentLearning.length > 10) {
+        this.learningData[aiType].recentLearning = 
+            this.learningData[aiType].recentLearning.slice(0, 10);
+      }
+    }
+    
+    console.log('[AI_LEARNING_SERVICE] 🧠 AI capabilities updated for:', aiTypes);
+  }
+
+  /**
+   * Push updates to Git repository
+   * @param {Object} oathPaper - The oath paper data
+   * @param {Array} keywords - Extracted keywords
+   * @param {Array} searchResults - Internet search results
+   * @returns {Promise<Object>} Git result
+   */
+  async pushToGit(oathPaper, keywords, searchResults) {
+    try {
+      console.log('[AI_LEARNING_SERVICE] 🔄 Pushing learning updates to Git...');
+      
+      const commitMessage = `AI Learning Update: ${oathPaper.subject}\n\n` +
+        `Keywords: ${keywords.slice(0, 5).join(', ')}\n` +
+        `Sources: ${searchResults.length} internet sources\n` +
+        `Target AI: ${oathPaper.targetAI || 'All AIs'}`;
+      
+      // This would integrate with Git API
+      const gitResult = await this.performGitCommit(commitMessage, oathPaper);
+      
+      console.log('[AI_LEARNING_SERVICE] ✅ Git update completed');
+      return gitResult;
+    } catch (error) {
+      console.error('[AI_LEARNING_SERVICE] ❌ Git update failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Perform Git commit (placeholder for real Git integration)
+   * @param {string} message - Commit message
+   * @param {Object} oathPaper - The oath paper data
+   * @returns {Promise<Object>} Git commit result
+   */
+  async performGitCommit(message, oathPaper) {
+    // This would integrate with Git API (GitHub, GitLab, etc.)
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate Git operations
+    
+    return {
+      commit: `abc123${Date.now()}`,
+      message,
+      timestamp: new Date().toISOString(),
+      files: ['ai_learning_data.json', 'capabilities.json'],
+    };
+  }
+
+  /**
+   * Save learning data to persistent storage
+   * @param {Object} learningEntry - Learning entry to save
+   * @returns {Promise<void>}
+   */
+  async saveLearningData(learningEntry) {
+    // Add to in-memory learning data
+    if (!this.learningData.oathPapers) {
+      this.learningData.oathPapers = [];
+    }
+    
+    this.learningData.oathPapers.push(learningEntry);
+    
+    // In a real implementation, this would save to a database or file
+    console.log('[AI_LEARNING_SERVICE] 💾 Learning data saved');
+  }
+
+  // Common words to filter out during keyword extraction
+  commonWords = new Set([
+    'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
+    'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has',
+    'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may',
+    'might', 'can', 'this', 'that', 'these', 'those', 'a', 'an', 'as', 'if',
+    'then', 'else', 'when', 'where', 'why', 'how', 'all', 'any', 'both',
+    'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
+    'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'you',
+    'your', 'yours', 'yourself', 'yourselves', 'i', 'me', 'my', 'myself',
+    'we', 'our', 'ours', 'ourselves', 'what', 'which', 'who', 'whom',
+  ]);
 }
 
 module.exports = AILearningService; 

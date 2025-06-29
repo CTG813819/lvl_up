@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-06-29T07:17:33.224Z",
+  "tests": [
+    {
+      "test": "workflow_configuration",
+      "status": "FAILED",
+      "message": "GitHub workflow file not found",
+      "details": {
+        "expectedPath": ".github/workflows/ci-cd-pipeline.yml"
+      }
+    },
+    {
+      "test": "proposal_validation_script",
+      "status": "FAILED",
+      "message": "Proposal validation script not found",
+      "details": {
+        "expectedPath": "ai-backend/scripts/validate-proposal.js"
+      }
+    },
+    {
+      "test": "proposal_integration_script",
+      "status": "FAILED",
+      "message": "Proposal integration script not found",
+      "details": {
+        "expectedPath": "ai-backend/scripts/test-proposal-integration.js"
+      }
+    },
+    {
+      "test": "app_functionality_script",
+      "status": "FAILED",
+      "message": "App functionality validation script not found",
+      "details": {
+        "expectedPath": "ai-backend/scripts/validate-app-functionality.js"
+      }
+    },
+    {
+      "test": "deployment_validation_script",
+      "status": "FAILED",
+      "message": "Deployment validation script not found",
+      "details": {
+        "expectedPath": "ai-backend/scripts/validate-deployment.js"
+      }
+    },
+    {
+      "test": "flutter_build_configuration",
+      "status": "FAILED",
+      "message": "Flutter pubspec.yaml not found",
+      "details": {
+        "expectedPath": "pubspec.yaml"
+      }
+    },
+    {
+      "test": "backend_build_configuration",
+      "status": "FAILED",
+      "message": "Backend package.json not found",
+      "details": {
+        "expectedPath": "ai-backend/package.json"
+      }
+    },
+    {
+      "test": "github_api_connectivity",
+      "status": "SKIPPED",
+      "message": "GitHub token or repo not configured",
+      "details": {
+        "hasToken": false,
+        "hasRepo": false
+      }
+    },
+    {
+      "test": "workflow_trigger_configuration",
+      "status": "FAILED",
+      "message": "GitHub workflow file not found",
+      "details": {
+        "expectedPath": ".github/workflows/ci-cd-pipeline.yml"
+      }
+    },
+    {
+      "test": "artifact_configuration",
+      "status": "FAILED",
+      "message": "GitHub workflow file not found",
+      "details": {
+        "expectedPath": ".github/workflows/ci-cd-pipeline.yml"
+      }
+    }
+  ],
+  "overall": "FAILED",
+  "summary": {
+    "total": 10,
+    "passed": 0,
+    "failed": 9,
+    "skipped": 1
+  }
+}

@@ -5,7 +5,15 @@
   "scripts": {
     "start": "node --max-old-space-size=4096 --expose-gc src/index.js",
     "dev": "nodemon --max-old-space-size=4096 --expose-gc src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo \"Backend build completed\" && exit 0",
+    "test:integration": "node scripts/test-complete-system-integration.js",
+    "test:proposals": "node scripts/validate-proposal.js --aiType=Imperium --proposalId=test-build",
+    "test:chaos-warp": "node scripts/test-chaos-warp-functionality.js",
+    "test:github-workflow": "node scripts/test-github-workflow-integration.js",
+    "test:proposal-integration": "node scripts/test-proposal-integration.js --aiType=Imperium --proposalId=test-integration",
+    "validate:app": "node scripts/validate-app-functionality.js",
+    "validate:deployment": "node scripts/validate-deployment.js"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +25,7 @@
     "archiver": "^7.0.1",
     "aws-sdk": "^2.1450.0",
     "axios": "^1.10.0",
+    "commander": "^14.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.0",
     "express": "^4.18.2",

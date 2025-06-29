@@ -15,37 +15,112 @@ function updateChaosWarpState(chaos, warp) {
   logEvent(`[QUOTA] Chaos mode: ${chaos}, Warp mode: ${warp}`);
 }
 
+// Operational hours configuration
+const OPERATIONAL_START_HOUR = 5; // 5 AM
+const OPERATIONAL_END_HOUR = 21; // 9 PM
+
 class AIQuotaService {
   /**
    * Check if current time is within operating hours (5 AM to 9 PM)
    */
   static isWithinOperatingHours() {
-    // If Chaos mode is active, ignore time restrictions
-    if (chaosMode) {
-      return true;
-    }
-    
     const now = new Date();
     const hour = now.getHours();
-    return hour >= 5 && hour < 21; // 5 AM to 9 PM (21:00)
+    return hour >= OPERATIONAL_START_HOUR && hour < OPERATIONAL_END_HOUR;
   }
 
   /**
-   * Check if AI operations are allowed (considering Chaos/Warp modes)
+   * Check if AI operations are allowed (considering Chaos/Warp modes with hierarchy)
+   * Hierarchy: Warp > Chaos > Operational Hours
    */
   static isAIOperationsAllowed() {
-    // Warp mode completely stops all AI operations
+    // Warp mode completely stops all AI operations (highest priority)
     if (warpMode) {
+      logEvent(`[QUOTA] AI operations blocked by Warp mode (Warp > Chaos > Operational Hours)`);
       return false;
     }
     
-    // Chaos mode allows operations regardless of time
+    // Chaos mode allows operations regardless of operational hours (overrides operational hours)
     if (chaosMode) {
+      logEvent(`[QUOTA] AI operations allowed by Chaos mode (overrides operational hours)`);
       return true;
     }
     
-    // Normal operating hours check
-    return this.isWithinOperatingHours();
+    // Normal operating hours check (lowest priority)
+    const withinHours = this.isWithinOperatingHours();
+    if (withinHours) {
+      logEvent(`[QUOTA] AI operations allowed during operational hours`);
+    } else {
+      logEvent(`[QUOTA] AI operations paused outside operational hours`);
+    }
+    return withinHours;
+  }
+
+  /**
+   * Get AI operation status with detailed information
+   */
+  static getAIOperationStatus() {
+    // Warp mode completely stops all AI operations (highest priority)
+    if (warpMode) {
+      return {
+        canOperate: false,
+        reason: 'WARP_MODE_ACTIVE',
+        message: 'All AI operations stopped by Warp mode',
+        hierarchy: 'WARP > CHAOS > OPERATIONAL_HOURS',
+        priority: 1,
+        details: {
+          warpMode: true,
+          chaosMode: false,
+          operationalHours: this.isWithinOperatingHours()
+        }
+      };
+    }
+    
+    // Chaos mode allows operations regardless of operational hours (overrides operational hours)
+    if (chaosMode) {
+      return {
+        canOperate: true,
+        reason: 'CHAOS_MODE_ACTIVE',
+        message: 'AI operations allowed by Chaos mode (overrides operational hours)',
+        hierarchy: 'CHAOS > OPERATIONAL_HOURS',
+        priority: 2,
+        details: {
+          warpMode: false,
+          chaosMode: true,
+          operationalHours: this.isWithinOperatingHours()
+        }
+      };
+    }
+    
+    // Normal operational hours check (lowest priority)
+    const withinHours = this.isWithinOperatingHours();
+    return {
+      canOperate: withinHours,
+      reason: withinHours ? 'OPERATIONAL_HOURS' : 'OUTSIDE_OPERATIONAL_HOURS',
+      message: withinHours ? 'AI operations allowed during operational hours' : 'AI operations paused outside operational hours',
+      hierarchy: 'OPERATIONAL_HOURS',
+      priority: 3,
+      details: {
+        warpMode: false,
+        chaosMode: false,
+        operationalHours: withinHours
+      }
+    };
+  }
+
+  /**
+   * Get current hierarchy status
+   */
+  static getCurrentHierarchyStatus() {
+    if (warpMode) {
+      return 'WARP (AI stopped)';
+    } else if (chaosMode) {
+      return 'CHAOS (AI allowed - overrides operational hours)';
+    } else if (this.isWithinOperatingHours()) {
+      return 'OPERATIONAL HOURS (AI allowed)';
+    } else {
+      return 'OUTSIDE HOURS (AI stopped)';
+    }
   }
 
   /**
@@ -53,18 +128,44 @@ class AIQuotaService {
    */
   static getTimeUntilOperating() {
     const now = new Date();
-    const tomorrow = new Date(now);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(5, 0, 0, 0); // 5 AM tomorrow
     
-    const today5AM = new Date(now);
-    today5AM.setHours(5, 0, 0, 0); // 5 AM today
+    const today5AM = new Date(today);
+    today5AM.setHours(OPERATIONAL_START_HOUR, 0, 0, 0); // 5 AM today
     
-    if (now.getHours() < 5) {
-      return today5AM - now; // Time until 5 AM today
+    const tomorrow5AM = new Date(tomorrow);
+    tomorrow5AM.setHours(OPERATIONAL_START_HOUR, 0, 0, 0); // 5 AM tomorrow
+    
+    if (now.getHours() < OPERATIONAL_START_HOUR) {
+      return today5AM.getTime() - now.getTime();
     } else {
-      return tomorrow - now; // Time until 5 AM tomorrow
+      return tomorrow5AM.getTime() - now.getTime();
     }
+  }
+
+  /**
+   * Format time until operating as string
+   */
+  static formatTimeUntilOperating(milliseconds) {
+    if (!milliseconds || milliseconds <= 0) return 'Now';
+    
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  }
+
+  /**
+   * Get operational hours as formatted string
+   */
+  static getOperationalHoursFormatted() {
+    return `${OPERATIONAL_START_HOUR.toString().padStart(2, '0')}:00 - ${OPERATIONAL_END_HOUR.toString().padStart(2, '0')}:00`;
   }
 
   /**
@@ -99,6 +200,12 @@ class AIQuotaService {
    */
   static async canSendProposals(aiType) {
     try {
+      // First check if AI operations are allowed
+      if (!this.isAIOperationsAllowed()) {
+        logEvent(`[QUOTA] ${aiType} cannot send proposals - AI operations not allowed`);
+        return false;
+      }
+      
       const quota = await this.initializeQuota(aiType);
       return quota.canSendMoreProposals();
     } catch (error) {
@@ -112,6 +219,12 @@ class AIQuotaService {
    */
   static async incrementProposalsSent(aiType) {
     try {
+      // Check if AI operations are allowed before incrementing
+      if (!this.isAIOperationsAllowed()) {
+        logEvent(`[QUOTA] Cannot increment proposals for ${aiType} - AI operations not allowed`);
+        return null;
+      }
+      
       const quota = await this.initializeQuota(aiType);
       await quota.incrementProposalsSent();
       
@@ -198,38 +311,31 @@ class AIQuotaService {
   static async calculateLearningEffectiveness(aiType, quota) {
     try {
       if (quota.learningCycles === 0) {
-        return 0; // First cycle, no baseline to compare against
+        return 0; // No baseline for first cycle
       }
       
-      // Get proposals from current cycle
-      const currentCycleProposals = await Proposal.find({
-        aiType,
-        createdAt: { $gte: quota.quotaResetDate }
-      });
-      
       // Get proposals from previous cycle for comparison
-      const previousCycleStart = new Date(quota.quotaResetDate);
-      previousCycleStart.setDate(previousCycleStart.getDate() - 30); // Approximate previous cycle
+      const previousCycleDate = new Date(quota.quotaResetDate);
+      previousCycleDate.setDate(previousCycleDate.getDate() - 7); // Rough estimate of previous cycle
       
-      const previousCycleProposals = await Proposal.find({
+      const previousProposals = await Proposal.find({
         aiType,
-        createdAt: { $gte: previousCycleStart, $lt: quota.quotaResetDate }
-      });
+        createdAt: { $gte: previousCycleDate, $lt: quota.quotaResetDate }
+      }).sort({ createdAt: -1 }).limit(quota.currentQuota);
       
-      // Calculate success rates
-      const currentSuccessRate = currentCycleProposals.length > 0 
-        ? (currentCycleProposals.filter(p => p.status === 'approved').length / currentCycleProposals.length) * 100 
-        : 0;
+      if (previousProposals.length === 0) {
+        return 0; // No previous data
+      }
       
-      const previousSuccessRate = previousCycleProposals.length > 0 
-        ? (previousCycleProposals.filter(p => p.status === 'approved').length / previousCycleProposals.length) * 100 
-        : 0;
+      const previousApprovedCount = previousProposals.filter(p => p.status === 'approved').length;
+      const previousSuccessRate = (previousApprovedCount / previousProposals.length) * 100;
       
       // Calculate improvement
-      const improvement = Math.max(0, currentSuccessRate - previousSuccessRate);
+      const currentSuccessRate = quota.successRate || 0;
+      const improvement = currentSuccessRate - previousSuccessRate;
       
       // Normalize to 0-100 scale
-      const effectiveness = Math.min(100, improvement * 2); // 50% improvement = 100% effectiveness
+      const effectiveness = Math.max(0, Math.min(100, 50 + improvement));
       
       return effectiveness;
     } catch (error) {
@@ -239,25 +345,25 @@ class AIQuotaService {
   }
 
   /**
-   * Get quota status for an AI
+   * Get quota status for a specific AI
    */
   static async getQuotaStatus(aiType) {
     try {
       const quota = await this.initializeQuota(aiType);
+      const operationStatus = this.getAIOperationStatus();
       
       return {
         aiType: quota.aiType,
         currentQuota: quota.currentQuota,
         proposalsSent: quota.proposalsSent,
         proposalsProcessed: quota.proposalsProcessed,
-        remainingProposals: quota.currentQuota - quota.proposalsSent,
+        canSendProposals: quota.canSendMoreProposals() && operationStatus.canOperate,
         learningCycles: quota.learningCycles,
-        isLearning: quota.isLearning,
-        canSendProposals: quota.canSendProposals,
         successRate: quota.successRate,
         learningEffectiveness: quota.learningEffectiveness,
-        lastLearningCycle: quota.lastLearningCycle,
-        quotaHistory: quota.quotaHistory.slice(-5) // Last 5 cycles
+        operationStatus: operationStatus,
+        operationalHours: this.getOperationalHoursFormatted(),
+        timeUntilOperating: this.formatTimeUntilOperating(this.getTimeUntilOperating())
       };
     } catch (error) {
       console.error(`[QUOTA] Error getting quota status for ${aiType}:`, error);
@@ -271,7 +377,7 @@ class AIQuotaService {
   static async getAllQuotaStatus() {
     const quotas = await AIQuota.find({});
     const status = {};
-    const isOperating = this.isWithinOperatingHours();
+    const operationStatus = this.getAIOperationStatus();
     const timeUntilOperating = this.getTimeUntilOperating();
     
     for (const quota of quotas) {
@@ -283,192 +389,153 @@ class AIQuotaService {
         cycleActive: quota.cycleActive,
         lastActive: quota.lastActive,
         aiOrder: quota.aiOrder,
-        isOperating: isOperating,
-        timeUntilOperating: timeUntilOperating
+        operationStatus: operationStatus,
+        operationalHours: this.getOperationalHoursFormatted(),
+        timeUntilOperating: this.formatTimeUntilOperating(timeUntilOperating)
       };
     }
     
     // Add global status
     status.global = {
-      isOperating: isOperating,
-      timeUntilOperating: timeUntilOperating,
+      operationStatus: operationStatus,
+      timeUntilOperating: this.formatTimeUntilOperating(timeUntilOperating),
       currentTime: new Date().toISOString(),
-      operatingHours: "5:00 AM - 9:00 PM"
+      operationalHours: this.getOperationalHoursFormatted(),
+      chaosMode: chaosMode,
+      warpMode: warpMode
     };
     
     return status;
   }
 
   /**
-   * Reset quota for an AI (for testing/debugging)
+   * Reset quota for an AI
    */
   static async resetQuota(aiType) {
     try {
-      await AIQuota.findOneAndUpdate(
-        { aiType },
-        {
-          currentQuota: 50,
-          proposalsSent: 0,
-          proposalsProcessed: 0,
-          learningCycles: 0,
-          isLearning: false,
-          canSendProposals: true,
-          successRate: 0,
-          learningEffectiveness: 0,
-          quotaResetDate: new Date()
-        },
-        { upsert: true }
-      );
+      const quota = await this.initializeQuota(aiType);
+      await quota.resetQuota();
       
       logEvent(`[QUOTA] Reset quota for ${aiType}`);
+      
+      return quota;
     } catch (error) {
       console.error(`[QUOTA] Error resetting quota for ${aiType}:`, error);
       throw error;
     }
   }
 
+  /**
+   * Initialize quotas for all AIs
+   */
   static async initializeAllQuotas() {
-    for (let i = 0; i < AI_ORDER.length; i++) {
-      await AIQuota.findOneAndUpdate(
-        { aiType: AI_ORDER[i] },
-        { aiOrder: i },
-        { upsert: true }
-      );
+    try {
+      for (const aiType of AI_ORDER) {
+        await this.initializeQuota(aiType);
+      }
+      logEvent(`[QUOTA] Initialized quotas for all AIs`);
+    } catch (error) {
+      console.error(`[QUOTA] Error initializing all quotas:`, error);
+      throw error;
     }
   }
 
+  /**
+   * Get current AI based on rotation
+   */
   static async getCurrentAI() {
-    // Check if AI operations are allowed
-    if (!this.isAIOperationsAllowed()) {
-      if (warpMode) {
-        logEvent('[QUOTA] Warp mode active. AI operations completely stopped.');
-      } else {
-        logEvent('[QUOTA] Outside operating hours (5 AM - 9 PM). AI operations paused.');
+    try {
+      const quotas = await AIQuota.find({}).sort({ lastActive: 1 });
+      
+      if (quotas.length === 0) {
+        await this.initializeAllQuotas();
+        return AI_ORDER[0];
       }
-      return null;
+      
+      // Find the AI that hasn't been active the longest
+      const oldestActive = quotas[0];
+      return oldestActive.aiType;
+    } catch (error) {
+      console.error(`[QUOTA] Error getting current AI:`, error);
+      return AI_ORDER[0]; // Fallback to first AI
     }
-
-    const all = await AIQuota.find({}).sort({ aiOrder: 1 });
-    let current = all.find(q => q.cycleActive);
-    if (!current) {
-      // Start with the first AI
-      current = all[0];
-      current.cycleActive = true;
-      current.lastActive = new Date();
-      await current.save();
-    }
-    return current;
   }
 
+  /**
+   * Rotate to next AI in the order
+   */
   static async rotateToNextAI() {
-    // Check if AI operations are allowed
-    if (!this.isAIOperationsAllowed()) {
-      if (warpMode) {
-        logEvent('[QUOTA] Warp mode active. AI rotation stopped.');
-      } else {
-        logEvent('[QUOTA] Outside operating hours. AI rotation paused.');
-      }
-      return null;
+    try {
+      const currentAI = await this.getCurrentAI();
+      const currentIndex = AI_ORDER.indexOf(currentAI);
+      const nextIndex = (currentIndex + 1) % AI_ORDER.length;
+      const nextAI = AI_ORDER[nextIndex];
+      
+      // Update last active time for current AI
+      const quota = await this.initializeQuota(currentAI);
+      quota.lastActive = new Date();
+      await quota.save();
+      
+      logEvent(`[QUOTA] Rotated from ${currentAI} to ${nextAI}`);
+      
+      return nextAI;
+    } catch (error) {
+      console.error(`[QUOTA] Error rotating to next AI:`, error);
+      return AI_ORDER[0]; // Fallback to first AI
     }
-
-    const all = await AIQuota.find({}).sort({ aiOrder: 1 });
-    let currentIdx = all.findIndex(q => q.cycleActive);
-    if (currentIdx === -1) currentIdx = 0;
-    all[currentIdx].cycleActive = false;
-    await all[currentIdx].save();
-    const nextIdx = (currentIdx + 1) % all.length;
-    all[nextIdx].cycleActive = true;
-    all[nextIdx].lastActive = new Date();
-    all[nextIdx].currentPhase = 'proposing';
-    all[nextIdx].phaseProgress = { proposing: 0, testing: 0, learning: 0 };
-    await all[nextIdx].save();
-    
-    logEvent(`[QUOTA] Rotated to ${all[nextIdx].aiType} for ${all[nextIdx].currentPhase} phase`);
-    return all[nextIdx];
   }
 
+  /**
+   * Check if an AI can process in a specific phase
+   */
   static async canProcess(aiType, phase) {
-    // Check if AI operations are allowed (considering Chaos/Warp modes)
-    if (!this.isAIOperationsAllowed()) {
-      if (warpMode) {
-        logEvent(`[QUOTA] ${aiType} cannot process ${phase} - Warp mode active (all operations stopped)`);
-      } else {
-        logEvent(`[QUOTA] ${aiType} cannot process ${phase} - outside operating hours (5 AM - 9 PM)`);
+    try {
+      // Check if AI operations are allowed
+      if (!this.isAIOperationsAllowed()) {
+        return false;
       }
+      
+      const quota = await this.initializeQuota(aiType);
+      return quota.canProcessPhase(phase);
+    } catch (error) {
+      console.error(`[QUOTA] Error checking if ${aiType} can process phase ${phase}:`, error);
       return false;
     }
-
-    const quota = await AIQuota.findOne({ aiType });
-    if (!quota) {
-      logEvent(`[QUOTA] No quota found for ${aiType}`);
-      return false;
-    }
-    if (!quota.cycleActive) {
-      logEvent(`[QUOTA] ${aiType} cannot process ${phase} - not active AI`);
-      return false;
-    }
-    if (quota.currentPhase !== phase) {
-      logEvent(`[QUOTA] ${aiType} cannot process ${phase} - current phase is ${quota.currentPhase}`);
-      return false;
-    }
-    if (quota.phaseProgress[phase] >= quota.phaseQuotas[phase]) {
-      logEvent(`[QUOTA] ${aiType} cannot process ${phase} - quota met (${quota.phaseProgress[phase]}/${quota.phaseQuotas[phase]})`);
-      return false;
-    }
-    return true;
   }
 
+  /**
+   * Increment phase progress for an AI
+   */
   static async incrementPhaseProgress(aiType, phase) {
-    const quota = await AIQuota.findOne({ aiType });
-    quota.phaseProgress[phase] += 1;
-    
-    logEvent(`[QUOTA] ${aiType} ${phase} progress: ${quota.phaseProgress[phase]}/${quota.phaseQuotas[phase]}`);
-    
-    // If phase quota met, rotate to next phase
-    if (quota.phaseProgress[phase] >= quota.phaseQuotas[phase]) {
-      if (phase === 'proposing') {
-        quota.currentPhase = 'testing';
-        logEvent(`[QUOTA] ${aiType} completed proposing phase, moving to testing`);
-      } else if (phase === 'testing') {
-        quota.currentPhase = 'learning';
-        logEvent(`[QUOTA] ${aiType} completed testing phase, moving to learning`);
-      } else if (phase === 'learning') {
-        quota.currentPhase = 'proposing';
-        quota.phaseProgress = { proposing: 0, testing: 0, learning: 0 };
-        quota.cycleActive = false;
-        await quota.save();
-        logEvent(`[QUOTA] ${aiType} completed full cycle, rotating to next AI`);
-        await AIQuotaService.rotateToNextAI();
-        return;
-      }
+    try {
+      const quota = await this.initializeQuota(aiType);
+      await quota.incrementPhaseProgress(phase);
+      
+      logEvent(`[QUOTA] ${aiType} phase ${phase} progress: ${quota.phaseProgress[phase]}/${quota.phaseQuotas[phase]}`);
+      
+      return quota;
+    } catch (error) {
+      console.error(`[QUOTA] Error incrementing phase progress for ${aiType} phase ${phase}:`, error);
+      throw error;
     }
-    await quota.save();
   }
 
   /**
    * Get current operating status
    */
   static getOperatingStatus() {
-    const isOperating = this.isWithinOperatingHours();
+    const operationStatus = this.getAIOperationStatus();
     const timeUntilOperating = this.getTimeUntilOperating();
     const now = new Date();
     
     return {
-      isOperating: isOperating,
+      operationStatus: operationStatus,
       currentTime: now.toISOString(),
-      operatingHours: "5:00 AM - 9:00 PM",
-      timeUntilOperating: timeUntilOperating,
-      timeUntilOperatingFormatted: this.formatTimeUntilOperating(timeUntilOperating)
+      operationalHours: this.getOperationalHoursFormatted(),
+      timeUntilOperating: this.formatTimeUntilOperating(timeUntilOperating),
+      chaosMode: chaosMode,
+      warpMode: warpMode
     };
-  }
-
-  /**
-   * Format time until operating in human-readable format
-   */
-  static formatTimeUntilOperating(milliseconds) {
-    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
-    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
   }
 }
 

@@ -262,6 +262,50 @@ router.post('/reset-learning/:aiType', async (req, res) => {
   }
 });
 
+// Reset quota and learning state for an AI
+router.post('/reset-quota/:aiType', async (req, res) => {
+  try {
+    const { aiType } = req.params;
+    
+    if (!['Imperium', 'Sandbox', 'Guardian'].includes(aiType)) {
+      return res.status(400).json({ error: 'Invalid AI type' });
+    }
+    
+    console.log(`[PROPOSALS] 🔄 Resetting quota and learning state for ${aiType}...`);
+    
+    // Reset quota and learning state
+    const { AIQuotaService } = require('../services/aiQuotaService');
+    await AIQuotaService.resetQuota(aiType);
+    
+    // Reset learning state
+    const AILearningService = require('../services/aiLearningService');
+    AILearningService.setLearningState(aiType, false);
+    
+    // Store a reset event
+    await Learning.create({
+      aiType,
+      status: 'learning-completed',
+      feedbackReason: 'Manual quota and learning state reset',
+      learningKey: 'manual_quota_reset',
+      learningValue: 'Quota and learning state manually reset by user',
+      filePath: 'system',
+      improvementType: 'system'
+    });
+    
+    console.log(`[PROPOSALS] ✅ Quota and learning state reset for ${aiType}`);
+    
+    res.json({ 
+      message: `Quota and learning state reset for ${aiType}`,
+      aiType,
+      canSendProposals: true,
+      isLearning: false
+    });
+  } catch (error) {
+    console.error(`[PROPOSALS] ❌ Error resetting quota:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get current AI status
 router.get('/ai-status', async (req, res) => {
   try {

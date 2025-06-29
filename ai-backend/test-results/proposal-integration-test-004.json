@@ -1,0 +1,69 @@
+{
+  "proposalId": "test-004",
+  "aiType": "Imperium",
+  "timestamp": "2025-06-29T07:26:46.505Z",
+  "results": [
+    {
+      "test": "Proposal Retrieval",
+      "passed": true,
+      "details": "API working, 29 proposals found",
+      "timestamp": "2025-06-29T07:26:46.150Z"
+    },
+    {
+      "test": "Chaos/Warp Status",
+      "passed": true,
+      "details": "Status: OPERATIONAL HOURS (AI allowed)",
+      "timestamp": "2025-06-29T07:26:46.153Z"
+    },
+    {
+      "test": "Proposal Creation Under Chaos/Warp",
+      "passed": true,
+      "details": "AI operations allowed",
+      "timestamp": "2025-06-29T07:26:46.153Z"
+    },
+    {
+      "test": "GitHub Integration",
+      "passed": true,
+      "details": "GitHub connected: undefined",
+      "timestamp": "2025-06-29T07:26:46.156Z"
+    },
+    {
+      "test": "Database Integration",
+      "passed": true,
+      "details": "Database accessible",
+      "timestamp": "2025-06-29T07:26:46.492Z"
+    },
+    {
+      "test": "Notification Integration",
+      "passed": true,
+      "details": "Notifications working",
+      "timestamp": "2025-06-29T07:26:46.494Z"
+    },
+    {
+      "test": "App Functionality Integration",
+      "passed": true,
+      "details": "App status: running",
+      "timestamp": "2025-06-29T07:26:46.495Z"
+    },
+    {
+      "test": "Error Handling",
+      "passed": true,
+      "details": "Proper error responses",
+      "timestamp": "2025-06-29T07:26:46.498Z"
+    },
+    {
+      "test": "Proposal Creation",
+      "passed": false,
+      "details": "Creation failed: [object Object]",
+      "timestamp": "2025-06-29T07:26:46.503Z"
+    }
+  ],
+  "issues": [],
+  "summary": {
+    "total": 9,
+    "passed": 8,
+    "failed": 1,
+    "errorCount": 0,
+    "warningCount": 0
+  }
+}
