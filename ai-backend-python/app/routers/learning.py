@@ -3,7 +3,7 @@ Learning router for AI learning endpoints
 """
 
 from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 import structlog
 
 from app.services.ml_service import MLService
@@ -12,12 +12,13 @@ ml_service = MLService()
 from app.services.ai_learning_service import AILearningService
 ai_learning_service = AILearningService()
 
-from app.models.sql_models import AILearningHistory
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
+from sqlalchemy.future import select
 from app.core.database import get_session
-from collections import defaultdict
+from app.models.sql_models import AILearningHistory
 from datetime import datetime
+from collections import defaultdict
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -254,28 +255,24 @@ async def trigger_periodic_learning():
         }
     except Exception as e:
         logger.error("Error triggering periodic learning", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) 
 
 
-@router.get("/codex/chapters")
-async def get_codex_chapters(db: AsyncSession = Depends(get_session)):
-    """Get Codex chapters: each day is a chapter, entries are what AIs learned/discussed with timestamps."""
-    # Fetch all learning history, order by created_at
-    result = await db.execute(
-        AILearningHistory.__table__.select().order_by(AILearningHistory.created_at.asc())
-    )
-    rows = result.fetchall()
+@router.get("/api/codex/chapters")
+async def get_codex_chapters(session: AsyncSession = Depends(get_session)):
+    # Fetch all learning history entries, ordered by created_at
+    result = await session.execute(select(AILearningHistory).order_by(AILearningHistory.created_at.asc()))
+    entries = result.scalars().all()
     # Group by day (YYYY-MM-DD)
     chapters = defaultdict(list)
-    for row in rows:
-        created_at = row.created_at
-        day_str = created_at.strftime('%Y-%m-%d')
-        chapters[day_str].append({
-            "ai_type": row.ai_type,
-            "content": row.learning_event if not row.details else f"{row.learning_event}: {row.details}",
-            "timestamp": created_at.strftime('%H:%M:%S'),
+    for entry in entries:
+        day = entry.created_at.strftime('%Y-%m-%d')
+        chapters[day].append({
+            "ai_type": entry.ai_type,
+            "content": entry.learning_event + (f": {entry.details.get('summary', '')}" if entry.details and 'summary' in entry.details else ''),
+            "timestamp": entry.created_at.strftime('%H:%M')
         })
-    # Format for frontend: list of {day, entries}
+    # Format as list of chapters
     chapter_list = [
         {"day": day, "entries": entries}
         for day, entries in sorted(chapters.items())
