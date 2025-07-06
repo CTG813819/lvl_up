@@ -3,22 +3,16 @@ Learning router for AI learning endpoints
 """
 
 from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query
 import structlog
+from datetime import datetime, timedelta
+from typing import List, Dict, Any
 
 from app.services.ml_service import MLService
 ml_service = MLService()
 
 from app.services.ai_learning_service import AILearningService
 ai_learning_service = AILearningService()
-
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.core.database import get_session
-from app.models.sql_models import AILearningHistory
-from datetime import datetime
-from collections import defaultdict
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -255,26 +249,30 @@ async def trigger_periodic_learning():
         }
     except Exception as e:
         logger.error("Error triggering periodic learning", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/codex/chapters")
-async def get_codex_chapters(session: AsyncSession = Depends(get_session)):
-    # Fetch all learning history entries, ordered by created_at
-    result = await session.execute(select(AILearningHistory).order_by(AILearningHistory.created_at.asc()))
-    entries = result.scalars().all()
-    # Group by day (YYYY-MM-DD)
-    chapters = defaultdict(list)
-    for entry in entries:
-        day = entry.created_at.strftime('%Y-%m-%d')
-        chapters[day].append({
-            "ai_type": entry.ai_type,
-            "content": entry.learning_event + (f": {entry.details.get('summary', '')}" if entry.details and 'summary' in entry.details else ''),
-            "timestamp": entry.created_at.strftime('%H:%M')
-        })
-    # Format as list of chapters
-    chapter_list = [
-        {"day": day, "entries": entries}
-        for day, entries in sorted(chapters.items())
-    ]
-    return {"chapters": chapter_list} 
+def get_codex_chapters() -> Dict[str, Any]:
+    # Placeholder: In a real implementation, fetch from DB or logs
+    # Group entries by day, each day is a chapter
+    # Each entry: {ai_type, content, timestamp}
+    now = datetime.utcnow()
+    chapters = []
+    for i in range(3):
+        day = (now - timedelta(days=i)).strftime('%Y-%m-%d')
+        entries = [
+            {
+                "ai_type": "Imperium",
+                "content": f"Learned about ML topic {i+1}.",
+                "timestamp": (now - timedelta(days=i, hours=2)).strftime('%H:%M')
+            },
+            {
+                "ai_type": "Guardian",
+                "content": f"Discussed system architecture {i+1}.",
+                "timestamp": (now - timedelta(days=i, hours=1)).strftime('%H:%M')
+            },
+        ]
+        chapters.append({"day": day, "entries": entries})
+    chapters.reverse()  # Oldest first
+    return {"chapters": chapters} 
