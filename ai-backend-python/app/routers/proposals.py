@@ -141,15 +141,18 @@ async def periodic_proposal_generation():
             # Clean up old pending proposals first
             await cleanup_old_pending_proposals()
             
-            # Use the proposal cycle service instead of direct generation
+            # Get the proposal cycle service
             cycle_service = await get_proposal_cycle_service()
-            if cycle_service:
-                # The cycle service will handle proposal generation based on the round-robin logic
-                await feedback_log("Proposal cycle service is managing generation")
+            
+            # Get the next agent that should generate a proposal
+            next_agent = await cycle_service.get_next_agent()
+            
+            if next_agent is not None:
+                logger.info(f"🔄 Generating proposal for {next_agent.value}")
+                await generate_and_test_proposal(next_agent.value)
             else:
-                # Fallback to direct generation if cycle service is not available
-                for ai_type in ["imperium", "guardian", "sandbox", "conquest"]:
-                    await generate_and_test_proposal(ai_type)
+                logger.info("🔄 No agent available for proposal generation")
+                
         except Exception as e:
             await feedback_log("Error in periodic proposal generation", error=str(e))
         await asyncio.sleep(60)  # 1 minute interval for testing
@@ -1447,49 +1450,40 @@ async def get_cycle_status():
         status = await cycle_service.get_cycle_status()
         return status
     except Exception as e:
-        logger.error("Error getting cycle status", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error getting cycle status: {str(e)}")
-
-@router.post("/cycle/force-new")
-async def force_new_cycle():
-    """Force start a new proposal cycle"""
-    try:
-        cycle_service = await get_proposal_cycle_service()
-        await cycle_service.force_new_cycle()
-        return {"message": "New cycle forced successfully"}
-    except Exception as e:
-        logger.error("Error forcing new cycle", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error forcing new cycle: {str(e)}")
+        logger.error(f"Error getting cycle status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/cycle/reset")
 async def reset_cycle():
-    """Reset the proposal cycle to start from the beginning"""
+    """Force reset the proposal cycle"""
     try:
         cycle_service = await get_proposal_cycle_service()
-        await cycle_service.reset_cycle()
-        return {"message": "Cycle reset successfully"}
+        result = await cycle_service.force_cycle_reset()
+        return result
     except Exception as e:
-        logger.error("Error resetting cycle", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error resetting cycle: {str(e)}")
+        logger.error(f"Error resetting cycle: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/cycle/start")
-async def start_cycle_service():
-    """Start the proposal cycle service"""
+@router.get("/cycle/agent/{agent_type}/progress")
+async def get_agent_progress(agent_type: str):
+    """Get progress for a specific agent"""
     try:
+        from app.services.proposal_cycle_service import AIAgent
+        
+        # Map agent type string to enum
+        agent_map = {
+            "imperium": AIAgent.IMPERIUM,
+            "guardian": AIAgent.GUARDIAN,
+            "sandbox": AIAgent.SANDBOX,
+            "conquest": AIAgent.CONQUEST
+        }
+        
+        if agent_type not in agent_map:
+            raise HTTPException(status_code=400, detail=f"Invalid agent type: {agent_type}")
+        
         cycle_service = await get_proposal_cycle_service()
-        await cycle_service.start_cycle_service()
-        return {"message": "Proposal cycle service started"}
+        progress = await cycle_service.get_agent_progress(agent_map[agent_type])
+        return progress
     except Exception as e:
-        logger.error("Error starting cycle service", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error starting cycle service: {str(e)}")
-
-@router.post("/cycle/stop")
-async def stop_cycle_service():
-    """Stop the proposal cycle service"""
-    try:
-        cycle_service = await get_proposal_cycle_service()
-        await cycle_service.stop_cycle_service()
-        return {"message": "Proposal cycle service stopped"}
-    except Exception as e:
-        logger.error("Error stopping cycle service", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Error stopping cycle service: {str(e)}")
+        logger.error(f"Error getting agent progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -56,7 +56,9 @@ async def startup_event():
         
         # Start background services
         asyncio.create_task(background_service.start_autonomous_cycle())
-        asyncio.create_task(proposal_cycle_service.start_cycle_service())
+        
+        # Note: Proposal cycle service is now integrated into the periodic proposal generation
+        # No need to start it separately as it's called from the proposals router
         
         print("✅ Application startup complete")
         
@@ -73,8 +75,8 @@ async def shutdown_event():
         if background_service:
             await background_service.stop_autonomous_cycle()
         
-        if proposal_cycle_service:
-            await proposal_cycle_service.stop_cycle_service()
+        # Note: Proposal cycle service doesn't need to be stopped separately
+        # as it's integrated into the periodic proposal generation
         
         print("✅ Application shutdown complete")
         
