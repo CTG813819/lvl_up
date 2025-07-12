@@ -122,8 +122,9 @@ class ProposalCycleService:
     async def _is_cycle_complete(self) -> bool:
         """Check if the current cycle is complete (all proposals approved/rejected)"""
         try:
-            await init_database()
-            async with init_database() as session:
+            from app.core.database import SessionLocal
+            
+            async with SessionLocal() as session:
                 # Count pending proposals
                 pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending")
                 pending_result = await session.execute(pending_query)
@@ -167,8 +168,9 @@ class ProposalCycleService:
     async def _has_agent_completed_proposals(self, agent: AIAgent) -> bool:
         """Check if an agent has completed its proposal quota"""
         try:
-            await init_database()
-            async with init_database() as session:
+            from app.core.database import SessionLocal
+            
+            async with SessionLocal() as session:
                 # Count pending proposals for this agent
                 query = select(func.count(Proposal.id)).where(
                     Proposal.status == "pending",
@@ -237,8 +239,9 @@ class ProposalCycleService:
     async def get_cycle_status(self) -> Dict:
         """Get current cycle status"""
         try:
-            await init_database()
-            async with init_database() as session:
+            from app.core.database import SessionLocal
+            
+            async with SessionLocal() as session:
                 # Get proposal counts by status and agent
                 status_query = select(
                     Proposal.ai_type,
