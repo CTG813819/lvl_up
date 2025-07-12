@@ -21,7 +21,7 @@ from .github_service import GitHubService
 from .ai_learning_service import AILearningService
 from .ml_service import MLService
 from .advanced_code_generator import AdvancedCodeGenerator
-from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
+from app.services.unified_ai_service import call_ai, get_ai_stats
 
 logger = structlog.get_logger()
 
@@ -95,7 +95,7 @@ class AIAgentService:
             
             # Claude verification
             try:
-                verification = await anthropic_rate_limited_call(
+                verification = await call_ai(
                     f"Imperium agent analyzed {len(dart_files)} Dart files and found {len(optimizations)} optimizations. Please verify the quality and suggest improvements.",
                     ai_name="imperium"
                 )
@@ -114,7 +114,7 @@ class AIAgentService:
             logger.error("Error running Imperium agent", error=str(e))
             # Claude failure analysis
             try:
-                advice = await anthropic_rate_limited_call(
+                advice = await call_ai(
                     f"Imperium agent failed with error: {str(e)}. Please analyze the error and suggest how to improve.",
                     ai_name="imperium"
                 )
@@ -169,7 +169,7 @@ class AIAgentService:
             
             # Claude verification
             try:
-                verification = await anthropic_rate_limited_call(
+                verification = await call_ai(
                     f"Guardian agent found {len(security_issues)} security issues and {len(quality_issues)} quality issues. Please verify the severity and suggest improvements.",
                     ai_name="guardian"
                 )
@@ -189,7 +189,7 @@ class AIAgentService:
             logger.error("Error running Guardian agent", error=str(e))
             # Claude failure analysis
             try:
-                advice = await anthropic_rate_limited_call(
+                advice = await call_ai(
                     f"Guardian agent failed with error: {str(e)}. Please analyze the error and suggest how to improve.",
                     ai_name="guardian"
                 )
@@ -234,7 +234,7 @@ class AIAgentService:
                 
                 # Claude verification
                 try:
-                    verification = await anthropic_rate_limited_call(
+                    verification = await call_ai(
                         f"Sandbox agent ran AI experiments and basic tests. No recent commits. Please verify the quality of the tests and suggest improvements.",
                         ai_name="sandbox"
                     )
@@ -291,7 +291,7 @@ class AIAgentService:
             
             # Claude verification
             try:
-                verification = await anthropic_rate_limited_call(
+                verification = await call_ai(
                     f"Sandbox agent ran {len(experiments)} experiments and {len(ai_experiments)} AI experiments. Please verify the quality of the experiments and suggest improvements.",
                     ai_name="sandbox"
                 )
@@ -313,7 +313,7 @@ class AIAgentService:
             logger.error("Error running Sandbox agent", error=str(e))
             # Claude failure analysis
             try:
-                advice = await anthropic_rate_limited_call(
+                advice = await call_ai(
                     f"Sandbox agent failed with error: {str(e)}. Please analyze the error and suggest how to improve.",
                     ai_name="sandbox"
                 )
@@ -343,7 +343,7 @@ class AIAgentService:
             
             # Claude verification
             try:
-                verification = await anthropic_rate_limited_call(
+                verification = await call_ai(
                     f"Conquest agent deployed {deployments} changes and pushed {pushed_changes} changes. Please verify the deployment and suggest improvements.",
                     ai_name="conquest"
                 )
@@ -361,7 +361,7 @@ class AIAgentService:
             logger.error("Error running Conquest agent", error=str(e))
             # Claude failure analysis
             try:
-                advice = await anthropic_rate_limited_call(
+                advice = await call_ai(
                     f"Conquest agent failed with error: {str(e)}. Please analyze the error and suggest how to improve.",
                     ai_name="conquest"
                 )
@@ -1633,8 +1633,9 @@ All experiments are run in isolated environments and do not affect the main code
             return None 
 
     def anthropic_experimentation(self, prompt: str) -> str:
-        """Use Anthropic Claude for experimentation, proposal generation, or agent reasoning."""
+        """Use unified AI service for experimentation, proposal generation, or agent reasoning."""
         try:
-            return call_claude(prompt)
+            import asyncio
+            return asyncio.run(call_ai(prompt))
         except Exception as e:
-            return f"Anthropic error: {str(e)}" 
+            return f"AI service error: {str(e)}" 
