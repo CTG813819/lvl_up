@@ -182,7 +182,8 @@ class ProposalCycleService:
             
             async with get_session() as session:
                 # Delete all proposals
-                await session.execute("DELETE FROM proposals")
+                from sqlalchemy import text
+                await session.execute(text("DELETE FROM proposals"))
                 await session.commit()
                 
                 # Reset cycle state
