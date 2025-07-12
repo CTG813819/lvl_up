@@ -54,7 +54,9 @@ class ProposalCycleService:
         """Get the next AI agent that should generate a proposal"""
         try:
             await init_database()
-            async with SessionLocal() as session:
+            from app.core.database import get_session
+            
+            async with get_session() as session:
                 # Check if current cycle is complete (all proposals approved/rejected)
                 if await self._is_cycle_complete(session):
                     logger.info("🔄 Cycle complete, starting new cycle")
@@ -129,7 +131,9 @@ class ProposalCycleService:
         """Get current cycle status"""
         try:
             await init_database()
-            async with SessionLocal() as session:
+            from app.core.database import get_session
+            
+            async with get_session() as session:
                 # Get proposal counts by status and agent
                 status_query = select(
                     Proposal.ai_type,
@@ -174,7 +178,9 @@ class ProposalCycleService:
         """Force reset the current cycle"""
         try:
             await init_database()
-            async with SessionLocal() as session:
+            from app.core.database import get_session
+            
+            async with get_session() as session:
                 # Delete all proposals
                 await session.execute("DELETE FROM proposals")
                 await session.commit()
@@ -195,7 +201,9 @@ class ProposalCycleService:
         """Get progress for a specific agent"""
         try:
             await init_database()
-            async with SessionLocal() as session:
+            from app.core.database import get_session
+            
+            async with get_session() as session:
                 # Count proposals by status for this agent
                 query = select(
                     Proposal.status,
