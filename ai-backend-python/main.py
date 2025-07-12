@@ -18,9 +18,14 @@ import structlog
 from app.routers import (
     proposals, learning, analytics, approval, conquest, imperium, 
     guardian, sandbox, code, oath_papers, experiments, notify,
-    github_webhook, agents, growth, notifications
+    github_webhook, agents, growth, notifications, missions
 )
+from app.routers.imperium_learning import router as imperium_learning_router
 from app.routers.codex import router as codex_router
+from app.routers.plugin import router as plugin_router
+from app.routers.auto_apply import router as auto_apply_router
+from app.routers.optimized_services import router as optimized_services_router
+from app.routers.proposals import periodic_proposal_generation
 
 # Import services
 from app.services.ai_learning_service import AILearningService
@@ -34,6 +39,11 @@ from app.services.ai_agent_service import AIAgentService
 from app.services.github_service import GitHubService
 from app.services.background_service import BackgroundService
 from app.services.ai_growth_service import AIGrowthService
+from app.services.imperium_learning_controller import ImperiumLearningController
+from app.services.auto_apply_service import auto_apply_service
+from app.services.cache_service import CacheService
+from app.services.data_collection_service import DataCollectionService
+from app.services.analysis_service import AnalysisService
 
 # Setup logging
 setup_logging()
@@ -60,10 +70,27 @@ async def lifespan(app: FastAPI):
     await BackgroundService.initialize()
     await AIGrowthService.initialize()
     
+    # Initialize Imperium Learning Controller
+    await ImperiumLearningController.initialize()
+    
+    # Initialize Auto-Apply Service
+    await auto_apply_service.initialize()
+    
+    # Initialize new optimization services
+    await CacheService.initialize()
+    await DataCollectionService.initialize()
+    await AnalysisService.initialize()
+    
     # Start autonomous AI cycle in background
     background_service = BackgroundService()
     asyncio.create_task(background_service.start_autonomous_cycle())
     
+    # Start auto-apply monitoring
+    asyncio.create_task(auto_apply_service.start_monitoring())
+
+    # Start periodic proposal generation feedback loop (ensure DB is ready)
+    asyncio.create_task(periodic_proposal_generation())
+
     yield
     
     # Shutdown
@@ -239,7 +266,12 @@ app.include_router(github_webhook.router, prefix="/api/github", tags=["github"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(growth.router, prefix="/api/growth", tags=["growth"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(missions.router, prefix="/api/missions", tags=["missions"])
 app.include_router(codex_router, prefix="/api/codex", tags=["Codex"])
+app.include_router(imperium_learning_router, tags=["Imperium Learning Controller"])
+app.include_router(plugin_router, tags=["plugins"])
+app.include_router(auto_apply_router, tags=["Auto-Apply Service"])
+app.include_router(optimized_services_router, tags=["Optimized Services"])
 
 # Add extra mounts for /api/ai/* compatibility
 app.include_router(imperium.router, prefix="/api/ai/imperium", tags=["ai-imperium"])
