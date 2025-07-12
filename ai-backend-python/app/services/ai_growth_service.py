@@ -29,7 +29,7 @@ from ..core.database import get_session
 from ..core.config import settings
 from .ml_service import MLService
 from .ai_learning_service import AILearningService
-from app.services.unified_ai_service import call_ai, get_ai_stats
+from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
 
 logger = structlog.get_logger()
 

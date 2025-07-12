@@ -24,22 +24,7 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, env="DEBUG")
     
     # AI Services
-    # OpenAI configuration for load balancing with Anthropic
-    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4o", env="OPENAI_MODEL")
-    openai_max_tokens: int = Field(default=1024, env="OPENAI_MAX_TOKENS")
-    
-    # Anthropic configuration
-    anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
-    anthropic_model: str = Field(default="claude-3-5-sonnet-20241022", env="ANTHROPIC_MODEL")
-    anthropic_max_tokens: int = Field(default=1024, env="ANTHROPIC_MAX_TOKENS")
-    
-    # AI Provider load balancing
-    enable_ai_load_balancing: bool = Field(default=True, env="ENABLE_AI_LOAD_BALANCING")
-    anthropic_weight: float = Field(default=0.6, env="ANTHROPIC_WEIGHT")  # 60% of requests
-    openai_weight: float = Field(default=0.4, env="OPENAI_WEIGHT")  # 40% of requests
-    
-    # Google API (existing)
+    # OpenAI removed to prevent authentication errors and timeouts
     google_api_key: Optional[str] = Field(default=None, env="GOOGLE_API_KEY")
     
     # GitHub

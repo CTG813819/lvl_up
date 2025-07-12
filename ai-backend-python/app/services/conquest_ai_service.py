@@ -24,7 +24,7 @@ from .github_service import GitHubService
 from .ai_learning_service import AILearningService
 from .sckipit_service import SckipitService
 from .advanced_code_generator import AdvancedCodeGenerator
-from app.services.unified_ai_service import call_ai, get_ai_stats
+from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
 
 logger = structlog.get_logger()
 

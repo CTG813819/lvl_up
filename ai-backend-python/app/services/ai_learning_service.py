@@ -32,7 +32,7 @@ import json
 from ..core.database import get_session
 from ..core.config import settings
 from .ml_service import MLService
-from app.services.unified_ai_service import call_ai, get_ai_stats
+from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
 
 logger = structlog.get_logger()
 
@@ -211,7 +211,7 @@ class AILearningService:
             
             # After learning, ask Claude for verification and new sources
             try:
-                verification = await call_ai(
+                verification = await anthropic_rate_limited_call(
                     f"{ai_type} AI learned from failure in proposal {proposal_id}. Test summary: {test_summary}. What is your feedback? Where else should this AI learn from to improve in its area?",
                     ai_name=ai_type.lower()
                 )
@@ -232,7 +232,7 @@ class AILearningService:
             logger.error(f"Error in learn_from_failure: {str(e)}")
             # Claude failure analysis
             try:
-                advice = await call_ai(
+                advice = await anthropic_rate_limited_call(
                     f"{ai_type} AI failed to learn from failure in proposal {proposal_id}. Error: {str(e)}. Please analyze and suggest how to improve.",
                     ai_name=ai_type.lower()
                 )
@@ -1456,12 +1456,11 @@ class AILearningService:
             return {} 
 
     def anthropic_enhanced_learning(self, prompt: str) -> str:
-        """Use unified AI service for advanced learning, code review, or proposal improvement."""
+        """Use Anthropic Claude for advanced learning, code review, or proposal improvement."""
         try:
-            import asyncio
-            return asyncio.run(call_ai(prompt))
+            return call_claude(prompt)
         except Exception as e:
-            return f"AI service error: {str(e)}" 
+            return f"Anthropic error: {str(e)}" 
 
     async def add_learning_sources(self, ai_type: str, sources: list):
         # Dummy implementation, should update persistent learning sources
