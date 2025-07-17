@@ -61,9 +61,9 @@ class BackgroundService:
         logger.info("🤖 Starting autonomous AI cycle...")
         
         try:
-            # Start background tasks
+            # Start background tasks (disable _agent_scheduler to avoid duplicate proposal generation)
             self._tasks = [
-                asyncio.create_task(self._agent_scheduler()),
+                # asyncio.create_task(self._agent_scheduler()),  # DISABLED: Only proposals.py should generate proposals
                 asyncio.create_task(self._github_monitor()),
                 asyncio.create_task(self._learning_cycle()),
                 asyncio.create_task(self._health_monitor()),
@@ -283,7 +283,7 @@ class BackgroundService:
         try:
             async with aiohttp.ClientSession() as session:
                 await session.post(
-                    "http://localhost:4000/api/codex/log",
+                    "http://localhost:8000/api/codex/log",
                     json=codex_event,
                     timeout=10
                 )
@@ -301,9 +301,9 @@ class BackgroundService:
             # Get recent learning data
             from sqlalchemy import select, func
             from ..models.sql_models import Learning
+            from ..core.database import get_session
             
-            session = self.learning_service.get_session()
-            try:
+            async with get_session() as session:
                 # Count recent learning entries
                 stmt = select(func.count(Learning.id)).where(
                     Learning.created_at >= datetime.utcnow() - timedelta(days=7)
@@ -316,8 +316,6 @@ class BackgroundService:
                     logger.info("🔄 Retraining ML models due to new learning data")
                     await self.ai_agent_service.ml_service.train_models()
                 
-            finally:
-                await session.close()
         except Exception as e:
             logger.error("Error checking ML retraining", error=str(e))
     
@@ -340,17 +338,15 @@ class BackgroundService:
         """Check database health"""
         try:
             from sqlalchemy import text
+            from ..core.database import get_session
             
-            session = self.learning_service.get_session()
-            try:
+            async with get_session() as session:
                 # Test database connection
                 await session.execute(text("SELECT 1"))
                 return {
                     "status": "healthy",
                     "message": "Database connection working"
                 }
-            finally:
-                await session.close()
         except Exception as e:
             return {
                 "status": "error",
@@ -421,7 +417,7 @@ class BackgroundService:
                 # 1. Check backend health endpoint
                 async with aiohttp.ClientSession() as session:
                     try:
-                        resp = await session.get("http://localhost:4000/health", timeout=10)
+                        resp = await session.get("http://localhost:8000/health", timeout=10)
                         healthy = resp.status == 200
                     except Exception:
                         healthy = False
@@ -468,7 +464,7 @@ class BackgroundService:
                 try:
                     async with aiohttp.ClientSession() as session:
                         await session.post(
-                            "http://localhost:4000/api/codex/log",
+                            "http://localhost:8000/api/codex/log",
                             json=codex_event,
                             timeout=10
                         )

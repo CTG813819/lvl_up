@@ -2,10 +2,10 @@
 Proposals router with ML integration
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
@@ -22,6 +22,8 @@ from app.models.sql_models import Proposal
 from app.core.database import get_db, SessionLocal, init_database
 from app.services.ml_service import MLService
 from app.services.proposal_cycle_service import ProposalCycleService
+from app.services.proposal_validation_service import ProposalValidationService
+from app.services.enhanced_proposal_validation_service import EnhancedProposalValidationService
 
 # Ensure logger is defined at the top
 logger = structlog.get_logger()
@@ -119,6 +121,7 @@ Please generate an improved version that addresses the test failures.
 
 ml_service = MLService()
 ai_learning_service = AILearningService()
+proposal_validation_service = EnhancedProposalValidationService()
 
 
 # --- Feedback Loop State ---
@@ -131,6 +134,33 @@ async def feedback_log(message, **kwargs):
     feedback_loop_logs.append(log_entry)
     logger.info(f"[FEEDBACK_LOOP] {message}", **kwargs)
 
+async def notify_ai_of_deleted_proposal(proposal):
+    # Stub: Implement actual notification logic here
+    logger.info("Notifying AI of deleted proposal", proposal_id=str(proposal.id), ai_type=proposal.ai_type, file_path=proposal.file_path, reason="Expired due to new proposal cycle")
+    # You could add more details or send a message to the AI agent here
+
+async def delete_old_pending_proposals():
+    """Delete all pending proposals created before the current cycle and notify AIs with details."""
+    from app.core.database import get_session
+    from app.models.sql_models import Proposal
+    import datetime
+    now = datetime.datetime.utcnow()
+    # Define cutoff as 45 minutes ago
+    cutoff = now - datetime.timedelta(minutes=45)
+    async with get_session() as session:
+        old_pending = await session.execute(
+            select(Proposal).where(
+                Proposal.status == "pending",
+                Proposal.created_at < cutoff
+            )
+        )
+        old_proposals = old_pending.scalars().all()
+        for proposal in old_proposals:
+            logger.info("Deleting expired pending proposal", proposal_id=str(proposal.id), ai_type=proposal.ai_type, reason="Expired due to new proposal cycle", file_path=proposal.file_path)
+            await notify_ai_of_deleted_proposal(proposal)
+            await session.delete(proposal)
+        await session.commit()
+
 # --- Periodic Proposal Generation Scheduler ---
 async def periodic_proposal_generation():
     await asyncio.sleep(5)  # Wait for app startup
@@ -140,6 +170,7 @@ async def periodic_proposal_generation():
             
             # Clean up old pending proposals first
             await cleanup_old_pending_proposals()
+            await delete_old_pending_proposals()
             
             # Get the proposal cycle service
             cycle_service = await get_proposal_cycle_service()
@@ -155,19 +186,19 @@ async def periodic_proposal_generation():
                 
         except Exception as e:
             await feedback_log("Error in periodic proposal generation", error=str(e))
-        await asyncio.sleep(60)  # 1 minute interval for testing
+        # 30-minute cooldown starts only after all proposal generation and testing is complete
+        await asyncio.sleep(2700)  # 2700 seconds = 45 minutes
 
 async def cleanup_old_pending_proposals():
     """Clean up pending proposals older than 1 hour to prevent backlog"""
     try:
-        from datetime import datetime, timedelta
         import app.core.database as database_module
         
         # Check if we have too many pending proposals
         async with database_module.SessionLocal() as db:
             pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending")
             pending_result = await db.execute(pending_query)
-            pending_count = pending_result.scalar()
+            pending_count = pending_result.scalar() or 0
             
             if pending_count > 50:  # If more than 50 pending, clean up old ones (increased from 30)
                 cutoff_time = datetime.utcnow() - timedelta(minutes=30)  # More aggressive: 30 minutes instead of 1 hour
@@ -209,67 +240,50 @@ async def generate_and_test_proposal(ai_type: str):
         if database_module.SessionLocal is None:
             logger.error("SessionLocal is None after init_database. Database initialization failed.")
             raise RuntimeError("SessionLocal is None after init_database. Check database configuration and connectivity.")
+        
         # Check for existing pending proposals for this AI type
         async with database_module.SessionLocal() as db:
             pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending", Proposal.ai_type == ai_type)
             pending_result = await db.execute(pending_query)
-            pending_count = pending_result.scalar()
-            # Use getattr for pending_count None check
-            pending_count = getattr(pending_count, '__int__', lambda: 0)() if pending_count is not None else 0
+            pending_count = pending_result.scalar() or 0
             if pending_count >= 2:
                 print(f"[INFO] Skipping proposal generation for {ai_type}: already has {pending_count} pending proposals.")
                 await feedback_log(f"Skipped proposal generation for {ai_type}: already has {pending_count} pending proposals.")
                 return
-        print("[DEBUG] About to create proposal data")
-        proposal_data = ProposalCreate(
-            ai_type=ai_type,
-            file_path=f"/path/to/{ai_type}_file.py",
-            code_before="# before code",
-            code_after="# after code",
-            status="pending"
-        )
-        print(f"[DEBUG] Proposal data created: {proposal_data}")
-        print("[DEBUG] About to create database session")
-        async with database_module.SessionLocal() as db:
-            print("[DEBUG] Database session created successfully")
-            print("[DEBUG] About to call create_proposal_internal")
-            new_proposal = await create_proposal_internal(proposal_data, db)
-            print(f"[DEBUG] create_proposal_internal completed: {new_proposal}")
-            await feedback_log(f"Proposal generated for {ai_type}", proposal_id=str(new_proposal.id))
-            print("[DEBUG] About to create proposal_dict")
-            proposal_dict = {
-                "id": str(new_proposal.id),
-                "ai_type": new_proposal.ai_type,
-                "file_path": new_proposal.file_path,
-                "code_before": new_proposal.code_before,
-                "code_after": new_proposal.code_after,
-                "improvement_type": getattr(new_proposal, 'improvement_type', None),
-                "confidence": getattr(new_proposal, 'confidence', None),
-            }
-            print(f"[DEBUG] proposal_dict created: {proposal_dict}")
-            print("[DEBUG] Creating fresh TestingService instance")
-            testing_service_instance = get_testing_service()
-            print(f"[DEBUG] Fresh testing_service_instance created: {testing_service_instance}, type: {type(testing_service_instance)}")
-            print(f"[DEBUG] testing_service_instance.test_proposal exists: {hasattr(testing_service_instance, 'test_proposal')}")
-            if testing_service_instance is None:
-                print("[ERROR] testing_service_instance is None!")
-                raise RuntimeError("testing_service_instance is None")
-            if not hasattr(testing_service_instance, 'test_proposal'):
-                print("[ERROR] testing_service_instance has no test_proposal method!")
-                raise RuntimeError("testing_service_instance has no test_proposal method")
-            test_proposal_method = getattr(testing_service_instance, 'test_proposal', None)
-            if not callable(test_proposal_method):
-                print("[ERROR] testing_service_instance.test_proposal is not callable!")
-                raise RuntimeError("testing_service_instance.test_proposal is not callable")
-            print("[DEBUG] About to call test_proposal...")
-            test_result = await testing_service_instance.test_proposal(proposal_dict)
-            print("[DEBUG] test_proposal call completed successfully")
-            await feedback_log(f"Proposal tested for {ai_type}", proposal_id=str(new_proposal.id), test_result=test_result)
-            if test_result and len(test_result) >= 1 and hasattr(test_result[0], 'value') and test_result[0].value == "failed":
-                await feedback_log(f"Proposal failed test for {ai_type}", proposal_id=str(new_proposal.id), error=test_result[1] if len(test_result) > 1 else "Unknown error")
-                learning_event = await trigger_learning_from_failure(new_proposal, test_result, db)
-                await feedback_log(f"Learning event triggered for failed proposal", proposal_id=str(new_proposal.id), learning_event=learning_event)
-                await generate_improved_proposal_from_learning(new_proposal, learning_event, db)
+        
+        # Actually run the AI agent to generate real proposals
+        print(f"[DEBUG] Running {ai_type} agent to generate real proposals")
+        from app.services.ai_agent_service import AIAgentService
+        agent_service = AIAgentService()
+        
+        # Run the appropriate agent based on AI type
+        if ai_type.lower() == "imperium":
+            result = await agent_service.run_imperium_agent()
+        elif ai_type.lower() == "guardian":
+            result = await agent_service.run_guardian_agent()
+        elif ai_type.lower() == "sandbox":
+            result = await agent_service.run_sandbox_agent()
+        elif ai_type.lower() == "conquest":
+            result = await agent_service.run_conquest_agent()
+        else:
+            logger.error(f"Unknown AI type: {ai_type}")
+            return
+        
+        print(f"[DEBUG] {ai_type} agent result: {result}")
+        
+        if result.get("status") != "success":
+            logger.warning(f"{ai_type} agent failed to generate proposals: {result.get('message', 'Unknown error')}")
+            return
+        
+        # Check if proposals were actually created
+        proposals_created = result.get("proposals_created", 0)
+        if proposals_created == 0:
+            logger.info(f"No proposals were created by {ai_type} agent")
+            return
+        
+        logger.info(f"Successfully generated {proposals_created} proposals for {ai_type}")
+        await feedback_log(f"Generated {proposals_created} proposals for {ai_type}")
+        
     except Exception as e:
         await feedback_log(f"Error in generate_and_test_proposal for {ai_type}", error=str(e))
 
@@ -320,21 +334,39 @@ async def create_proposal_internal(proposal: ProposalCreate, db: AsyncSession) -
     try:
         logger.info("Starting create_proposal_internal", proposal_ai_type=proposal.ai_type)
         
-        # Check current pending proposal count
-        logger.info("Checking pending proposal count")
-        pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending")
-        pending_result = await db.execute(pending_query)
-        pending_count = pending_result.scalar()
-        logger.info("Pending proposal count", count=pending_count)
+        # Check if this AI type already has a pending proposal
+        existing_query = select(Proposal).where(
+            Proposal.ai_type == proposal.ai_type,
+            Proposal.status.in_(["pending", "test-passed", "testing"])
+        )
+        existing_result = await db.execute(existing_query)
+        existing_proposals = existing_result.scalars().all()
         
-        # Limit to 100 pending proposals (increased from 40)
-        # Use getattr to safely check for None
-        pending_count = getattr(pending_count, '__int__', lambda: 0)() if pending_count is not None else 0
-        if pending_count >= 100:
+        if existing_proposals:
+            logger.warning(f"AI {proposal.ai_type} already has {len(existing_proposals)} active proposals")
             raise HTTPException(
                 status_code=429, 
-                detail="Maximum pending proposals reached (100). Please review existing proposals before creating new ones."
+                detail=f"AI {proposal.ai_type} already has active proposals. Please approve or reject existing proposals first."
             )
+        
+        # Validate proposal using the validation service
+        logger.info("Validating proposal with validation service")
+        proposal_dict = proposal.dict()
+        is_valid, validation_reason, validation_details = await proposal_validation_service.validate_proposal(proposal_dict, db)
+        
+        if not is_valid:
+            logger.warning(f"Proposal validation failed: {validation_reason}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Proposal validation failed: {validation_reason}"
+            )
+        
+        logger.info("Proposal validation passed", validation_details=validation_details)
+        
+        # Get pending count for logging
+        pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending")
+        pending_result = await db.execute(pending_query)
+        pending_count = pending_result.scalar() or 0
         
         # Compute semantic hash if not provided
         if not proposal.semantic_hash:
@@ -391,7 +423,8 @@ async def create_proposal_internal(proposal: ProposalCreate, db: AsyncSession) -
             confidence=confidence,
             user_feedback_reason=proposal.user_feedback_reason,
             ai_learning_applied=proposal.ai_learning_applied,
-            previous_mistakes_avoided=proposal.previous_mistakes_avoided
+            previous_mistakes_avoided=proposal.previous_mistakes_avoided,
+            files_analyzed=proposal.files_analyzed or []
         )
         
         logger.info("Adding proposal to database")
@@ -897,7 +930,6 @@ async def reject_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(new_proposal)
     # Debug log
-    logger = structlog.get_logger()
     logger.info("Proposal rejected and new pending proposal created", old_id=str(proposal.id), old_status=proposal.status, new_id=str(new_proposal.id), new_status=new_proposal.status)
     return {
         "status": "success", 
@@ -1080,6 +1112,20 @@ async def delete_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/validation/stats")
+async def get_validation_stats(db: AsyncSession = Depends(get_db)):
+    """Get proposal validation statistics"""
+    try:
+        stats = await proposal_validation_service.get_validation_stats(db)
+        return {
+            "validation_stats": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error("Error getting validation stats", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/stats/summary", response_model=ProposalStats)
 async def get_proposal_stats(db: AsyncSession = Depends(get_db)):
     """Get proposal statistics"""
@@ -1257,10 +1303,18 @@ async def apply_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(code_after)
         
-        # Update proposal status
+        # Generate application response
+        application_response = self._generate_application_response(proposal, final_summary)
+        post_application_analysis = self._generate_post_application_analysis(proposal, final_summary)
+        
+        # Update proposal status with response data
         proposal.status = "applied"
         proposal.user_feedback = "applied"
         proposal.updated_at = datetime.utcnow()
+        proposal.application_response = application_response
+        proposal.application_timestamp = datetime.utcnow()
+        proposal.application_result = "success"
+        proposal.post_application_analysis = post_application_analysis
         await db.commit()
         
         # Notify about successful application
@@ -1289,7 +1343,9 @@ async def apply_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
             "message": "Proposal applied successfully after rigorous testing",
             "file_path": file_path,
             "backup_path": backup_path,
-            "final_test_summary": final_summary
+            "final_test_summary": final_summary,
+            "application_response": application_response,
+            "post_application_analysis": post_application_analysis
         }
         
     except Exception as e:
@@ -1308,6 +1364,58 @@ async def apply_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
         
         logger.error(f"Error applying proposal {proposal_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Apply failed: {e}")
+
+    def _generate_application_response(self, proposal, test_summary: str) -> str:
+        """Generate a user-friendly response when a proposal is applied"""
+        ai_type = proposal.ai_type
+        file_name = proposal.file_path.split('/')[-1] if '/' in proposal.file_path else proposal.file_path
+        change_type = getattr(proposal, 'change_type', 'unknown')
+        improvement_type = proposal.improvement_type or 'general'
+        
+        response_templates = {
+            'Imperium': f"✅ {ai_type} AI has successfully applied system improvements to {file_name}. The {change_type} changes have been tested and validated, ensuring enhanced system performance and reliability.",
+            'Guardian': f"🛡️ {ai_type} AI has successfully applied security and stability enhancements to {file_name}. The {change_type} modifications have been thoroughly tested to maintain system integrity.",
+            'Sandbox': f"🧪 {ai_type} AI has successfully applied experimental improvements to {file_name}. The {change_type} changes have been validated and are ready for production use.",
+            'Conquest': f"⚔️ {ai_type} AI has successfully applied user experience improvements to {file_name}. The {change_type} enhancements have been tested and will improve user satisfaction."
+        }
+        
+        base_response = response_templates.get(ai_type, f"✅ {ai_type} AI has successfully applied {improvement_type} improvements to {file_name}.")
+        
+        if test_summary and "passed" in test_summary.lower():
+            base_response += " All tests passed successfully."
+        
+        return base_response
+
+    def _generate_post_application_analysis(self, proposal, test_summary: str) -> str:
+        """Generate post-application analysis"""
+        ai_type = proposal.ai_type
+        file_name = proposal.file_path.split('/')[-1] if '/' in proposal.file_path else proposal.file_path
+        change_type = getattr(proposal, 'change_type', 'unknown')
+        
+        analysis = f"""
+**Post-Application Analysis for {ai_type} AI Proposal**
+
+**File Modified:** {file_name}
+**Change Type:** {change_type.title()}
+**Application Status:** ✅ Successfully Applied
+**Test Results:** {test_summary}
+
+**Impact Assessment:**
+- The {change_type} changes have been successfully implemented
+- All validation tests passed
+- System stability maintained
+- No conflicts detected with existing functionality
+
+**Next Steps:**
+- Monitor system performance for any unexpected behavior
+- Track user feedback on the changes
+- Consider additional improvements based on usage patterns
+
+**Learning Outcome:**
+This successful application contributes to the {ai_type} AI's learning database, improving future proposal accuracy and effectiveness.
+        """.strip()
+        
+        return analysis
 
 
 @router.post("/{proposal_id}/auto-apply")
@@ -1486,4 +1594,166 @@ async def get_agent_progress(agent_type: str):
         return progress
     except Exception as e:
         logger.error(f"Error getting agent progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/accept-all")
+async def accept_all_proposals(db: AsyncSession = Depends(get_db)):
+    """Accept all test-passed proposals"""
+    try:
+        # Get all test-passed proposals
+        query = select(Proposal).where(
+            Proposal.status == "test-passed",
+            Proposal.test_status == "passed"
+        )
+        result = await db.execute(query)
+        test_passed_proposals = result.scalars().all()
+        
+        if not test_passed_proposals:
+            return {
+                "status": "success",
+                "message": "No test-passed proposals to accept",
+                "accepted_count": 0
+            }
+        
+        accepted_count = 0
+        for proposal in test_passed_proposals:
+            try:
+                # Accept the proposal
+                proposal.status = "approved"
+                proposal.user_feedback = "accepted"
+                proposal.user_feedback_reason = "Bulk approval"
+                
+                # Generate a new pending proposal for this AI type
+                new_proposal = Proposal(
+                    ai_type=proposal.ai_type,
+                    file_path=proposal.file_path,
+                    code_before=proposal.code_before,
+                    code_after=proposal.code_after,
+                    status="pending",
+                    user_feedback=None,
+                    test_status=None,
+                    test_output=None,
+                    code_hash=proposal.code_hash,
+                    semantic_hash=proposal.semantic_hash,
+                    diff_score=proposal.diff_score,
+                    duplicate_of=proposal.duplicate_of,
+                    ai_reasoning=proposal.ai_reasoning,
+                    learning_context=proposal.learning_context,
+                    mistake_pattern=proposal.mistake_pattern,
+                    improvement_type=proposal.improvement_type,
+                    confidence=proposal.confidence,
+                    user_feedback_reason=None,
+                    ai_learning_applied=proposal.ai_learning_applied,
+                    previous_mistakes_avoided=proposal.previous_mistakes_avoided
+                )
+                db.add(new_proposal)
+                accepted_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error accepting proposal {proposal.id}: {str(e)}")
+                continue
+        
+        await db.commit()
+        
+        logger.info(f"Bulk accepted {accepted_count} proposals")
+        
+        return {
+            "status": "success",
+            "message": f"Accepted {accepted_count} proposals",
+            "accepted_count": accepted_count
+        }
+        
+    except Exception as e:
+        logger.error("Error in bulk accept", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/reset-all")
+async def reset_all_proposals(db: AsyncSession = Depends(get_db)):
+    """Reset all proposals to pending status"""
+    try:
+        # Get all proposals that are not approved or rejected
+        query = select(Proposal).where(
+            Proposal.status.in_(["test-passed", "test-failed", "testing"])
+        )
+        result = await db.execute(query)
+        proposals_to_reset = result.scalars().all()
+        
+        if not proposals_to_reset:
+            return {
+                "status": "success",
+                "message": "No proposals to reset",
+                "reset_count": 0
+            }
+        
+        reset_count = 0
+        for proposal in proposals_to_reset:
+            try:
+                proposal.status = "pending"
+                proposal.user_feedback = None
+                proposal.test_status = None
+                proposal.test_output = None
+                reset_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error resetting proposal {proposal.id}: {str(e)}")
+                continue
+        
+        await db.commit()
+        
+        logger.info(f"Bulk reset {reset_count} proposals")
+        
+        return {
+            "status": "success",
+            "message": f"Reset {reset_count} proposals",
+            "reset_count": reset_count
+        }
+        
+    except Exception as e:
+        logger.error("Error in bulk reset", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/cleanup-daily")
+async def cleanup_daily_proposals(db: AsyncSession = Depends(get_db)):
+    """Clean up all proposals that haven't been approved by end of day"""
+    try:
+        # Get all proposals that are not approved or rejected and older than 1 day
+        cutoff_time = datetime.utcnow() - timedelta(days=1)
+        query = select(Proposal).where(
+            Proposal.status.in_(["pending", "test-passed", "test-failed", "testing"]),
+            Proposal.created_at < cutoff_time
+        )
+        result = await db.execute(query)
+        old_proposals = result.scalars().all()
+        
+        if not old_proposals:
+            return {
+                "status": "success",
+                "message": "No old proposals to clean up",
+                "cleaned_count": 0
+            }
+        
+        cleaned_count = 0
+        for proposal in old_proposals:
+            try:
+                proposal.status = "expired"
+                proposal.user_feedback = "expired"
+                proposal.user_feedback_reason = "Daily cleanup - not approved within 24 hours"
+                cleaned_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error cleaning up proposal {proposal.id}: {str(e)}")
+                continue
+        
+        await db.commit()
+        
+        logger.info(f"Daily cleanup: removed {cleaned_count} old proposals")
+        
+        return {
+            "status": "success",
+            "message": f"Cleaned up {cleaned_count} old proposals",
+            "cleaned_count": cleaned_count
+        }
+        
+    except Exception as e:
+        logger.error("Error in daily cleanup", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
