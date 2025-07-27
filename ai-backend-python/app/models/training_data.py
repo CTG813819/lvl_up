@@ -7,6 +7,7 @@ class TrainingData(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False, index=True)
+    subject = Column(String(200), nullable=True, index=True)  # New subject field for AI learning
     description = Column(Text, nullable=False)
     code = Column(Text, nullable=True)  # Optional code field
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

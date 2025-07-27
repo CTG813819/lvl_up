@@ -1,0 +1,87 @@
+[Unit]
+Description=Custodes AI Testing Service - Fixed
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
+Environment=PYTHONPATH=/home/ubuntu/ai-backend-python
+Environment=PYTHONUNBUFFERED=1
+Environment=DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-red-fire-aekqiiwr-pooler.c-2.us-east-2.aws.neon.tech/neondb
+Environment=GITHUB_TOKEN=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
+Environment=GITHUB_REPO_URL=https://github.com/CTG813819/Lvl_UP.git
+Environment=GITHUB_USERNAME=CTG813819
+
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/python -c "
+import asyncio
+import sys
+import os
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler('/home/ubuntu/ai-backend-python/logs/custodes.log'),
+        logging.StreamHandler()
+    ]
+)
+
+# Add app directory to path
+sys.path.insert(0, '/home/ubuntu/ai-backend-python/app')
+
+try:
+    from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
+    from app.core.database import get_session
+
+    async def run_custodes():
+        service = EnhancedAutonomousLearningService()
+        logging.info('Custodes AI Service started - Using EnhancedAutonomousLearningService')
+        counter = 0
+
+        while True:
+            try:
+                if counter % 2 == 0:
+                    logging.info('Starting comprehensive Custodes testing cycle')
+                    # Run comprehensive custodes testing
+                    await service._run_custodes_testing()
+                else:
+                    logging.info('Starting regular Custodes testing cycle')
+                    # Run regular custodes testing
+                    await service._run_custodes_testing()
+
+                counter += 1
+                logging.info('Custodes testing cycle completed')
+            except Exception as e:
+                logging.error(f'Custodes testing error: {str(e)}')
+
+            await asyncio.sleep(2700)  # 45 minutes
+
+    asyncio.run(run_custodes())
+except Exception as e:
+    logging.error(f'Custodes service startup error: {str(e)}')
+    sys.exit(1)
+"
+
+Restart=always
+RestartSec=30
+StartLimitInterval=300
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=custodes-ai
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target 

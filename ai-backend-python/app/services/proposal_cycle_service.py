@@ -233,4 +233,4 @@ class ProposalCycleService:
                 
         except Exception as e:
             logger.error(f"Error getting agent progress: {e}")
-            return {"error": str(e)} 
+            return {"error": str(e)}

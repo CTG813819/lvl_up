@@ -579,11 +579,12 @@ class AIGrowthService:
                 learning_entry = Learning(
                     ai_type=ai_type,
                     learning_type=f"capability_expansion_{capability_type}",
-                    pattern=f"new_capability_{capability_type}",
-                    context=f"AI {ai_type} expanded with {capability_type} capability",
-                    feedback=f"Capability {capability_type} successfully implemented",
-                    confidence=0.8,
-                    created_at=datetime.utcnow()
+                    learning_data={
+                        'pattern': f"new_capability_{capability_type}",
+                        'context': f"AI {ai_type} expanded with {capability_type} capability",
+                        'feedback': f"Capability {capability_type} successfully implemented",
+                        'confidence': 0.8
+                    }
                 )
                 
                 session.add(learning_entry)
@@ -613,11 +614,12 @@ class AIGrowthService:
                     learning_entry = Learning(
                         ai_type=ai_type,
                         learning_type=pattern,
-                        pattern="foundation_establishment",
-                        context=f"Basic {pattern} capability established for {ai_type}",
-                        feedback="Foundation learning pattern created",
-                        confidence=0.7,
-                        created_at=datetime.utcnow()
+                        learning_data={
+                            'pattern': "foundation_establishment",
+                            'context': f"Basic {pattern} capability established for {ai_type}",
+                            'feedback': "Foundation learning pattern created",
+                            'confidence': 0.7
+                        }
                     )
                     session.add(learning_entry)
                 
@@ -639,11 +641,12 @@ class AIGrowthService:
                 learning_entry = Learning(
                     ai_type=ai_type,
                     learning_type="growth_implementation",
-                    pattern=f"implementation_{implementation_id}",
-                    context=f"Growth recommendation implementation: {recommendation.get('title', 'Unknown')}",
-                    feedback=f"Implementation result: {result.get('status', 'unknown')}",
-                    confidence=0.9,
-                    created_at=datetime.utcnow()
+                    learning_data={
+                        'pattern': f"implementation_{implementation_id}",
+                        'context': f"Growth recommendation implementation: {recommendation.get('title', 'Unknown')}",
+                        'feedback': f"Implementation result: {result.get('status', 'unknown')}",
+                        'confidence': 0.9
+                    }
                 )
                 
                 session.add(learning_entry)
@@ -689,36 +692,104 @@ class AIGrowthService:
         except Exception as e:
             logger.error("Error training growth models", error=str(e))
     
+    def _to_roman(self, n: int) -> str:
+        """Convert an integer to a Roman numeral (for prestige display)."""
+        val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+        syb = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+        roman_num = ''
+        i = 0
+        while n > 0:
+            for _ in range(n // val[i]):
+                roman_num += syb[i]
+                n -= val[i]
+            i += 1
+        return roman_num if roman_num else "I"
+
     async def get_growth_insights(self) -> Dict[str, Any]:
-        """Get comprehensive growth insights"""
+        """Get comprehensive growth insights (live from DB, with prestige/leveling)."""
         try:
             ai_types = ["Imperium", "Guardian", "Sandbox", "Conquest"]
             growth_insights = {}
-            
-            for ai_type in ai_types:
-                growth_analysis = await self.analyze_growth_potential(ai_type)
-                growth_insights[ai_type] = growth_analysis
-            
-            # Overall system growth
+            growth_scores = []
+            prestige_map = {}
+            from sqlalchemy import select, update
+            from ..models.sql_models import AgentMetrics
+            async with get_session() as session:
+                for ai_type in ai_types:
+                    stmt = select(AgentMetrics).where(AgentMetrics.agent_type == ai_type.lower()).order_by(AgentMetrics.updated_at.desc())
+                    result = await session.execute(stmt)
+                    metrics = result.scalars().first()
+                    if metrics:
+                        growth_score = float(metrics.learning_score or 0)
+                        # Prestige logic: if growth_score >= 100, increment prestige, reset score
+                        if growth_score >= 100:
+                            new_prestige = (metrics.prestige or 0) + 1
+                            await session.execute(update(AgentMetrics).where(AgentMetrics.id == metrics.id).values(
+                                learning_score=0.0, prestige=new_prestige, updated_at=datetime.utcnow()
+                            ))
+                            await session.commit()
+                            growth_score = 0.0
+                            metrics.prestige = new_prestige
+                        growth_scores.append(growth_score)
+                        prestige_map[ai_type] = metrics.prestige or 0
+                        growth_insights[ai_type] = {
+                            'growth_score': growth_score,
+                            'success_rate': float(metrics.success_rate or 0),
+                            'failure_rate': float(metrics.failure_rate or 0),
+                            'total_learning_cycles': metrics.total_learning_cycles,
+                            'last_learning_cycle': metrics.last_learning_cycle.isoformat() if metrics.last_learning_cycle else None,
+                            'growth_stage': metrics.status,
+                            'capabilities': metrics.capabilities,
+                            'improvement_suggestions': metrics.improvement_suggestions,
+                            'updated_at': metrics.updated_at.isoformat() if metrics.updated_at else None,
+                            'prestige': metrics.prestige or 0,
+                            'prestige_roman': self._to_roman(metrics.prestige or 0)
+                        }
+                    else:
+                        growth_insights[ai_type] = {
+                            'growth_score': 0.0,
+                            'success_rate': 0.0,
+                            'failure_rate': 0.0,
+                            'total_learning_cycles': 0,
+                            'last_learning_cycle': None,
+                            'growth_stage': 'unknown',
+                            'capabilities': [],
+                            'improvement_suggestions': [],
+                            'updated_at': None,
+                            'prestige': 0,
+                            'prestige_roman': "I"
+                        }
+            # Calculate live average
+            average_growth_score = float(np.mean(growth_scores)) if growth_scores else 0.0
+            # System prestige logic: if avg reaches 100, increment system prestige, reset avg
+            # For demo, store in a file (could use DB table for production)
+            system_prestige_path = "system_prestige.txt"
+            system_prestige = 0
+            import os
+            if os.path.exists(system_prestige_path):
+                with open(system_prestige_path, "r") as f:
+                    try:
+                        system_prestige = int(f.read().strip())
+                    except Exception:
+                        system_prestige = 0
+            if average_growth_score >= 100:
+                system_prestige += 1
+                average_growth_score = 0.0
+                with open(system_prestige_path, "w") as f:
+                    f.write(str(system_prestige))
             overall_growth = {
-                'total_learning_entries': len(self.performance_history),
-                'average_growth_score': np.mean([
-                    insight.get('growth_potential', {}).get('growth_score', 0.5)
-                    for insight in growth_insights.values()
-                ]),
-                'total_expansion_opportunities': sum([
-                    len(insight.get('expansion_opportunities', []))
-                    for insight in growth_insights.values()
-                ]),
-                'system_maturity': self._calculate_system_maturity(growth_insights)
+                'average_growth_score': average_growth_score,
+                'system_maturity': self._calculate_system_maturity(growth_insights),
+                'total_learning_entries': sum([insight['total_learning_cycles'] for insight in growth_insights.values()]),
+                'total_expansion_opportunities': sum([len(insight.get('improvement_suggestions', [])) for insight in growth_insights.values()]),
+                'system_prestige': system_prestige,
+                'system_prestige_roman': self._to_roman(system_prestige)
             }
-            
             return {
                 'ai_growth_insights': growth_insights,
                 'overall_growth': overall_growth,
                 'timestamp': datetime.utcnow().isoformat()
             }
-            
         except Exception as e:
             logger.error("Error getting growth insights", error=str(e))
             return {'error': str(e)}
@@ -727,7 +798,7 @@ class AIGrowthService:
         """Calculate overall system maturity"""
         try:
             growth_scores = [
-                insight.get('growth_potential', {}).get('growth_score', 0.5)
+                insight.get('growth_score', 0.5)
                 for insight in growth_insights.values()
             ]
             
@@ -744,3 +815,19 @@ class AIGrowthService:
         except Exception as e:
             logger.error("Error calculating system maturity", error=str(e))
             return "unknown" 
+
+    async def _append_learning_pattern_and_persist(self, ai_type: str, pattern: str):
+        """Append a learning pattern to the agent's metrics and persist to DB."""
+        try:
+            from app.services.imperium_learning_controller import ImperiumLearningController
+            controller = ImperiumLearningController()
+            if ai_type not in controller._agent_metrics:
+                logger.warning(f"[LEARNING] No in-memory metrics for {ai_type}, cannot append pattern.")
+                return
+            metrics = controller._agent_metrics[ai_type]
+            if pattern not in metrics.learning_patterns:
+                metrics.learning_patterns.append(pattern)
+                await controller.persist_agent_metrics(ai_type)
+                logger.info(f"[LEARNING] Appended pattern and persisted metrics for {ai_type}: {pattern}")
+        except Exception as e:
+            logger.error(f"[LEARNING] Error appending pattern and persisting for {ai_type}: {str(e)}") 

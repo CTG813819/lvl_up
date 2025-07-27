@@ -16,6 +16,8 @@ from app.services.testing_service import TestingService
 from app.services.ai_learning_service import AILearningService
 from app.models.sql_models import LearningLog
 import hashlib
+from app.models.sql_models import HumanFeedback
+from sqlalchemy import select
 
 from app.models.proposal import ProposalCreate, ProposalUpdate, ProposalResponse, ProposalStats
 from app.models.sql_models import Proposal
@@ -179,8 +181,20 @@ async def periodic_proposal_generation():
             next_agent = await cycle_service.get_next_agent()
             
             if next_agent is not None:
-                logger.info(f"🔄 Generating proposal for {next_agent.value}")
-                await generate_and_test_proposal(next_agent.value)
+                # Check custody eligibility before generating proposal
+                from app.services.custody_protocol_service import CustodyProtocolService
+                custody_service = await CustodyProtocolService.initialize()
+                analytics = await custody_service.get_custody_analytics()
+                
+                ai_metrics = analytics.get("ai_specific_metrics", {}).get(next_agent.value, {})
+                can_create_proposals = ai_metrics.get("can_create_proposals", False)
+                
+                if can_create_proposals:
+                    logger.info(f"🔄 Generating proposal for {next_agent.value} - custody eligibility confirmed")
+                    await generate_and_test_proposal(next_agent.value)
+                else:
+                    logger.warning(f"🔄 Skipping proposal generation for {next_agent.value} - not custody eligible")
+                    await feedback_log(f"Skipped proposal generation for {next_agent.value}: custody requirements not met")
             else:
                 logger.info("🔄 No agent available for proposal generation")
                 
@@ -334,19 +348,36 @@ async def create_proposal_internal(proposal: ProposalCreate, db: AsyncSession) -
     try:
         logger.info("Starting create_proposal_internal", proposal_ai_type=proposal.ai_type)
         
-        # Check if this AI type already has a pending proposal
+        # Check if this AI type already has up to 5 active proposals
         existing_query = select(Proposal).where(
             Proposal.ai_type == proposal.ai_type,
             Proposal.status.in_(["pending", "test-passed", "testing"])
         )
         existing_result = await db.execute(existing_query)
         existing_proposals = existing_result.scalars().all()
-        
-        if existing_proposals:
+
+        if len(existing_proposals) >= 5:
             logger.warning(f"AI {proposal.ai_type} already has {len(existing_proposals)} active proposals")
             raise HTTPException(
                 status_code=429, 
-                detail=f"AI {proposal.ai_type} already has active proposals. Please approve or reject existing proposals first."
+                detail=f"AI {proposal.ai_type} already has {len(existing_proposals)} active proposals. Please approve or reject existing proposals first."
+            )
+        
+        # Check custody eligibility first
+        logger.info("Checking custody eligibility for proposal creation")
+        from app.services.custody_protocol_service import CustodyProtocolService
+        custody_service = await CustodyProtocolService.initialize()
+        analytics = await custody_service.get_custody_analytics()
+        
+        ai_metrics = analytics.get("ai_specific_metrics", {}).get(proposal.ai_type.lower(), {})
+        logger.info(f"[PROPOSAL][DEBUG] Loaded ai_metrics for {proposal.ai_type}: {json.dumps(ai_metrics, default=str, ensure_ascii=False)}")
+        can_create_proposals = ai_metrics.get("can_create_proposals", False)
+        
+        if not can_create_proposals:
+            logger.warning(f"AI {proposal.ai_type} not eligible to create proposals - custody requirements not met")
+            raise HTTPException(
+                status_code=403,
+                detail=f"AI {proposal.ai_type} is not eligible to create proposals. Must pass custody tests first. Current status: {ai_metrics.get('total_tests_passed', 0)} tests passed, {ai_metrics.get('consecutive_failures', 0)} consecutive failures."
             )
         
         # Validate proposal using the validation service
@@ -544,6 +575,11 @@ async def create_proposal(proposal: ProposalCreate, db: AsyncSession = Depends(g
                     # Generate a new improved proposal based on learning
                     await generate_improved_proposal(new_proposal, summary, db)
                     
+                    # After learning, delete the failed proposal
+                    await db.delete(new_proposal)
+                    await db.commit()
+                    logger.info("Deleted failed proposal after learning", proposal_id=str(new_proposal.id))
+                    
                 except Exception as e:
                     logger.error("Error learning from failed test", 
                                 proposal_id=str(new_proposal.id),
@@ -703,6 +739,15 @@ async def accept_proposal(proposal_id: str, db: AsyncSession = Depends(get_db)):
     if not proposal:
         raise HTTPException(status_code=404, detail="Proposal not found")
     
+    # Integrate feedback gating
+    from app.models.sql_models import HumanFeedback
+    from sqlalchemy import select
+    result = await db.execute(select(HumanFeedback).where(HumanFeedback.target_type == "proposal", HumanFeedback.target_id == proposal_id).order_by(HumanFeedback.created_at.desc()))
+    feedbacks = result.scalars().all()
+    approvals = [fb for fb in feedbacks if (fb.feedback_type == "approval" and (fb.rating is None or fb.rating >= 4)) or (fb.feedback_type == "rating" and fb.rating is not None and fb.rating >= 4)]
+    if not approvals:
+        raise HTTPException(status_code=403, detail="Proposal cannot be accepted without at least one positive human/expert approval or rating >= 4.")
+
     # If proposal is already test-passed, approve it directly
     if proposal.status == "test-passed":
         # For SQLAlchemy boolean columns, use explicit comparison
@@ -1756,4 +1801,70 @@ async def cleanup_daily_proposals(db: AsyncSession = Depends(get_db)):
         
     except Exception as e:
         logger.error("Error in daily cleanup", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{proposal_id}/feedback")
+async def submit_proposal_feedback(proposal_id: str, feedback: dict, db: AsyncSession = Depends(get_db)):
+    """Submit human/expert/crowd feedback for a proposal. Validates proposal is live, triggers ML/SCKIPIT learning update."""
+    try:
+        # Validate proposal exists and is live
+        proposal = await db.get(Proposal, proposal_id)
+        if not proposal or proposal.status not in ["pending", "test-passed", "test-failed", "accepted"]:
+            raise HTTPException(status_code=404, detail="Proposal not found or not live.")
+        # Save feedback
+        fb = HumanFeedback(
+            target_type="proposal",
+            target_id=proposal_id,
+            ai_type=feedback.get("ai_type"),
+            reviewer=feedback.get("reviewer", "user"),
+            feedback_type=feedback.get("feedback_type", "comment"),
+            rating=feedback.get("rating"),
+            comment=feedback.get("comment"),
+            feedback_data=feedback.get("feedback_data", {}),
+        )
+        db.add(fb)
+        await db.commit()
+        await db.refresh(fb)
+        # If feedback is approval/rating, trigger ML/SCKIPIT learning
+        if feedback.get("feedback_type") in ["approval", "rating"]:
+            from app.services.ai_learning_service import AILearningService
+            learning_service = AILearningService()
+            # Use expert feedback as higher weight if reviewer is expert
+            weight = 2.0 if feedback.get("reviewer") == "expert" else 1.0
+            await learning_service.reinforcement_learning_update(
+                ai_type=proposal.ai_type,
+                prompt=proposal.code_before or proposal.description or proposal.file_path,
+                answer=proposal.code_after or proposal.description or proposal.file_path,
+                evaluation={
+                    "feedback_type": feedback.get("feedback_type"),
+                    "rating": feedback.get("rating"),
+                    "comment": feedback.get("comment"),
+                    "weight": weight,
+                    "feedback_data": feedback.get("feedback_data", {})
+                }
+            )
+        return {"status": "success", "data": {"id": str(fb.id)}}
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{proposal_id}/feedback")
+async def get_proposal_feedback(proposal_id: str, db: AsyncSession = Depends(get_db)):
+    """Get all human/expert/crowd feedback for a proposal."""
+    try:
+        result = await db.execute(select(HumanFeedback).where(HumanFeedback.target_type == "proposal", HumanFeedback.target_id == proposal_id).order_by(HumanFeedback.created_at.desc()))
+        feedbacks = result.scalars().all()
+        return {"status": "success", "data": [
+            {
+                "id": str(fb.id),
+                "reviewer": fb.reviewer,
+                "feedback_type": fb.feedback_type,
+                "rating": fb.rating,
+                "comment": fb.comment,
+                "feedback_data": fb.feedback_data,
+                "created_at": fb.created_at.isoformat() if fb.created_at else None
+            } for fb in feedbacks
+        ]}
+    except Exception as e:
+        logger.error(f"Error getting feedback: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

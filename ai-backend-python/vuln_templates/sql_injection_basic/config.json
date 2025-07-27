@@ -1,0 +1,30 @@
+{
+  "name": "Basic SQL Injection",
+  "description": "Simple web application with SQL injection vulnerability in login form",
+  "difficulty": "easy",
+  "category": "web",
+  "vulnerabilities": ["sql_injection", "information_disclosure"],
+  "ports": [8080],
+  "credentials": {
+    "admin": "admin:admin123",
+    "user": "user:password123",
+    "test": "test:test123"
+  },
+  "mutation_options": {
+    "code_complexity": "low",
+    "vuln_obfuscation": false,
+    "randomization": true,
+    "table_names": ["users", "products", "orders"],
+    "column_names": ["id", "username", "password", "email", "role"]
+  },
+  "hints": [
+    "Try using ' OR 1=1 -- in the username field",
+    "Look for error messages that reveal database structure",
+    "Try UNION-based attacks to extract data"
+  ],
+  "success_criteria": {
+    "extract_credentials": true,
+    "bypass_authentication": true,
+    "access_admin_panel": true
+  }
+} 

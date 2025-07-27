@@ -6,6 +6,7 @@ Test script to verify the cleanup fix works correctly
 import asyncio
 import sys
 import os
+import pytest
 
 # Add the app directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
@@ -15,6 +16,7 @@ from app.models.sql_models import Proposal
 from sqlalchemy import select, func
 from datetime import datetime, timedelta
 
+@pytest.mark.asyncio
 async def test_cleanup_function():
     """Test the cleanup function with the fixed user_feedback length"""
     try:

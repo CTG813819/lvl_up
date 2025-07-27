@@ -961,8 +961,9 @@ async def get_persisted_agent_metrics(
     agent_id: Optional[str] = None,
     controller: ImperiumLearningController = Depends(get_learning_controller)
 ):
-    """Get agent metrics from database"""
+    """Get agent metrics from database (always live, never from in-memory)."""
     try:
+        logger.info(f"[API] Fetching persisted agent metrics for {agent_id or 'all agents'} from DB")
         metrics = await controller.get_persisted_agent_metrics(agent_id)
         return {"status": "success", "data": metrics}
     except Exception as e:

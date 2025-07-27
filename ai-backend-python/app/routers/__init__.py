@@ -1,2 +1,33 @@
-# Routers package 
-from .codex import router as codex_router 
+# Routers package
+from .imperium_learning import router as imperium_learning
+from .notifications import router as notifications
+from .missions import router as missions
+from .imperium import router as imperium
+from .guardian import router as guardian
+from .conquest import router as conquest
+from .sandbox import router as sandbox
+from .learning import router as learning
+from .growth import router as growth
+from .proposals import router as proposals
+from .notify import router as notify
+from .oath_papers import router as oath_papers
+from .codex import router as codex
+from .agents import router as agents
+from .analytics import router as analytics
+from .github_webhook import router as github_webhook
+from .code import router as code
+from .approval import router as approval
+from .experiments import router as experiments
+from .plugin import router as plugin
+from .enhanced_learning import router as enhanced_learning
+from .terra_extensions import router as terra_extensions
+from .training_data import router as training_data
+from .anthropic_test import router as anthropic_test
+from .optimized_services import router as optimized_services
+from .token_usage import router as token_usage
+from .weekly_notifications import router as weekly_notifications
+from .custody_protocol import router as custody_protocol
+from .black_library import router as black_library
+from .imperium_extensions import router as imperium_extensions
+from .system_status import router as system_status 
+from .weapons import router as weapons 

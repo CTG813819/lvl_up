@@ -19,12 +19,29 @@ class Settings(BaseSettings):
     database_name: str = Field(default="ai_backend", env="DATABASE_NAME")
     
     # Server
-    port: int = Field(default=4000, env="PORT")
+    port: int = Field(default=8000, env="PORT")
     host: str = Field(default="0.0.0.0", env="HOST")
     debug: bool = Field(default=False, env="DEBUG")
     
     # AI Services
     # OpenAI removed to prevent authentication errors and timeouts
+    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="https://api.openai.com/v1", env="OPENAI_BASE_URL")
+    openai_model: str = Field(default="gpt-4.1", env="OPENAI_MODEL")
+    openai_max_tokens: int = Field(default=1024, env="OPENAI_MAX_TOKENS")
+    openai_temperature: float = Field(default=0.7, env="OPENAI_TEMPERATURE")
+
+    # Anthropic
+    anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    anthropic_model: str = Field(default="claude-3-5-sonnet-20241022", env="ANTHROPIC_MODEL")
+    anthropic_max_tokens: int = Field(default=1024, env="ANTHROPIC_MAX_TOKENS")
+
+    # Token Usage Limits
+    anthropic_monthly_limit: int = Field(default=40000, env="ANTHROPIC_MONTHLY_LIMIT")  # 40k tokens monthly
+    openai_monthly_limit: int = Field(default=6000, env="OPENAI_MONTHLY_LIMIT")  # 6k tokens monthly
+    enable_openai_fallback: bool = Field(default=True, env="ENABLE_OPENAI_FALLBACK")
+    openai_fallback_threshold: float = Field(default=0.95, env="OPENAI_FALLBACK_THRESHOLD")  # Use OpenAI when Anthropic is 95% used
+    
     google_api_key: Optional[str] = Field(default=None, env="GOOGLE_API_KEY")
     
     # GitHub
@@ -39,6 +56,12 @@ class Settings(BaseSettings):
     aws_access_key_id: Optional[str] = Field(default=None, env="AWS_ACCESS_KEY_ID")
     aws_secret_access_key: Optional[str] = Field(default=None, env="AWS_SECRET_ACCESS_KEY")
     aws_region: str = Field(default="us-east-1", env="AWS_REGION")
+    
+    # Twilio SMS Notifications
+    twilio_account_sid: Optional[str] = Field(default=None, env="TWILIO_ACCOUNT_SID")
+    twilio_auth_token: Optional[str] = Field(default=None, env="TWILIO_AUTH_TOKEN")
+    twilio_phone_number: Optional[str] = Field(default=None, env="TWILIO_PHONE_NUMBER")
+    admin_phone_number: Optional[str] = Field(default=None, env="ADMIN_PHONE_NUMBER")
     
     # ML Settings
     ml_model_path: str = Field(default="./models", env="ML_MODEL_PATH")
@@ -89,7 +112,7 @@ class Settings(BaseSettings):
     create_issues_enabled: bool = Field(default=True, env="CREATE_ISSUES_ENABLED")
     
     # Learning Cycle Configuration
-    learning_cycle_interval: int = Field(default=300, env="LEARNING_CYCLE_INTERVAL")
+    learning_cycle_interval: int = Field(default=2100, env="LEARNING_CYCLE_INTERVAL")  # 35 minutes (between 30-45)
     max_learning_cycles: int = Field(default=100, env="MAX_LEARNING_CYCLES")
     
     # Experiment Configuration

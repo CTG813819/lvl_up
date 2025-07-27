@@ -60,7 +60,7 @@ class AILearningService:
             
             # Save to database
             async with get_session() as db:
-                proposal = Proposal(**proposal_data)
+            proposal = Proposal(**proposal_data)
                 db.add(proposal)
                 await db.commit()
                 await db.refresh(proposal)
@@ -71,7 +71,7 @@ class AILearningService:
                 "file_path": proposal.file_path,
                 "status": proposal.status
             }
-        except Exception as e:
+    except Exception as e:
             print(f"Error creating quality proposal: {e}")
             return {}
     

@@ -11,6 +11,7 @@ class OathPaperResponse(BaseModel):
     """Response model for Oath Paper"""
     id: str
     title: str
+    subject: Optional[str] = None  # New subject field
     content: str
     category: str
     ai_insights: Optional[Dict[str, Any]] = None
@@ -24,6 +25,7 @@ class OathPaperResponse(BaseModel):
 class OathPaperCreate(BaseModel):
     """Create model for Oath Paper"""
     title: str
+    subject: Optional[str] = None  # New subject field
     content: str
     category: str = "general"
 

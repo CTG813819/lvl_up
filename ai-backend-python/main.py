@@ -20,6 +20,7 @@ from app.routers import (
     guardian, sandbox, code, oath_papers, experiments, notify,
     github_webhook, agents, growth, notifications, missions
 )
+from app.routers.custody_protocol import router as custody_protocol
 from app.routers.imperium_learning import router as imperium_learning_router
 from app.routers.codex import router as codex_router
 from app.routers.plugin import router as plugin_router
@@ -81,16 +82,88 @@ async def lifespan(app: FastAPI):
     await DataCollectionService.initialize()
     await AnalysisService.initialize()
     
-    # Start autonomous AI cycle in background
-    background_service = BackgroundService()
-    asyncio.create_task(background_service.start_autonomous_cycle())
+    # Only start background jobs if RUN_BACKGROUND_JOBS=1
+    if os.getenv("RUN_BACKGROUND_JOBS", "0") == "1":
+        # Start autonomous AI cycle in background
+        background_service = BackgroundService()
+        asyncio.create_task(background_service.start_autonomous_cycle())
+        
+        # Start enhanced autonomous learning service with custody protocol
+        from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
+        enhanced_learning_service = EnhancedAutonomousLearningService()
+        asyncio.create_task(enhanced_learning_service.start_enhanced_autonomous_learning())
+        
+        # Start auto-apply monitoring
+        asyncio.create_task(auto_apply_service.start_monitoring())
+
+        # Start periodic proposal generation feedback loop (ensure DB is ready)
+        asyncio.create_task(periodic_proposal_generation())
+        
+        print("✅ Background jobs started")
+    else:
+        print("⚠️ Background jobs NOT started (RUN_BACKGROUND_JOBS != 1)")
     
-    # Start auto-apply monitoring
-    asyncio.create_task(auto_apply_service.start_monitoring())
-
-    # Start periodic proposal generation feedback loop (ensure DB is ready)
-    asyncio.create_task(periodic_proposal_generation())
-
+    # Start enhanced adversarial testing service on port 8001
+    try:
+        import uvicorn
+        from multiprocessing import Process
+        
+        def start_enhanced_adversarial_service():
+            """Start the enhanced adversarial testing service on port 8001"""
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+            
+            from standalone_enhanced_adversarial_testing import app as adversarial_app
+            
+            uvicorn.run(
+                adversarial_app,
+                host="0.0.0.0",
+                port=8001,
+                log_level="info",
+                access_log=True
+            )
+        
+        # Start enhanced adversarial testing service in a separate process
+        adversarial_process = Process(target=start_enhanced_adversarial_service)
+        adversarial_process.start()
+        
+        logger.info("✅ Enhanced adversarial testing service started on port 8001")
+        print("✅ Enhanced adversarial testing service started on port 8001")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+        print(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+    
+    # Start training ground server on port 8002
+    try:
+        def start_training_ground_service():
+            """Start the training ground service on port 8002"""
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+            
+            from training_ground_server import app as training_ground_app
+            
+            uvicorn.run(
+                training_ground_app,
+                host="0.0.0.0",
+                port=8002,
+                log_level="info",
+                access_log=True
+            )
+        
+        # Start training ground service in a separate process
+        training_ground_process = Process(target=start_training_ground_service)
+        training_ground_process.start()
+        
+        logger.info("✅ Training ground service started on port 8002")
+        print("✅ Training ground service started on port 8002")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to start training ground service: {str(e)}")
+        print(f"❌ Failed to start training ground service: {str(e)}")
+    
     yield
     
     # Shutdown
@@ -250,40 +323,41 @@ async def github_status():
     }
 
 # Include routers
-app.include_router(proposals.router, prefix="/api/proposals", tags=["proposals"])
-app.include_router(code.router, prefix="/api/code", tags=["code"])
-app.include_router(experiments.router, prefix="/api/experiments", tags=["experiments"])
-app.include_router(guardian.router, prefix="/api/guardian", tags=["guardian"])
-app.include_router(imperium.router, prefix="/api/imperium", tags=["imperium"])
-app.include_router(sandbox.router, prefix="/api/sandbox", tags=["sandbox"])
-app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
-app.include_router(notify.router, prefix="/api/notify", tags=["notify"])
-app.include_router(learning.router, prefix="/api/learning", tags=["learning"])
-app.include_router(approval.router, prefix="/api/approval", tags=["approval"])
-app.include_router(oath_papers.router, prefix="/api/oath-papers", tags=["oath-papers"])
-app.include_router(conquest.router, prefix="/api/conquest", tags=["conquest"])
-app.include_router(github_webhook.router, prefix="/api/github", tags=["github"])
-app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
-app.include_router(growth.router, prefix="/api/growth", tags=["growth"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
-app.include_router(missions.router, prefix="/api/missions", tags=["missions"])
+app.include_router(proposals, prefix="/api/proposals", tags=["proposals"])
+app.include_router(code, prefix="/api/code", tags=["code"])
+app.include_router(experiments, prefix="/api/experiments", tags=["experiments"])
+app.include_router(guardian, prefix="/api/guardian", tags=["guardian"])
+app.include_router(imperium, prefix="/api/imperium", tags=["imperium"])
+app.include_router(sandbox, prefix="/api/sandbox", tags=["sandbox"])
+app.include_router(analytics, prefix="/api/analytics", tags=["analytics"])
+app.include_router(notify, prefix="/api/notify", tags=["notify"])
+app.include_router(learning, prefix="/api/learning", tags=["learning"])
+app.include_router(approval, prefix="/api/approval", tags=["approval"])
+app.include_router(oath_papers, prefix="/api/oath-papers", tags=["oath-papers"])
+app.include_router(conquest, prefix="/api/conquest", tags=["conquest"])
+app.include_router(github_webhook, prefix="/api/github", tags=["github"])
+app.include_router(agents, prefix="/api/agents", tags=["agents"])
+app.include_router(growth, prefix="/api/growth", tags=["growth"])
+app.include_router(notifications, prefix="/api/notifications", tags=["notifications"])
+app.include_router(missions, prefix="/api/missions", tags=["missions"])
 app.include_router(codex_router, prefix="/api/codex", tags=["Codex"])
 app.include_router(imperium_learning_router, tags=["Imperium Learning Controller"])
 app.include_router(plugin_router, tags=["plugins"])
 app.include_router(auto_apply_router, tags=["Auto-Apply Service"])
 app.include_router(optimized_services_router, tags=["Optimized Services"])
+app.include_router(custody_protocol, prefix="/api/custody", tags=["Custody Protocol"])
 
 # Add extra mounts for /api/ai/* compatibility
-app.include_router(imperium.router, prefix="/api/ai/imperium", tags=["ai-imperium"])
-app.include_router(guardian.router, prefix="/api/ai/guardian", tags=["ai-guardian"])
-app.include_router(sandbox.router, prefix="/api/ai/sandbox", tags=["ai-sandbox"])
-app.include_router(conquest.router, prefix="/api/ai/conquest", tags=["ai-conquest"])
+app.include_router(imperium, prefix="/api/ai/imperium", tags=["ai-imperium"])
+app.include_router(guardian, prefix="/api/ai/guardian", tags=["ai-guardian"])
+app.include_router(sandbox, prefix="/api/ai/sandbox", tags=["ai-sandbox"])
+app.include_router(conquest, prefix="/api/ai/conquest", tags=["ai-conquest"])
 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 4000)),
+        port=int(os.getenv("PORT", 8000)),
         reload=True,
         log_level="info"
     ) 

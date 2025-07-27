@@ -4,12 +4,14 @@ Learning router for AI learning endpoints
 """
 
 from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
 import structlog
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import os
+import json
 
 from app.services.ml_service import MLService
 ml_service = MLService()
@@ -19,6 +21,11 @@ ai_learning_service = AILearningService()
 
 from app.models.sql_models import Proposal, Experiment
 from app.core.database import get_db
+from app.models.sql_models import Learning
+from app.core.database import get_session
+from sqlalchemy import select
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -93,37 +100,40 @@ async def get_learning_insights(ai_type: str, session: AsyncSession = Depends(ge
         recommendations = []
         
         if recent_learning:
-            # Analyze success patterns
-            success_patterns = [l for l in recent_learning if l.success_rate > 0.7]
-            failure_patterns = [l for l in recent_learning if l.success_rate < 0.3]
+            # Analyze learning patterns based on learning_type and status
+            successful_learning = [l for l in recent_learning if l.status == "active"]
+            failed_learning = [l for l in recent_learning if l.status == "failed"]
             
-            if success_patterns:
-                recommendations.append(f"Continue focusing on {success_patterns[0].pattern} - high success rate")
+            if successful_learning:
+                recommendations.append(f"Continue focusing on {successful_learning[0].learning_type} - successful learning")
             
-            if failure_patterns:
-                recommendations.append(f"Improve {failure_patterns[0].pattern} - needs refinement")
+            if failed_learning:
+                recommendations.append(f"Improve {failed_learning[0].learning_type} - needs refinement")
             
-            # General recommendations based on patterns
-            avg_success = sum(l.success_rate for l in recent_learning) / len(recent_learning)
-            if avg_success < 0.5:
-                recommendations.append("Focus on improving overall success rate")
-            elif avg_success > 0.8:
-                recommendations.append("Consider expanding to more complex tasks")
+            # General recommendations based on learning types
+            learning_types = [l.learning_type for l in recent_learning]
+            if "proposal_feedback" in learning_types:
+                recommendations.append("Focus on improving proposal quality")
+            elif "user_feedback" in learning_types:
+                recommendations.append("Enhance user interaction patterns")
+            elif "system_analysis" in learning_types:
+                recommendations.append("Strengthen system analysis capabilities")
             
             # Pattern-specific recommendations
             for learning in recent_learning[:3]:
-                if learning.pattern:
-                    if "error" in learning.pattern.lower():
+                if learning.learning_type:
+                    if "error" in learning.learning_type.lower():
                         recommendations.append("Enhance error handling capabilities")
-                    elif "security" in learning.pattern.lower():
+                    elif "security" in learning.learning_type.lower():
                         recommendations.append("Strengthen security validation")
-                    elif "performance" in learning.pattern.lower():
+                    elif "performance" in learning.learning_type.lower():
                         recommendations.append("Optimize performance patterns")
         
         # Calculate learning metrics
         total_learning = len(recent_learning)
-        avg_success_rate = sum(l.success_rate for l in recent_learning) / total_learning if total_learning > 0 else 0.0
-        applied_learning = sum(1 for l in recent_learning if l.applied_count > 0) / total_learning if total_learning > 0 else 0.0
+        successful_learning = len([l for l in recent_learning if l.status == "active"])
+        avg_success_rate = successful_learning / total_learning if total_learning > 0 else 0.0
+        applied_learning = successful_learning / total_learning if total_learning > 0 else 0.0
         
         return {
             "recommendations": recommendations,
@@ -357,6 +367,20 @@ async def get_debug_log(session: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/logs/all")
+async def get_all_logs():
+    """
+    Return recent learning, audit, and agent logs (from codex_log.json and debug-log).
+    """
+    logs = []
+    codex_log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../codex_log.json'))
+    if os.path.exists(codex_log_path):
+        with open(codex_log_path, 'r', encoding='utf-8') as f:
+            logs.extend(json.load(f))
+    logs = sorted(logs, key=lambda x: x.get('timestamp', ''), reverse=True)
+    return {"logs": logs[:100], "last_updated": datetime.utcnow().isoformat()}
+
+
 @router.get("/periodic-learning-status")
 async def get_periodic_learning_status(session: AsyncSession = Depends(get_db)):
     """Get status of periodic internet learning for all AIs from live data"""
@@ -464,3 +488,23 @@ async def get_all_learning_insights():
     except Exception as e:
         logger.error("Error getting all learning insights", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) 
+
+
+@router.get("/nodes/{ai_type}")
+async def get_learning_nodes(ai_type: str, session: AsyncSession = Depends(get_session)):
+    """
+    Return a list of learning nodes for the given AI type from the live Neon database.
+    """
+    result = await session.execute(
+        select(Learning).where(Learning.ai_type == ai_type)
+    )
+    nodes = []
+    for row in result.scalars().all():
+        nodes.append({
+            "id": row.id,
+            "name": getattr(row, "learning_type", "Unknown"),
+            "unlocked": True,  # You can add logic to determine this
+            "timestamp": row.created_at.isoformat() if hasattr(row, "created_at") and row.created_at else None,
+            "learning_data": getattr(row, "learning_data", None),
+        })
+    return {"nodes": nodes, "ai_type": ai_type} 

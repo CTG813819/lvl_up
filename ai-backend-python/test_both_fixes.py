@@ -6,6 +6,7 @@ Test script to verify both fixes work correctly
 import asyncio
 import sys
 import os
+import pytest
 
 # Add the app directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
@@ -16,6 +17,7 @@ from app.models.sql_models import Proposal
 from sqlalchemy import select, func
 from datetime import datetime, timedelta
 
+@pytest.mark.asyncio
 async def test_both_fixes():
     """Test both the cleanup fix and duplicate check fix"""
     try:

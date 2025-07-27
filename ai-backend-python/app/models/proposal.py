@@ -44,22 +44,29 @@ class ProposalBase(BaseModel):
     ai_reasoning: Optional[str] = Field(default=None, description="Why the AI made this suggestion")
     learning_context: Optional[str] = Field(default=None, description="Context from previous feedback")
     mistake_pattern: Optional[str] = Field(default=None, description="Pattern of mistakes to avoid")
-    improvement_type: Optional[str] = Field(
-        default=None,
-        description="Type of improvement",
-        pattern="^(performance|readability|security|bug-fix|refactor|feature|system)$"
-    )
-    confidence: float = Field(
-        default=0.5,
-        ge=0.0,
-        le=1.0,
-        description="AI confidence in this proposal"
-    )
+    improvement_type: Optional[str] = Field(default="general", description="Type of improvement")
+    confidence: Optional[float] = Field(default=0.5, description="AI confidence in this proposal")
+    user_feedback_reason: Optional[str] = Field(default=None, description="Reason for user feedback")
+    ai_learning_applied: Optional[bool] = Field(default=False, description="Whether AI learning was applied")
+    previous_mistakes_avoided: Optional[List[str]] = Field(default=[], description="Previous mistakes avoided")
     
-    # Feedback and learning
-    user_feedback_reason: Optional[str] = Field(default=None, description="Why user approved/rejected")
-    ai_learning_applied: bool = Field(default=False, description="Whether learning was applied")
-    previous_mistakes_avoided: List[str] = Field(default_factory=list, description="List of previous mistakes this proposal avoids")
+    # Enhanced Learning and Change Description Fields
+    ai_learning_summary: Optional[str] = Field(default=None, description="What the AI has learned from previous interactions")
+    change_type: Optional[str] = Field(default=None, description="Type of change: 'frontend', 'backend', 'database', 'config', 'other'")
+    change_scope: Optional[str] = Field(default=None, description="Scope of change: 'minor', 'moderate', 'major', 'critical'")
+    affected_components: Optional[List[str]] = Field(default=[], description="List of components affected by this change")
+    learning_sources: Optional[List[str]] = Field(default=[], description="Sources of learning (previous proposals, user feedback, etc.)")
+    expected_impact: Optional[str] = Field(default=None, description="Expected impact of this change")
+    risk_assessment: Optional[str] = Field(default=None, description="Risk assessment of this change")
+    
+    # Response fields for when proposals are applied
+    application_response: Optional[str] = Field(default=None, description="Response message when proposal is applied")
+    application_timestamp: Optional[datetime] = Field(default=None, description="When the proposal was applied")
+    application_result: Optional[str] = Field(default=None, description="Result of applying the proposal")
+    post_application_analysis: Optional[str] = Field(default=None, description="Analysis after applying the proposal")
+    
+    # Files analyzed during proposal creation
+    files_analyzed: Optional[List[str]] = Field(default=[], description="List of files analyzed by the AI when creating this proposal")
 
     class Config:
         allow_population_by_field_name = True
@@ -91,6 +98,9 @@ class ProposalUpdate(BaseModel):
     user_feedback_reason: Optional[str] = None
     ai_learning_applied: Optional[bool] = None
     confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    application_response: Optional[str] = None
+    application_result: Optional[str] = None
+    post_application_analysis: Optional[str] = None
 
 
 class Proposal(ProposalBase):
@@ -111,7 +121,10 @@ class Proposal(ProposalBase):
                 "code_after": "print('Hello, World!');",
                 "status": "pending",
                 "improvement_type": "readability",
-                "confidence": 0.8
+                "confidence": 0.8,
+                "change_type": "frontend",
+                "change_scope": "minor",
+                "ai_learning_summary": "Learned from previous user feedback that code readability is important"
             }
         }
 
@@ -133,6 +146,19 @@ class ProposalResponse(BaseModel):
     test_output: Optional[str] = None
     ai_reasoning: Optional[str] = None
     user_feedback_reason: Optional[str] = None
+    files_analyzed: Optional[List[str]] = None
+    
+    # Enhanced fields
+    ai_learning_summary: Optional[str] = None
+    change_type: Optional[str] = None
+    change_scope: Optional[str] = None
+    affected_components: Optional[List[str]] = None
+    learning_sources: Optional[List[str]] = None
+    expected_impact: Optional[str] = None
+    risk_assessment: Optional[str] = None
+    application_response: Optional[str] = None
+    application_result: Optional[str] = None
+    post_application_analysis: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -141,10 +167,18 @@ class ProposalResponse(BaseModel):
 
 class ProposalStats(BaseModel):
     """Statistics for proposals"""
-    total: int
-    pending: int
-    approved: int
-    rejected: int
-    applied: int
-    test_passed: int
-    test_failed: int 
+    total_proposals: int
+    pending_proposals: int
+    approved_proposals: int
+    rejected_proposals: int
+    applied_proposals: int
+    test_passed_proposals: int
+    test_failed_proposals: int
+    average_confidence: float
+    improvement_type_distribution: dict
+    ai_type_distribution: dict
+    change_type_distribution: dict
+    recent_activity: List[dict]
+
+    class Config:
+        from_attributes = True 

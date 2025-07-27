@@ -256,7 +256,7 @@ class BackgroundService:
         try:
             async with aiohttp.ClientSession() as session:
                 await session.post(
-                    "http://localhost:4000/api/codex/log",
+                    "http://localhost:8000/api/codex/log",
                     json=codex_event,
                     timeout=10
                 )
@@ -394,7 +394,7 @@ class BackgroundService:
                 # 1. Check backend health endpoint
                 async with aiohttp.ClientSession() as session:
                     try:
-                        resp = await session.get("http://localhost:4000/health", timeout=10)
+                        resp = await session.get("http://localhost:8000/health", timeout=10)
                         healthy = resp.status == 200
                     except Exception:
                         healthy = False
@@ -425,7 +425,7 @@ class BackgroundService:
                 try:
                     async with aiohttp.ClientSession() as session:
                         await session.post(
-                            "http://localhost:4000/api/codex/log",
+                            "http://localhost:8000/api/codex/log",
                             json=codex_event,
                             timeout=10
                         )

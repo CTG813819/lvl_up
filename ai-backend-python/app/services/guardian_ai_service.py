@@ -1,41 +1,751 @@
 """
-Guardian AI Service for health checks and repair suggestions
+Guardian AI Service - Security analysis and threat detection with comprehensive SCKIPIT integration
+Enhanced with ML-driven security analysis, vulnerability assessment, and threat intelligence
 """
 
-import structlog
+import asyncio
+import json
+import os
+import pickle
+import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, text
-from sqlalchemy.orm import selectinload
-import json
-import re
-from uuid import UUID
+import structlog
+import numpy as np
+import pandas as pd
+import time
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.decomposition import PCA
+from sklearn.feature_selection import SelectKBest, f_classif, RFE
+from sklearn.pipeline import Pipeline
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+import joblib
 
 from app.models.sql_models import GuardianSuggestion, Proposal, Learning, ErrorLearning, Mission, MissionSubtask
 from app.core.database import get_session
+from app.core.config import settings
 from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
+from .ml_service import MLService
+from .sckipit_service import SckipitService
+from .ai_learning_service import AILearningService
+# Remove top-level import of CustodyProtocolService
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, and_, or_, text
+from sqlalchemy.orm import selectinload
 
 logger = structlog.get_logger()
 
 
 class GuardianAIService:
-    """Guardian AI service for comprehensive health checks and repairs"""
+    """Guardian AI Service - Security analysis and threat detection with comprehensive SCKIPIT integration"""
+    
+    _instance = None
+    _initialized = False
+    _security_analyses = {}
+    _threat_detections = []
+    _vulnerability_assessments = []
+    _ml_models = {}
+    _sckipit_models = {}
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(GuardianAIService, cls).__new__(cls)
+        return cls._instance
     
     def __init__(self):
-        self.health_check_rules = {
-            "mission": self._check_mission_health,
-            "entry": self._check_entry_health,
-            "mastery": self._check_mastery_health,
-            "proposal": self._check_proposal_health,
-            "learning": self._check_learning_health
-        }
+        if not self._initialized:
+            self.ml_service = MLService()
+            self.sckipit_service = SckipitService()
+            self.learning_service = AILearningService()
+            self.custody_service = CustodyProtocolService()
+            self._initialized = True
+            self._initialize_enhanced_ml_models()
+            
+            # SCKIPIT Integration
+            self.sckipit_security_models = {}
+            self.sckipit_threat_analyzer = None
+            self.sckipit_vulnerability_detector = None
+            self.sckipit_security_assessor = None
+            
+            # Enhanced Security Data
+            self.sckipit_enhanced_security_analyses = []
+            self.threat_detection_history = []
+            self.vulnerability_assessment_results = []
+            
+            # Initialize SCKIPIT models
+            self._initialize_sckipit_models()
+            
+            # Health check rules for backward compatibility
+            self.health_check_rules = {
+                "mission": self._check_mission_health,
+                "entry": self._check_entry_health,
+                "mastery": self._check_mastery_health,
+                "proposal": self._check_proposal_health,
+                "learning": self._check_learning_health
+            }
+    
+    def _initialize_enhanced_ml_models(self):
+        """Initialize enhanced ML models with SCKIPIT integration"""
+        try:
+            # Create models directory
+            os.makedirs(settings.ml_model_path, exist_ok=True)
+            
+            # Enhanced ML Models with SCKIPIT Integration
+            self._ml_models = {
+                # Security Threat Predictor (Enhanced with SCKIPIT)
+                'security_threat_predictor': RandomForestClassifier(
+                    n_estimators=200, 
+                    max_depth=15, 
+                    min_samples_split=5,
+                    random_state=42
+                ),
+                
+                # Vulnerability Detector (Enhanced with SCKIPIT)
+                'vulnerability_detector': GradientBoostingClassifier(
+                    n_estimators=150,
+                    learning_rate=0.1,
+                    max_depth=10,
+                    random_state=42
+                ),
+                
+                # Security Risk Assessor (Enhanced with SCKIPIT)
+                'security_risk_assessor': AdaBoostClassifier(
+                    n_estimators=100,
+                    learning_rate=0.05,
+                    random_state=42
+                ),
+                
+                # Threat Intelligence Analyzer (Enhanced with SCKIPIT)
+                'threat_intelligence_analyzer': MLPClassifier(
+                    hidden_layer_sizes=(100, 50, 25),
+                    activation='relu',
+                    solver='adam',
+                    max_iter=500,
+                    random_state=42
+                ),
+                
+                # Security Anomaly Detector (Enhanced with SCKIPIT)
+                'security_anomaly_detector': SVC(
+                    kernel='rbf',
+                    C=1.0,
+                    gamma='scale',
+                    probability=True,
+                    random_state=42
+                ),
+                
+                # Feature Selection for Better Models
+                'feature_selector': SelectKBest(
+                    score_func=f_classif,
+                    k=15
+                )
+            }
+            
+            # Load existing models
+            self._load_existing_enhanced_models()
+            
+            logger.info("Enhanced ML models with SCKIPIT integration initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing enhanced ML models: {str(e)}")
+    
+    def _initialize_sckipit_models(self):
+        """Initialize SCKIPIT-specific models for Guardian AI enhancement"""
+        try:
+            # SCKIPIT Security Analysis Models
+            self.sckipit_models = {
+                'threat_analyzer': RandomForestClassifier(
+                    n_estimators=150,
+                    max_depth=12,
+                    random_state=42
+                ),
+                
+                'vulnerability_detector': GradientBoostingClassifier(
+                    n_estimators=120,
+                    learning_rate=0.1,
+                    random_state=42
+                ),
+                
+                'security_assessor': LogisticRegression(
+                    random_state=42,
+                    max_iter=200
+                ),
+                
+                'anomaly_detector': MLPClassifier(
+                    hidden_layer_sizes=(80, 40),
+                    activation='relu',
+                    solver='adam',
+                    max_iter=300,
+                    random_state=42
+                ),
+                
+                'text_analyzer': TfidfVectorizer(
+                    max_features=1000,
+                    ngram_range=(1, 3),
+                    stop_words='english'
+                ),
+                
+                'feature_extractor': PCA(
+                    n_components=50,
+                    random_state=42
+                )
+            }
+            
+            # Load existing SCKIPIT models
+            self._load_existing_sckipit_models()
+            
+            logger.info("SCKIPIT models for Guardian AI initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing SCKIPIT models: {str(e)}")
+    
+    def _load_existing_sckipit_models(self):
+        """Load existing trained SCKIPIT models"""
+        try:
+            model_files = {
+                'threat_analyzer': 'sckipit_threat_analyzer.pkl',
+                'vulnerability_detector': 'sckipit_vulnerability_detector.pkl',
+                'security_assessor': 'sckipit_security_assessor.pkl',
+                'anomaly_detector': 'sckipit_anomaly_detector.pkl',
+                'text_analyzer': 'sckipit_text_analyzer.pkl',
+                'feature_extractor': 'sckipit_feature_extractor.pkl'
+            }
+            
+            for model_name, filename in model_files.items():
+                model_path = os.path.join(settings.ml_model_path, filename)
+                if os.path.exists(model_path):
+                    try:
+                        with open(model_path, 'rb') as f:
+                            self.sckipit_models[model_name] = pickle.load(f)
+                        logger.info(f"Loaded SCKIPIT model: {model_name}")
+                    except Exception as e:
+                        logger.error(f"Failed to load SCKIPIT model {filename}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error loading existing SCKIPIT models: {str(e)}")
+    
+    def _load_existing_enhanced_models(self):
+        """Load existing enhanced ML models"""
+        try:
+            model_files = {
+                'security_threat_predictor': 'guardian_security_threat_predictor.pkl',
+                'vulnerability_detector': 'guardian_vulnerability_detector.pkl',
+                'security_risk_assessor': 'guardian_security_risk_assessor.pkl',
+                'threat_intelligence_analyzer': 'guardian_threat_intelligence_analyzer.pkl',
+                'security_anomaly_detector': 'guardian_security_anomaly_detector.pkl'
+            }
+            
+            for model_name, filename in model_files.items():
+                model_path = os.path.join(settings.ml_model_path, filename)
+                if os.path.exists(model_path):
+                    try:
+                        with open(model_path, 'rb') as f:
+                            self._ml_models[model_name] = pickle.load(f)
+                        logger.info(f"Loaded enhanced model: {model_name}")
+                    except Exception as e:
+                        logger.error(f"Failed to load enhanced model {filename}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error loading existing enhanced models: {str(e)}")
+    
+    async def _save_sckipit_model(self, model_name: str):
+        """Save a trained SCKIPIT model"""
+        try:
+            model_path = os.path.join(settings.ml_model_path, f"sckipit_{model_name}.pkl")
+            with open(model_path, 'wb') as f:
+                pickle.dump(self.sckipit_models[model_name], f)
+            logger.info(f"Saved SCKIPIT model: {model_name}")
+        except Exception as e:
+            logger.error(f"Failed to save SCKIPIT model {model_name}: {str(e)}")
+    
+    # ==================== SCKIPIT-ENHANCED SECURITY METHODS ====================
+    
+    async def analyze_security_with_sckipit(self, code: str, file_path: str, analysis_type: str = "comprehensive") -> Dict[str, Any]:
+        """Analyze security using SCKIPIT-enhanced ML analysis"""
+        try:
+            logger.info(f"Guardian AI analyzing security with SCKIPIT: {file_path}")
+            
+            # Initialize SCKIPIT service
+            sckipit = await SckipitService.initialize()
+            
+            # Analyze code quality with SCKIPIT
+            quality_analysis = await sckipit.analyze_code_quality(code, file_path)
+            
+            # Extract security features
+            security_features = await self._extract_security_features(code, file_path, analysis_type)
+            
+            # SCKIPIT Threat Analysis
+            threat_analysis = await self._analyze_threats_with_sckipit(code, security_features)
+            
+            # SCKIPIT Vulnerability Detection
+            vulnerability_analysis = await self._detect_vulnerabilities_with_sckipit(code, security_features)
+            
+            # SCKIPIT Security Assessment
+            security_assessment = await self._assess_security_with_sckipit(code, quality_analysis, threat_analysis, vulnerability_analysis)
+            
+            # Enhanced security record with SCKIPIT insights
+            security_record = {
+                'timestamp': datetime.now().isoformat(),
+                'file_path': file_path,
+                'analysis_type': analysis_type,
+                'quality_score': quality_analysis.get('quality_score', 0.7),
+                'threat_level': threat_analysis.get('threat_level', 'low'),
+                'vulnerability_count': vulnerability_analysis.get('vulnerability_count', 0),
+                'security_score': security_assessment.get('security_score', 0.7),
+                'threat_analysis': threat_analysis,
+                'vulnerability_analysis': vulnerability_analysis,
+                'security_assessment': security_assessment,
+                'sckipit_confidence': security_assessment.get('sckipit_confidence', 0.7)
+            }
+            
+            self.sckipit_enhanced_security_analyses.append(security_record)
+            
+            # Update SCKIPIT learning data
+            await self._update_sckipit_security_data(security_record)
+            
+            logger.info(f"SCKIPIT-enhanced security analysis completed for {file_path}")
+            
+            return {
+                'status': 'success',
+                'security_score': security_assessment.get('security_score', 0.7),
+                'threat_level': threat_analysis.get('threat_level', 'low'),
+                'vulnerabilities': vulnerability_analysis.get('vulnerabilities', []),
+                'recommendations': security_assessment.get('recommendations', []),
+                'sckipit_analysis': {
+                    'quality_analysis': quality_analysis,
+                    'threat_analysis': threat_analysis,
+                    'vulnerability_analysis': vulnerability_analysis,
+                    'security_assessment': security_assessment
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing security with SCKIPIT: {str(e)}")
+            return {'status': 'error', 'message': str(e)}
+    
+    async def _analyze_threats_with_sckipit(self, code: str, features: Dict) -> Dict[str, Any]:
+        """Analyze threats using SCKIPIT models"""
+        try:
+            # Use SCKIPIT threat analyzer
+            if 'threat_analyzer' in self.sckipit_models:
+                X = np.array([list(features.values())])
+                threat_score = self.sckipit_models['threat_analyzer'].predict_proba(X)[0][1]
+                
+                threat_analysis = {
+                    'threat_score': float(threat_score),
+                    'threat_level': await self._classify_threat_level(threat_score),
+                    'threat_types': await self._identify_threat_types(features),
+                    'risk_factors': await self._identify_risk_factors(features),
+                    'mitigation_strategies': await self._generate_mitigation_strategies(threat_score, features)
+                }
+            else:
+                threat_analysis = {
+                    'threat_score': 0.3,
+                    'threat_level': 'low',
+                    'threat_types': [],
+                    'risk_factors': [],
+                    'mitigation_strategies': []
+                }
+            
+            return threat_analysis
+            
+        except Exception as e:
+            logger.error(f"Error analyzing threats with SCKIPIT: {str(e)}")
+            return {'threat_score': 0.3, 'threat_level': 'unknown'}
+    
+    async def _detect_vulnerabilities_with_sckipit(self, code: str, features: Dict) -> Dict[str, Any]:
+        """Detect vulnerabilities using SCKIPIT models"""
+        try:
+            # Use SCKIPIT vulnerability detector
+            if 'vulnerability_detector' in self.sckipit_models:
+                X = np.array([list(features.values())])
+                vulnerability_score = self.sckipit_models['vulnerability_detector'].predict_proba(X)[0][1]
+                
+                vulnerability_analysis = {
+                    'vulnerability_score': float(vulnerability_score),
+                    'vulnerability_count': await self._count_vulnerabilities(features),
+                    'vulnerability_types': await self._identify_vulnerability_types(features),
+                    'severity_levels': await self._assess_vulnerability_severity(features),
+                    'remediation_actions': await self._generate_remediation_actions(vulnerability_score, features)
+                }
+            else:
+                vulnerability_analysis = {
+                    'vulnerability_score': 0.2,
+                    'vulnerability_count': 0,
+                    'vulnerability_types': [],
+                    'severity_levels': [],
+                    'remediation_actions': []
+                }
+            
+            return vulnerability_analysis
+            
+        except Exception as e:
+            logger.error(f"Error detecting vulnerabilities with SCKIPIT: {str(e)}")
+            return {'vulnerability_score': 0.2, 'vulnerability_count': 0}
+    
+    async def _assess_security_with_sckipit(self, code: str, quality_analysis: Dict, threat_analysis: Dict, vulnerability_analysis: Dict) -> Dict[str, Any]:
+        """Assess overall security using SCKIPIT analysis"""
+        try:
+            # Calculate overall security score
+            quality_score = quality_analysis.get('quality_score', 0.7)
+            threat_score = threat_analysis.get('threat_score', 0.3)
+            vulnerability_score = vulnerability_analysis.get('vulnerability_score', 0.2)
+            
+            # Security score is weighted combination
+            security_score = (quality_score * 0.4 + (1 - threat_score) * 0.3 + (1 - vulnerability_score) * 0.3)
+            
+            # Generate security recommendations
+            recommendations = await self._generate_security_recommendations(
+                quality_score, threat_score, vulnerability_score, code
+            )
+            
+            return {
+                'security_score': security_score,
+                'security_level': await self._classify_security_level(security_score),
+                'recommendations': recommendations,
+                'risk_assessment': await self._assess_overall_risk(threat_score, vulnerability_score),
+                'compliance_status': await self._check_compliance_status(code),
+                'sckipit_confidence': 0.8 if security_score > 0.7 else 0.6
+            }
+            
+        except Exception as e:
+            logger.error(f"Error assessing security with SCKIPIT: {str(e)}")
+            return {
+                'security_score': 0.7,
+                'security_level': 'medium',
+                'recommendations': ["Apply general security best practices"],
+                'risk_assessment': 'low',
+                'compliance_status': 'unknown',
+                'sckipit_confidence': 0.5
+            }
+    
+    # ==================== SCKIPIT HELPER METHODS ====================
+    
+    async def _extract_security_features(self, code: str, file_path: str, analysis_type: str) -> Dict[str, float]:
+        """Extract features for security analysis"""
+        try:
+            return {
+                'code_length': len(code),
+                'line_count': len(code.split('\n')),
+                'has_sql_injection': 1.0 if any(sql in code.lower() for sql in ['select', 'insert', 'update', 'delete']) and '?' not in code else 0.0,
+                'has_xss_vulnerability': 1.0 if any(xss in code.lower() for xss in ['<script>', 'javascript:', 'onclick']) else 0.0,
+                'has_hardcoded_secrets': 1.0 if any(secret in code.lower() for secret in ['password', 'secret', 'key', 'token']) else 0.0,
+                'has_input_validation': 1.0 if any(validation in code.lower() for validation in ['validate', 'sanitize', 'escape']) else 0.0,
+                'has_authentication': 1.0 if any(auth in code.lower() for auth in ['auth', 'login', 'authenticate']) else 0.0,
+                'has_authorization': 1.0 if any(authz in code.lower() for authz in ['authorize', 'permission', 'role']) else 0.0,
+                'has_encryption': 1.0 if any(encrypt in code.lower() for encrypt in ['encrypt', 'hash', 'bcrypt']) else 0.0,
+                'analysis_type_encoded': hash(analysis_type) % 10 / 10.0,
+                'file_type_encoded': hash(file_path.split('.')[-1]) % 10 / 10.0
+            }
+        except Exception as e:
+            logger.error(f"Error extracting security features: {str(e)}")
+            return {'code_length': 0.0, 'line_count': 0.0, 'has_sql_injection': 0.0}
+    
+    async def _classify_threat_level(self, threat_score: float) -> str:
+        """Classify threat level based on threat score"""
+        try:
+            if threat_score >= 0.8:
+                return "critical"
+            elif threat_score >= 0.6:
+                return "high"
+            elif threat_score >= 0.4:
+                return "medium"
+            elif threat_score >= 0.2:
+                return "low"
+            else:
+                return "minimal"
+        except Exception as e:
+            logger.error(f"Error classifying threat level: {str(e)}")
+            return "unknown"
+    
+    async def _identify_threat_types(self, features: Dict) -> List[str]:
+        """Identify threat types based on features"""
+        try:
+            threat_types = []
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                threat_types.append("SQL Injection")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                threat_types.append("Cross-Site Scripting (XSS)")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                threat_types.append("Hardcoded Secrets")
+            
+            if features.get('has_input_validation', 0.0) < 0.5:
+                threat_types.append("Input Validation Bypass")
+            
+            if features.get('has_authentication', 0.0) < 0.5:
+                threat_types.append("Authentication Bypass")
+            
+            return threat_types
+        except Exception as e:
+            logger.error(f"Error identifying threat types: {str(e)}")
+            return ["General Security Threats"]
+    
+    async def _identify_risk_factors(self, features: Dict) -> List[str]:
+        """Identify risk factors based on features"""
+        try:
+            risk_factors = []
+            
+            if features.get('code_length', 0.0) > 1000:
+                risk_factors.append("Large codebase increases attack surface")
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                risk_factors.append("SQL injection vulnerabilities present")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                risk_factors.append("XSS vulnerabilities detected")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                risk_factors.append("Hardcoded secrets in code")
+            
+            if features.get('has_input_validation', 0.0) < 0.5:
+                risk_factors.append("Insufficient input validation")
+            
+            return risk_factors
+        except Exception as e:
+            logger.error(f"Error identifying risk factors: {str(e)}")
+            return ["General security risks"]
+    
+    async def _generate_mitigation_strategies(self, threat_score: float, features: Dict) -> List[str]:
+        """Generate mitigation strategies based on threat analysis"""
+        try:
+            strategies = []
+            
+            if threat_score > 0.6:
+                strategies.extend([
+                    "Implement comprehensive security testing",
+                    "Add input validation and sanitization",
+                    "Use parameterized queries to prevent SQL injection",
+                    "Implement proper authentication and authorization"
+                ])
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                strategies.append("Use parameterized queries or ORM")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                strategies.append("Implement output encoding and CSP headers")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                strategies.append("Move secrets to environment variables or secure storage")
+            
+            return strategies
+        except Exception as e:
+            logger.error(f"Error generating mitigation strategies: {str(e)}")
+            return ["Apply general security best practices"]
+    
+    async def _count_vulnerabilities(self, features: Dict) -> int:
+        """Count vulnerabilities based on features"""
+        try:
+            count = 0
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                count += 1
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                count += 1
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                count += 1
+            
+            if features.get('has_input_validation', 0.0) < 0.5:
+                count += 1
+            
+            return count
+        except Exception as e:
+            logger.error(f"Error counting vulnerabilities: {str(e)}")
+            return 0
+    
+    async def _identify_vulnerability_types(self, features: Dict) -> List[str]:
+        """Identify vulnerability types based on features"""
+        try:
+            vulnerabilities = []
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                vulnerabilities.append("SQL Injection")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                vulnerabilities.append("Cross-Site Scripting")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                vulnerabilities.append("Hardcoded Secrets")
+            
+            if features.get('has_input_validation', 0.0) < 0.5:
+                vulnerabilities.append("Input Validation Issues")
+            
+            return vulnerabilities
+        except Exception as e:
+            logger.error(f"Error identifying vulnerability types: {str(e)}")
+            return ["General vulnerabilities"]
+    
+    async def _assess_vulnerability_severity(self, features: Dict) -> List[str]:
+        """Assess vulnerability severity levels"""
+        try:
+            severities = []
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                severities.append("Critical: SQL Injection")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                severities.append("High: Cross-Site Scripting")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                severities.append("Medium: Hardcoded Secrets")
+            
+            if features.get('has_input_validation', 0.0) < 0.5:
+                severities.append("Medium: Input Validation Issues")
+            
+            return severities
+        except Exception as e:
+            logger.error(f"Error assessing vulnerability severity: {str(e)}")
+            return ["Medium: General security issues"]
+    
+    async def _generate_remediation_actions(self, vulnerability_score: float, features: Dict) -> List[str]:
+        """Generate remediation actions based on vulnerability analysis"""
+        try:
+            actions = []
+            
+            if vulnerability_score > 0.5:
+                actions.extend([
+                    "Conduct security code review",
+                    "Implement automated security testing",
+                    "Add security headers and configurations",
+                    "Update dependencies to latest secure versions"
+                ])
+            
+            if features.get('has_sql_injection', 0.0) > 0.5:
+                actions.append("Replace raw SQL with parameterized queries")
+            
+            if features.get('has_xss_vulnerability', 0.0) > 0.5:
+                actions.append("Implement output encoding and sanitization")
+            
+            if features.get('has_hardcoded_secrets', 0.0) > 0.5:
+                actions.append("Move secrets to secure configuration management")
+            
+            return actions
+        except Exception as e:
+            logger.error(f"Error generating remediation actions: {str(e)}")
+            return ["Apply general security remediation practices"]
+    
+    async def _classify_security_level(self, security_score: float) -> str:
+        """Classify security level based on security score"""
+        try:
+            if security_score >= 0.9:
+                return "excellent"
+            elif security_score >= 0.8:
+                return "good"
+            elif security_score >= 0.7:
+                return "acceptable"
+            elif security_score >= 0.6:
+                return "needs_improvement"
+            else:
+                return "poor"
+        except Exception as e:
+            logger.error(f"Error classifying security level: {str(e)}")
+            return "unknown"
+    
+    async def _generate_security_recommendations(self, quality_score: float, threat_score: float, vulnerability_score: float, code: str) -> List[str]:
+        """Generate security recommendations based on analysis"""
+        try:
+            recommendations = []
+            
+            if quality_score < 0.8:
+                recommendations.append("Improve code quality and security practices")
+            
+            if threat_score > 0.5:
+                recommendations.append("Implement threat modeling and security testing")
+            
+            if vulnerability_score > 0.5:
+                recommendations.append("Address identified vulnerabilities immediately")
+            
+            # General security recommendations
+            recommendations.extend([
+                "Follow OWASP security guidelines",
+                "Implement secure coding practices",
+                "Add comprehensive logging and monitoring",
+                "Regular security audits and penetration testing"
+            ])
+            
+            return list(set(recommendations))  # Remove duplicates
+            
+        except Exception as e:
+            logger.error(f"Error generating security recommendations: {str(e)}")
+            return ["Apply general security best practices"]
+    
+    async def _assess_overall_risk(self, threat_score: float, vulnerability_score: float) -> str:
+        """Assess overall risk level"""
+        try:
+            overall_risk = (threat_score + vulnerability_score) / 2
+            
+            if overall_risk >= 0.7:
+                return "high"
+            elif overall_risk >= 0.4:
+                return "medium"
+            else:
+                return "low"
+        except Exception as e:
+            logger.error(f"Error assessing overall risk: {str(e)}")
+            return "unknown"
+    
+    async def _check_compliance_status(self, code: str) -> str:
+        """Check compliance status"""
+        try:
+            # Basic compliance checks
+            has_encryption = 'encrypt' in code.lower() or 'hash' in code.lower()
+            has_authentication = 'auth' in code.lower() or 'login' in code.lower()
+            has_logging = 'log' in code.lower() or 'audit' in code.lower()
+            
+            if has_encryption and has_authentication and has_logging:
+                return "compliant"
+            elif has_authentication and has_logging:
+                return "partially_compliant"
+            else:
+                return "non_compliant"
+        except Exception as e:
+            logger.error(f"Error checking compliance status: {str(e)}")
+            return "unknown"
+    
+    async def _update_sckipit_security_data(self, security_record: Dict):
+        """Update SCKIPIT learning data with security analysis results"""
+        try:
+            # Add to SCKIPIT-enhanced security analyses
+            self.sckipit_enhanced_security_analyses.append(security_record)
+            
+            # Keep only recent data to prevent memory issues
+            max_records = 100
+            if len(self.sckipit_enhanced_security_analyses) > max_records:
+                self.sckipit_enhanced_security_analyses = self.sckipit_enhanced_security_analyses[-max_records:]
+            
+            logger.info(f"Updated SCKIPIT security data for {security_record.get('file_path', 'unknown')}")
+            
+        except Exception as e:
+            logger.error(f"Error updating SCKIPIT security data: {str(e)}")
+    
+    async def get_sckipit_analytics(self) -> Dict[str, Any]:
+        """Get SCKIPIT analytics for Guardian AI"""
+        try:
+            return {
+                'total_security_analyses': len(self.sckipit_enhanced_security_analyses),
+                'average_security_score': sum(analysis.get('security_score', 0.7) for analysis in self.sckipit_enhanced_security_analyses) / len(self.sckipit_enhanced_security_analyses) if self.sckipit_enhanced_security_analyses else 0.7,
+                'threat_detection_count': len(self.threat_detection_history),
+                'vulnerability_assessment_count': len(self.vulnerability_assessment_results),
+                'high_threat_files': len([analysis for analysis in self.sckipit_enhanced_security_analyses if analysis.get('threat_level') == 'high']),
+                'critical_vulnerabilities': len([analysis for analysis in self.sckipit_enhanced_security_analyses if analysis.get('vulnerability_count', 0) > 3]),
+                'recent_security_analyses': self.sckipit_enhanced_security_analyses[-5:] if self.sckipit_enhanced_security_analyses else [],
+                'sckipit_integration_status': 'active'
+            }
+        except Exception as e:
+            logger.error(f"Error getting SCKIPIT analytics: {str(e)}")
+            return {'error': str(e)}
     
     async def run_comprehensive_health_check(self, session: AsyncSession) -> Dict[str, Any]:
-        """Run comprehensive health checks on all system components"""
+        """Run comprehensive Guardian AI health check (delegates system/database/resource checks to core monitoring)"""
         try:
             logger.info("Starting comprehensive Guardian AI health check")
-            
             results = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "overall_health": "healthy",
@@ -44,15 +754,15 @@ class GuardianAIService:
                 "checks_performed": {},
                 "summary": {}
             }
-            
-            # Check each component type
+            # Only run AI-specific component checks (mission, proposal, learning, etc.)
             for component_type, check_function in self.health_check_rules.items():
-                logger.info(f"Running health check for {component_type}")
-                component_results = await check_function(session)
-                results["checks_performed"][component_type] = component_results
-                results["issues_found"] += component_results.get("issues_found", 0)
-                results["suggestions_created"] += component_results.get("suggestions_created", 0)
-            
+                if component_type in ["mission", "entry", "mastery", "proposal", "learning"]:
+                    logger.info(f"Running health check for {component_type}")
+                    component_results = await check_function(session)
+                    results["checks_performed"][component_type] = component_results
+                    results["issues_found"] += component_results.get("issues_found", 0)
+                    results["suggestions_created"] += component_results.get("suggestions_created", 0)
+            # System/database/resource health checks are now handled by app/core/monitoring.py
             # Determine overall health
             if results["issues_found"] == 0:
                 results["overall_health"] = "healthy"
@@ -60,10 +770,9 @@ class GuardianAIService:
                 results["overall_health"] = "warning"
             else:
                 results["overall_health"] = "critical"
-            
             # Generate summary
             results["summary"] = {
-                "total_components_checked": len(self.health_check_rules),
+                "total_components_checked": len(results["checks_performed"]),
                 "healthy_components": sum(1 for r in results["checks_performed"].values() 
                                         if r.get("health_status") == "healthy"),
                 "components_with_issues": sum(1 for r in results["checks_performed"].values() 
@@ -71,11 +780,9 @@ class GuardianAIService:
                 "critical_issues": sum(r.get("critical_issues", 0) for r in results["checks_performed"].values()),
                 "high_priority_issues": sum(r.get("high_priority_issues", 0) for r in results["checks_performed"].values())
             }
-            
             logger.info("Comprehensive health check completed", 
                        overall_health=results["overall_health"],
                        issues_found=results["issues_found"])
-            
             # Claude verification
             try:
                 verification = await anthropic_rate_limited_call(
@@ -86,9 +793,8 @@ class GuardianAIService:
             except Exception as e:
                 logger.warning(f"Claude verification error: {str(e)}")
             return results
-            
         except Exception as e:
-            logger.error("Error running comprehensive health check", error=str(e))
+            logger.error("Error running comprehensive health check", error_message=str(e))
             # Claude failure analysis
             try:
                 advice = await anthropic_rate_limited_call(
@@ -135,7 +841,7 @@ class GuardianAIService:
                         "ai_type": proposal.ai_type,
                         "file_path": proposal.file_path,
                         "has_code_before": bool(proposal.code_before)
-                    }),
+                    }, default=str),
                     proposed_fix="Add missing required fields or mark for deletion",
                     severity="high",
                     health_check_type="required_fields_validation"
@@ -206,7 +912,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error checking proposal health", error=str(e))
+            logger.error("Error checking proposal health", error_message=str(e))
             return {"health_status": "error", "error": str(e)}
     
     async def _check_learning_health(self, session: AsyncSession) -> Dict[str, Any]:
@@ -280,7 +986,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error checking learning health", error=str(e))
+            logger.error("Error checking learning health", error_message=str(e))
             return {"health_status": "error", "error": str(e)}
     
     async def _check_mission_health(self, session: AsyncSession) -> Dict[str, Any]:
@@ -318,7 +1024,7 @@ class GuardianAIService:
                         "title": mission.title,
                         "mission_type": mission.mission_type,
                         "notification_id": mission.notification_id
-                    }),
+                    }, default=str),
                     proposed_fix="Add missing required fields or mark for deletion",
                     severity="high",
                     health_check_type="required_fields_validation"
@@ -453,7 +1159,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error checking mission health", error=str(e))
+            logger.error("Error checking mission health", error_message=str(e))
             return {"health_status": "error", "error": str(e)}
     
     async def _check_entry_health(self, session: AsyncSession) -> Dict[str, Any]:
@@ -515,7 +1221,7 @@ class GuardianAIService:
             return suggestion
             
         except Exception as e:
-            logger.error("Error creating Guardian suggestion", error=str(e))
+            logger.error("Error creating Guardian suggestion", error_message=str(e))
             await session.rollback()
             raise
     
@@ -546,7 +1252,7 @@ class GuardianAIService:
             return result.scalars().all()
             
         except Exception as e:
-            logger.error("Error getting pending suggestions", error=str(e))
+            logger.error("Error getting pending suggestions", error_message=str(e))
             raise
     
     async def approve_suggestion(
@@ -601,7 +1307,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error approving suggestion", error=str(e))
+            logger.error("Error approving suggestion", error_message=str(e))
             await session.rollback()
             raise
     
@@ -645,7 +1351,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error rejecting suggestion", error=str(e))
+            logger.error("Error rejecting suggestion", error_message=str(e))
             await session.rollback()
             raise
     
@@ -663,7 +1369,7 @@ class GuardianAIService:
                 }
                 
         except Exception as e:
-            logger.error("Error applying fix", error=str(e))
+            logger.error("Error applying fix", error_message=str(e))
             return {
                 "success": False,
                 "message": f"Error applying fix: {str(e)}"
@@ -693,7 +1399,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error applying proposal fix", error=str(e))
+            logger.error("Error applying proposal fix", error_message=str(e))
             return {
                 "success": False,
                 "message": f"Error applying proposal fix: {str(e)}"
@@ -723,7 +1429,7 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error applying learning fix", error=str(e))
+            logger.error("Error applying learning fix", error_message=str(e))
             return {
                 "success": False,
                 "message": f"Error applying learning fix: {str(e)}"
@@ -800,5 +1506,17 @@ class GuardianAIService:
             }
             
         except Exception as e:
-            logger.error("Error getting suggestion statistics", error=str(e))
+            logger.error("Error getting suggestion statistics", error_message=str(e))
             raise 
+
+    async def answer_prompt(self, prompt: str) -> str:
+        learning_log = await self.learning_service.get_learning_log("guardian")
+        structured_response = await self.sckipit_service.generate_answer_with_llm(prompt, learning_log)
+        
+        # Extract the answer from the structured response
+        answer = structured_response.get("answer", "No answer generated")
+        
+        # Log the full structured response for learning and analytics
+        await self.learning_service.log_answer("guardian", prompt, answer, structured_response)
+        
+        return answer 

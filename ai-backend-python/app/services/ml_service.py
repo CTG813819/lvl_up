@@ -46,10 +46,14 @@ class MLService:
         """Initialize the ML service"""
         instance = cls()
         
-        # Download NLTK data
+        # Download NLTK data - comprehensive download to avoid missing resources
         try:
             nltk.download('punkt', quiet=True)
             nltk.download('stopwords', quiet=True)
+            nltk.download('punkt_tab', quiet=True)  # Add punkt_tab for newer NLTK versions
+            nltk.download('averaged_perceptron_tagger', quiet=True)  # Additional tokenizer dependency
+            nltk.download('maxent_ne_chunker', quiet=True)  # Named entity chunker
+            nltk.download('words', quiet=True)  # Word list
         except Exception as e:
             logger.warning("Failed to download NLTK data", error=str(e))
         
@@ -175,12 +179,21 @@ class MLService:
             ai_reasoning = proposal_data.ai_reasoning or ''
         
         if ai_reasoning:
-            # Tokenize and analyze reasoning
-            tokens = word_tokenize(ai_reasoning.lower())
-            
-            # Remove stopwords
-            stop_words = set(stopwords.words('english'))
-            tokens = [token for token in tokens if token.isalnum() and token not in stop_words]
+            # Tokenize and analyze reasoning with fallback
+            try:
+                tokens = word_tokenize(ai_reasoning.lower())
+                
+                # Remove stopwords
+                stop_words = set(stopwords.words('english'))
+                tokens = [token for token in tokens if token.isalnum() and token not in stop_words]
+            except LookupError as e:
+                # Fallback to simple tokenization if NLTK resources are missing
+                logger.warning("NLTK resources missing, using fallback tokenization", error=str(e))
+                tokens = ai_reasoning.lower().split()
+                tokens = [token for token in tokens if token.isalnum()]
+            except Exception as e:
+                logger.error("Error in text tokenization", error=str(e))
+                tokens = []
             
             features['reasoning_token_count'] = len(tokens)
             features['reasoning_unique_tokens'] = len(set(tokens))
@@ -336,8 +349,7 @@ class MLService:
             from sqlalchemy import select
             from ..models.sql_models import Proposal
             
-            session = get_session()
-            try:
+            async with get_session() as session:
                 # Get training data
                 stmt = select(Proposal).where(
                     Proposal.user_feedback.in_(["approved", "rejected"])
@@ -402,11 +414,6 @@ class MLService:
                 
                 await self._save_model(quality_model, 'quality_predictor')
                 await self._save_model(approval_model, 'approval_predictor')
-                
-            except Exception as e:
-                logger.error("Error training models", error=str(e))
-            finally:
-                await session.close()
             
         except Exception as e:
             logger.error("Error in train_models", error=str(e))
@@ -417,8 +424,7 @@ class MLService:
             from sqlalchemy import select, desc
             from ..models.sql_models import Proposal
             
-            session = get_session()
-            try:
+            async with get_session() as session:
                 # Get recent proposals
                 stmt = select(Proposal).order_by(desc(Proposal.created_at)).limit(100)
                 result = await session.execute(stmt)
@@ -455,13 +461,42 @@ class MLService:
                         insights['recommendations'].append("AI confidence is low - consider retraining models")
                 
                 return insights
-                
-            except Exception as e:
-                logger.error("Error getting ML insights", error=str(e))
-                return {}
-            finally:
-                await session.close()
             
         except Exception as e:
             logger.error("Error in get_ml_insights", error=str(e))
-            return {} 
+            return {}
+
+    async def generate_with_llm(self, prompt: str, model: str = "claude-3-5-sonnet-20241022", max_tokens: int = 1024, temperature: float = 0.7) -> Dict[str, Any]:
+        """
+        Generate text using LLM (Anthropic Claude by default)
+        Returns a structured response with content and metadata
+        """
+        try:
+            from app.services.anthropic_service import anthropic_rate_limited_call
+            
+            # Generate response using Anthropic
+            response = await anthropic_rate_limited_call(
+                prompt=prompt,
+                ai_name="ml_service",
+                model=model,
+                max_tokens=max_tokens
+            )
+            
+            return {
+                "content": response,
+                "model_used": model,
+                "tokens_estimated": len(prompt.split()) + len(response.split()),  # Rough estimation
+                "timestamp": datetime.now().isoformat(),
+                "success": True
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating with LLM: {str(e)}")
+            return {
+                "content": f"Error generating response: {str(e)}",
+                "model_used": model,
+                "tokens_estimated": 0,
+                "timestamp": datetime.now().isoformat(),
+                "success": False,
+                "error": str(e)
+            } 

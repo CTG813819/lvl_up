@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 
 from app.core.database import init_database, create_tables, create_indexes
-from app.models.sql_models import Base
+from app.models.sql_models import Base, TokenUsage, TokenUsageLog
 from sqlalchemy import text
 import structlog
 
@@ -68,6 +68,71 @@ async def create_all_tables():
                 logger.info("oath_papers table created successfully")
             else:
                 logger.info("oath_papers table already exists")
+            
+            # Check if token_usage tables exist
+            result = await conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'token_usage'
+                );
+            """))
+            token_usage_exists = result.scalar()
+            
+            if not token_usage_exists:
+                logger.info("Creating token_usage tables...")
+                # Create token_usage table
+                await conn.execute(text("""
+                    CREATE TABLE token_usage (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        ai_type VARCHAR(50) NOT NULL,
+                        month_year VARCHAR(7) NOT NULL,
+                        tokens_in INTEGER DEFAULT 0,
+                        tokens_out INTEGER DEFAULT 0,
+                        total_tokens INTEGER DEFAULT 0,
+                        request_count INTEGER DEFAULT 0,
+                        monthly_limit INTEGER DEFAULT 500000,
+                        usage_percentage FLOAT DEFAULT 0.0,
+                        last_request_at TIMESTAMP,
+                        status VARCHAR(20) DEFAULT 'active',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """))
+                
+                # Create token_usage_logs table
+                await conn.execute(text("""
+                    CREATE TABLE token_usage_logs (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        ai_type VARCHAR(50) NOT NULL,
+                        month_year VARCHAR(7) NOT NULL,
+                        request_id VARCHAR(100),
+                        tokens_in INTEGER DEFAULT 0,
+                        tokens_out INTEGER DEFAULT 0,
+                        total_tokens INTEGER DEFAULT 0,
+                        model_used VARCHAR(50),
+                        request_type VARCHAR(50),
+                        success BOOLEAN DEFAULT TRUE,
+                        error_message TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """))
+                
+                # Create indexes for token usage tables
+                await conn.execute(text("""
+                    CREATE INDEX idx_token_usage_ai_month ON token_usage(ai_type, month_year);
+                    CREATE INDEX idx_token_usage_ai_type ON token_usage(ai_type);
+                    CREATE INDEX idx_token_usage_month_year ON token_usage(month_year);
+                    CREATE INDEX idx_token_usage_status ON token_usage(status);
+                    CREATE INDEX idx_token_usage_updated_at ON token_usage(updated_at DESC);
+                    CREATE INDEX idx_token_usage_logs_ai_type ON token_usage_logs(ai_type);
+                    CREATE INDEX idx_token_usage_logs_month_year ON token_usage_logs(month_year);
+                    CREATE INDEX idx_token_usage_logs_created_at ON token_usage_logs(created_at DESC);
+                    CREATE INDEX idx_token_usage_logs_request_id ON token_usage_logs(request_id);
+                """))
+                
+                logger.info("token_usage tables created successfully")
+            else:
+                logger.info("token_usage tables already exist")
         
         logger.info("All database tables created successfully")
         

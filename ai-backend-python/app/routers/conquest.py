@@ -2,13 +2,14 @@
 Conquest AI Router - Creates new app repositories and APKs
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body, Path
 from typing import Dict, Any, List, Optional
 import structlog
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
 import re
+import requests
 
 from app.services.conquest_ai_service import ConquestAIService
 from app.core.database import get_db
@@ -871,11 +872,11 @@ async def get_sandbox_learnings():
 
 @router.post("/app-error")
 async def report_app_error(request: Dict[str, Any]):
-    """Report an app error for tracking and analysis"""
+    """Report an app error for tracking and analysis. If critical, auto-rollback."""
     try:
         conquest_service = ConquestAIService()
         await conquest_service.initialize()
-        
+
         # Extract error data with fallbacks for different formats
         app_id = request.get('appId') or request.get('app_id') or "unknown"
         error_message = request.get('error') or request.get('error_message') or "Unknown error"
@@ -883,7 +884,7 @@ async def report_app_error(request: Dict[str, Any]):
         branch = request.get('branch', '')
         source = request.get('source', 'unknown')
         step = request.get('step', 'unknown')
-        
+
         # Record the app error
         error_data = {
             "app_id": app_id,
@@ -894,22 +895,104 @@ async def report_app_error(request: Dict[str, Any]):
             "step": step,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         # Log the error for analysis
         logger.error("App error reported", 
                     app_id=app_id, 
                     error_message=error_message, 
                     source=source,
                     step=step)
-        
+
+        # --- Automated Rollback Logic ---
+        rollback_status = None
+        if "critical" in error_message.lower():
+            logger.warning(f"[AUTO-ROLLBACK] Critical error detected for app {app_id}. Initiating rollback.")
+            restored = await conquest_service.restoreCodeSnapshot(app_id)
+            if restored is not None:
+                await conquest_service.logRollback(app_id, restored)
+                rollback_status = {
+                    "status": "success",
+                    "message": f"Auto-rollback successful for app {app_id}",
+                }
+            else:
+                rollback_status = {
+                    "status": "error",
+                    "message": f"No snapshot found for app {app_id} during auto-rollback"
+                }
+
         return {
             "status": "success",
             "message": "App error recorded successfully",
             "error_id": str(uuid.uuid4()),
             "app_id": app_id,
-            "recorded_at": datetime.utcnow().isoformat()
+            "recorded_at": datetime.utcnow().isoformat(),
+            "auto_rollback": rollback_status
         }
-        
     except Exception as e:
         logger.error("Error recording app error", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) 
+
+
+@router.post("/rollback-app")
+async def rollback_app(request: Dict[str, Any] = Body(...)):
+    """Rollback the app to the last code snapshot (undo last change)"""
+    try:
+        conquest_service = ConquestAIService()
+        await conquest_service.initialize()
+        app_id = request.get('appId')
+        if not app_id:
+            raise HTTPException(status_code=400, detail="Missing appId")
+        # Attempt to restore code snapshot
+        restored = await conquest_service.restoreCodeSnapshot(app_id)
+        if restored is not None:
+            # Log the rollback event
+            await conquest_service.logRollback(app_id, restored)
+            return {
+                "status": "success",
+                "message": f"Rollback successful for app {app_id}",
+                "restored_code": restored
+            }
+        else:
+            return {
+                "status": "error",
+                "message": f"No snapshot found for app {app_id}"
+            }
+    except Exception as e:
+        logger.error("Error during rollback", error=str(e))
+        return {"status": "error", "message": str(e)} 
+
+
+@router.get("/commits/{app_id}")
+async def get_commit_history(app_id: str = Path(...)):
+    """Fetch commit history for a Conquest app's repository."""
+    try:
+        conquest_service = ConquestAIService()
+        await conquest_service.initialize()
+        # Look up the app's repo URL
+        app = await conquest_service.getAppById(app_id)
+        repo_url = app.get('repo_url')
+        if not repo_url:
+            return {"status": "error", "message": "No repository URL found for this app."}
+        # Extract owner/repo from URL (assume GitHub)
+        # e.g., https://github.com/owner/repo.git
+        import re
+        m = re.search(r'github.com[:/](.*?)/(.*?)(\.git)?$', repo_url)
+        if not m:
+            return {"status": "error", "message": "Invalid GitHub repo URL."}
+        owner, repo = m.group(1), m.group(2)
+        # Fetch commits from GitHub API
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/commits"
+        r = requests.get(api_url)
+        if r.status_code != 200:
+            return {"status": "error", "message": f"GitHub API error: {r.status_code}"}
+        commits = r.json()
+        # Optionally, parse commit messages for rollbacks/suggestions
+        for c in commits:
+            msg = c.get('commit', {}).get('message', '')
+            if 'rollback' in msg.lower():
+                c['is_rollback'] = True
+            if 'suggestion' in msg.lower() or 'improvement' in msg.lower():
+                c['is_suggestion'] = True
+        return {"status": "success", "commits": commits}
+    except Exception as e:
+        return {"status": "error", "message": str(e)} 

@@ -1,0 +1,62 @@
+{
+  "black_library_functionality": {
+    "purpose": "AI learning visualization and knowledge management system",
+    "features": {
+      "learning_trees": "Hexagonal nodes representing learned capabilities for each AI",
+      "ai_nexus": "Individual learning centers for each AI type with color-coded knowledge points",
+      "real_time_updates": "30-second polling for live data updates",
+      "knowledge_visualization": "Dynamic learning tree with level-appropriate nodes",
+      "recent_learnings": "Track of latest learning achievements for each AI",
+      "custody_integration": "Integration with Custodes Protocol testing results"
+    },
+    "ai_types": {
+      "imperium": {
+        "color": "amber",
+        "emoji": "crown",
+        "description": "System Architect & Overseer",
+        "focus": "System architecture, performance optimization, scalability"
+      },
+      "conquest": {
+        "color": "red",
+        "emoji": "sword",
+        "description": "Code Generator & Optimizer",
+        "focus": "Code generation, optimization, app development"
+      },
+      "guardian": {
+        "color": "blue",
+        "emoji": "shield",
+        "description": "Security & Quality Assurance",
+        "focus": "Security, code quality, testing"
+      },
+      "sandbox": {
+        "color": "green",
+        "emoji": "flask",
+        "description": "Experimental & Innovation Lab",
+        "focus": "Experimentation, innovation, prototyping"
+      }
+    },
+    "learning_nodes": {
+      "core_intelligence": "Base AI capabilities (Level 1+)",
+      "code_analysis": "Code analysis insights (Level 2+)",
+      "system_design": "System design insights (Level 3+)",
+      "security": "Security insights (Level 4+)",
+      "optimization": "Optimization insights (Level 5+)",
+      "innovation": "Innovation insights (Level 6+)",
+      "meta_learning": "Meta-learning capabilities (Level 7+)",
+      "collaboration": "Cross-AI collaboration (Level 8+)",
+      "experimental": "Experimental capabilities (Level 9+)"
+    },
+    "data_sources": {
+      "backend_api": "Real-time data from AI backend services",
+      "custody_protocol": "Testing results and eligibility status",
+      "learning_metrics": "Learning scores, cycles, and progress",
+      "cached_data": "Local persistence for offline viewing"
+    },
+    "technical_implementation": {
+      "frontend": "Flutter app with custom painting for learning trees",
+      "backend_integration": "HTTP API calls to agent status endpoints",
+      "data_persistence": "SharedPreferences for local caching",
+      "real_time_updates": "Timer-based polling with WebSocket support"
+    }
+  }
+}

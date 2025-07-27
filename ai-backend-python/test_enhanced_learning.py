@@ -21,6 +21,7 @@ import json
 import time
 from datetime import datetime
 from typing import Dict, List, Any
+import pytest
 
 # Configuration
 BASE_URL = "http://localhost:8000"
@@ -41,6 +42,7 @@ def print_result(title: str, result: Dict[str, Any]):
     if 'timestamp' in result:
         print(f"  Timestamp: {result['timestamp']}")
 
+@pytest.mark.asyncio
 async def test_enhanced_learning_capabilities():
     """Test all enhanced learning capabilities"""
     

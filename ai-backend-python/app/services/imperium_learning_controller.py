@@ -9,7 +9,7 @@ import time
 from typing import Dict, List, Optional, Any, Set
 from datetime import datetime, timedelta
 import structlog
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from enum import Enum
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -67,8 +67,11 @@ class AgentLearningMetrics:
     improvement_suggestions: List[str]
     status: LearningStatus
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    xp: int = 0
+    level: int = 1
+    prestige: int = 0
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)
 
 
 @dataclass
@@ -158,6 +161,9 @@ class ImperiumLearningController:
         await instance.learning_service.initialize()
         await instance.github_service.initialize()
         
+        # Load persisted agent metrics from database
+        await instance._load_persisted_agent_metrics()
+        
         # Register default agents
         await instance._register_default_agents()
         
@@ -207,8 +213,9 @@ class ImperiumLearningController:
                     improvement_suggestions=[],
                     status=LearningStatus.IDLE,
                     is_active=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    xp=0,
+                    level=1,
+                    prestige=0
                 )
                 
                 self._agent_metrics[agent_id] = metrics
@@ -320,18 +327,30 @@ class ImperiumLearningController:
             if result.get("status") == "success":
                 metrics.status = LearningStatus.SUCCESS
                 metrics.last_success = datetime.utcnow()
-                metrics.learning_score = min(100.0, metrics.learning_score + result.get("learning_score", 1.0))
-                logger.info(f"[LEARNING] Agent {agent_id}: Learning succeeded. Score: {metrics.learning_score}")
+                # Change: accumulate raw XP, e.g., +1000 per cycle, no cap
+                old_score = metrics.learning_score
+                metrics.learning_score = metrics.learning_score + result.get("learning_score", 1000.0)
+                logger.info(f"[LEARNING] Agent {agent_id}: Learning succeeded. Score: {old_score} -> {metrics.learning_score} (+{result.get('learning_score', 1000.0)})")
+                
+                # Persist XP immediately to ensure no loss
+                await self.persist_agent_metrics(agent_id)
+                logger.info(f"[LEARNING] Agent {agent_id}: XP persisted to database")
             else:
                 metrics.status = LearningStatus.FAILED
                 metrics.last_failure = datetime.utcnow()
                 logger.warning(f"[LEARNING] Agent {agent_id}: Learning failed. Error: {result.get('message')}")
+            
             total_cycles = metrics.total_learning_cycles
             if total_cycles > 0:
                 success_count = sum(1 for c in self._learning_cycles if c.success_count > 0)
                 metrics.success_rate = success_count / total_cycles
                 metrics.failure_rate = 1.0 - metrics.success_rate
+            
             logger.info(f"[LEARNING] Agent {agent_id}: Learning cycle complete. Success rate: {metrics.success_rate}, Failure rate: {metrics.failure_rate}")
+            
+            # Persist final metrics after cycle completion
+            await self.persist_agent_metrics(agent_id)
+            logger.info(f"[LEARNING] Agent {agent_id}: Final metrics persisted to database")
             # After learning, Claude verification and source suggestion
             try:
                 verification = await anthropic_rate_limited_call(
@@ -927,6 +946,54 @@ def apply_learned_patterns():
     # MASTER ORCHESTRATOR PERSISTENCE METHODS
     # ============================================================================
 
+    async def _load_persisted_agent_metrics(self):
+        """
+        Load persisted agent metrics from the database into memory.
+        This ensures AI level progress and growth scores are restored after backend restarts.
+        """
+        try:
+            # logger.info("[LEARNING][DB] Loading persisted agent metrics from database...")
+            
+            async with get_session() as session:
+                result = await session.execute(sa.select(AgentMetricsModel))
+                metrics_list = result.scalars().all()
+                
+                loaded_count = 0
+                for db_metrics in metrics_list:
+                    # Convert database metrics to AgentLearningMetrics
+                    metrics = AgentLearningMetrics(
+                        agent_id=str(db_metrics.agent_id),
+                        agent_type=str(db_metrics.agent_type),
+                        learning_score=float(db_metrics.learning_score) if db_metrics.learning_score is not None else 0.0,
+                        success_rate=float(db_metrics.success_rate) if db_metrics.success_rate is not None else 0.0,
+                        failure_rate=float(db_metrics.failure_rate) if db_metrics.failure_rate is not None else 0.0,
+                        total_learning_cycles=int(db_metrics.total_learning_cycles) if db_metrics.total_learning_cycles is not None else 0,
+                        last_learning_cycle=db_metrics.last_learning_cycle,
+                        last_success=db_metrics.last_success,
+                        last_failure=db_metrics.last_failure,
+                        learning_patterns=db_metrics.learning_patterns if db_metrics.learning_patterns is not None else [],
+                        improvement_suggestions=db_metrics.improvement_suggestions if db_metrics.improvement_suggestions is not None else [],
+                        status=LearningStatus(str(db_metrics.status)) if db_metrics.status and hasattr(LearningStatus, str(db_metrics.status)) else LearningStatus.IDLE,
+                        is_active=bool(db_metrics.is_active) if db_metrics.is_active is not None else True,
+                        xp=int(db_metrics.xp) if hasattr(db_metrics, 'xp') and db_metrics.xp is not None else 0,
+                        level=int(db_metrics.level) if hasattr(db_metrics, 'level') and db_metrics.level is not None else 1,
+                        prestige=int(db_metrics.prestige) if hasattr(db_metrics, 'prestige') and db_metrics.prestige is not None else 0,
+                        created_at=db_metrics.created_at,
+                        updated_at=db_metrics.updated_at
+                    )
+                    
+                    # Add to memory
+                    self._agent_metrics[db_metrics.agent_id] = metrics
+                    if db_metrics.is_active:
+                        self._active_agents.add(db_metrics.agent_id)
+                    
+                    loaded_count += 1
+                
+                logger.info(f"[LEARNING][DB] Successfully loaded {loaded_count} agent metrics from database")
+                
+        except Exception as e:
+            logger.error(f"[LEARNING][DB] Error loading persisted agent metrics: {e}")
+
     async def persist_agent_metrics(self, agent_id: str) -> bool:
         """
         Persist agent metrics to the database.
@@ -936,37 +1003,35 @@ def apply_learned_patterns():
                 logger.warning(f"Agent {agent_id} not found in memory metrics")
                 return False
             metrics = self._agent_metrics[agent_id]
+            agent_type = metrics.agent_type.lower()
             async with get_session() as session:
-                # Check if agent metrics exist in database
+                # Check if agent metrics exist in database by agent_type (lowercase)
                 existing_metrics = await session.execute(
-                    sa.select(AgentMetricsModel).where(AgentMetricsModel.agent_id == agent_id)
+                    sa.select(AgentMetricsModel).where(sa.func.lower(AgentMetricsModel.agent_type) == agent_type)
                 )
                 db_metrics = existing_metrics.scalar_one_or_none()
                 if db_metrics:
-                    # Update existing metrics using update()
-                    await session.execute(
-                        sa.update(AgentMetricsModel)
-                        .where(AgentMetricsModel.agent_id == agent_id)
-                        .values(
-                            learning_score=metrics.learning_score,
-                            success_rate=metrics.success_rate,
-                            failure_rate=metrics.failure_rate,
-                            total_learning_cycles=metrics.total_learning_cycles,
-                            last_learning_cycle=metrics.last_learning_cycle,
-                            last_success=metrics.last_success,
-                            last_failure=metrics.last_failure,
-                            learning_patterns=metrics.learning_patterns or [],
-                            improvement_suggestions=metrics.improvement_suggestions or [],
-                            status=metrics.status.value,
-                            is_active=metrics.is_active,
-                            updated_at=datetime.utcnow()
-                        )
-                    )
+                    # Update existing record
+                    db_metrics.learning_score = metrics.learning_score
+                    db_metrics.success_rate = metrics.success_rate
+                    db_metrics.failure_rate = metrics.failure_rate
+                    db_metrics.total_learning_cycles = metrics.total_learning_cycles
+                    db_metrics.last_learning_cycle = metrics.last_learning_cycle
+                    db_metrics.last_success = metrics.last_success
+                    db_metrics.last_failure = metrics.last_failure
+                    db_metrics.learning_patterns = metrics.learning_patterns or []
+                    db_metrics.improvement_suggestions = metrics.improvement_suggestions or []
+                    db_metrics.status = metrics.status.value
+                    db_metrics.is_active = metrics.is_active
+                    db_metrics.xp = metrics.xp
+                    db_metrics.level = metrics.level
+                    db_metrics.prestige = metrics.prestige
+                    db_metrics.updated_at = datetime.utcnow()
                 else:
-                    # Create new metrics record
+                    # Insert new record
                     db_metrics = AgentMetricsModel(
                         agent_id=metrics.agent_id,
-                        agent_type=metrics.agent_type,
+                        agent_type=agent_type,
                         learning_score=metrics.learning_score,
                         success_rate=metrics.success_rate,
                         failure_rate=metrics.failure_rate,
@@ -978,12 +1043,14 @@ def apply_learned_patterns():
                         improvement_suggestions=metrics.improvement_suggestions or [],
                         status=metrics.status.value,
                         is_active=metrics.is_active,
-                        created_at=datetime.utcnow(),
+                        xp=metrics.xp,
+                        level=metrics.level,
+                        prestige=metrics.prestige,
                         updated_at=datetime.utcnow()
                     )
                     session.add(db_metrics)
                 await session.commit()
-                logger.info(f"[LEARNING][DB] Successfully persisted metrics for agent {agent_id}")
+                logger.info(f"[LEARNING][DB] Persisted agent metrics for {agent_id} (type: {agent_type})")
                 return True
         except Exception as e:
             logger.error(f"[LEARNING][DB] Error persisting metrics for agent {agent_id}", error=str(e))
@@ -1224,6 +1291,9 @@ def apply_learned_patterns():
                             "improvement_suggestions": metrics.improvement_suggestions,
                             "status": metrics.status,
                             "is_active": metrics.is_active,
+                            "xp": metrics.xp if hasattr(metrics, 'xp') else 0,
+                            "level": metrics.level if hasattr(metrics, 'level') else 1,
+                            "prestige": metrics.prestige if hasattr(metrics, 'prestige') else 0,
                             "created_at": metrics.created_at.isoformat(),
                             "updated_at": metrics.updated_at.isoformat()
                         }
@@ -1247,6 +1317,9 @@ def apply_learned_patterns():
                             "improvement_suggestions": metrics.improvement_suggestions,
                             "status": metrics.status,
                             "is_active": metrics.is_active,
+                            "xp": metrics.xp if hasattr(metrics, 'xp') else 0,
+                            "level": metrics.level if hasattr(metrics, 'level') else 1,
+                            "prestige": metrics.prestige if hasattr(metrics, 'prestige') else 0,
                             "created_at": metrics.created_at.isoformat(),
                             "updated_at": metrics.updated_at.isoformat()
                         }

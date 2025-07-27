@@ -20,6 +20,7 @@ from app.models.sql_models import Proposal, ErrorLearning
 from app.models.proposal import ProposalResponse
 from typing import Optional
 import logging
+from app.services.imperium_ai_service import ImperiumAIService
 
 logger = logging.getLogger(__name__)
 
@@ -578,3 +579,10 @@ async def get_dynamic_learning_data():
         }
     except Exception as e:
         return {"status": "error", "message": str(e)} 
+
+@router.post("/cross_ai_optimization")
+async def cross_ai_optimization():
+    """Trigger Imperium's cross-AI optimization across all AIs."""
+    service = ImperiumAIService()
+    result = await service.run_cross_ai_optimization()
+    return result 

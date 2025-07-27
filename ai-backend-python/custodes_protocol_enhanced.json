@@ -1,0 +1,83 @@
+{
+  "custodes_protocol_enhancement": {
+    "purpose": "Enhanced Custodes Protocol with comprehensive learning cycle integration",
+    "learning_cycle_integration": {
+      "automatic_triggering": {
+        "frequency": "Every 1 hour",
+        "trigger_method": "Automatic custodes service",
+        "learning_activities": [
+          "Fallback learning from all AIs",
+          "Internet knowledge acquisition",
+          "SCKIPIT ML integration",
+          "Learning profile updates"
+        ]
+      },
+      "comprehensive_test_generation": {
+        "trigger": "During each custody test",
+        "learning_steps": [
+          "await custodes_fallback.learn_from_all_ais()",
+          "await self._learn_from_internet(ai_type, subject)",
+          "await self._integrate_sckipit_knowledge(ai_type, subject)",
+          "await self._generate_adaptive_test_content()"
+        ],
+        "data_utilization": {
+          "learning_records": "9,741+ records analyzed",
+          "subjects_per_ai": "205+ subjects per AI",
+          "internet_knowledge": "Current trends and APIs",
+          "ml_enhancement": "SCKIPIT knowledge integration"
+        }
+      },
+      "smart_fallback_system": {
+        "trigger": "Every test generation",
+        "learning_activities": [
+          "Profile creation from learning data",
+          "Subject selection based on history",
+          "Rich test generation using actual data"
+        ],
+        "token_management": {
+          "external_ai": "When tokens available",
+          "internal_generation": "When tokens limited",
+          "smart_switching": "Based on token availability"
+        }
+      },
+      "learning_data_sources": {
+        "database_records": {
+          "count": "9,741+ learning records",
+          "tables": [
+            "Learning",
+            "Proposal",
+            "OathPaper"
+          ],
+          "extraction": "Rich learning profiles"
+        },
+        "internet_knowledge": {
+          "sources": [
+            "StackOverflow",
+            "GitHub",
+            "Medium",
+            "Dev.to"
+          ],
+          "apis": "Current trends and knowledge",
+          "integration": "Real-time knowledge acquisition"
+        },
+        "ml_enhancement": {
+          "sckipit_models": "Knowledge assessment and test generation",
+          "difficulty_prediction": "ML-based difficulty assessment",
+          "question_classification": "AI-powered question categorization"
+        }
+      }
+    },
+    "enhanced_test_generation": {
+      "adaptive_content": "Tests based on actual learning history",
+      "personalized_difficulty": "Difficulty based on AI level and learning",
+      "knowledge_gap_analysis": "Identify and test knowledge gaps",
+      "learning_pattern_recognition": "Recognize and adapt to learning patterns"
+    },
+    "real_time_learning_tracking": {
+      "learning_cycle_status": "Track current learning cycle status",
+      "knowledge_acquisition": "Monitor knowledge acquisition in real-time",
+      "ai_progression": "Track AI progression through learning cycles",
+      "test_effectiveness": "Measure test effectiveness based on learning"
+    }
+  }
+}

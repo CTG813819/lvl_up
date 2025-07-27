@@ -13,6 +13,7 @@ from app.core.database import get_db
 from app.models.sql_models import OathPaper, Proposal
 from app.services.ai_learning_service import AILearningService
 from app.services.ai_agent_service import AIAgentService
+from app.services.enhanced_subject_learning_service import EnhancedSubjectLearningService
 from app.models.oath_paper import OathPaperResponse
 from sqlalchemy import select
 
@@ -35,26 +36,32 @@ class EnhancedOathPaperRequest(BaseModel):
     timestamp: Optional[str] = None
 
 
+class OathPaperCreateRequest(BaseModel):
+    title: str
+    subject: Optional[str] = None  # New subject field
+    content: str
+    category: str = "general"
+
+
 @router.get("/", response_model=List[OathPaperResponse])
-async def list_oath_papers():
+async def list_oath_papers(session: AsyncSession = Depends(get_db)):
     """List all oath papers"""
     try:
-        session = get_session()
-        async with session as s:
-            result = await s.execute(select(OathPaper).order_by(OathPaper.created_at.desc()))
-            papers = result.scalars().all()
-            return [OathPaperResponse(
-                id=str(p.id),
-                title=p.title,
-                content=p.content,
-                category=p.category,
-                ai_insights=p.ai_insights,
-                learning_value=p.learning_value,
-                status=p.status,
-                ai_responses=p.ai_responses,
-                created_at=p.created_at,
-                updated_at=p.updated_at
-            ) for p in papers]
+        result = await session.execute(select(OathPaper).order_by(OathPaper.created_at.desc()))
+        papers = result.scalars().all()
+        return [OathPaperResponse(
+            id=str(p.id),
+            title=p.title,
+            subject=p.subject,
+            content=p.content,
+            category=p.category,
+            ai_insights=p.ai_insights,
+            learning_value=p.learning_value,
+            status=p.status,
+            ai_responses=p.ai_responses or {},
+            created_at=p.created_at,
+            updated_at=p.updated_at
+        ) for p in papers]
     except Exception as e:
         logger.error("Error getting oath papers", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -62,25 +69,47 @@ async def list_oath_papers():
 
 @router.post("/")
 async def create_oath_paper(
-    title: str,
-    content: str,
-    category: str = "general",
+    request: OathPaperCreateRequest,
     session: AsyncSession = Depends(get_db)
 ):
-    """Create a new oath paper with AI analysis"""
+    """Create a new oath paper with AI analysis and subject learning"""
     try:
         # Create oath paper
         oath_paper = OathPaper(
-            title=title,
-            content=content,
-            category=category,
+            title=request.title,
+            subject=request.subject,  # Include subject field
+            content=request.content,
+            category=request.category,
             created_at=datetime.utcnow()
         )
         session.add(oath_paper)
         await session.commit()
         await session.refresh(oath_paper)
         
-        # Analyze with AI learning
+        # Enhanced subject learning if subject is provided
+        if request.subject:
+            try:
+                enhanced_learning = EnhancedSubjectLearningService()
+                knowledge_base = await enhanced_learning.build_subject_knowledge_base(
+                    subject=request.subject,
+                    context=request.content
+                )
+                
+                # Update oath paper with enhanced insights
+                oath_paper.ai_insights = knowledge_base
+                oath_paper.learning_value = knowledge_base.get("learning_value", 0.0)
+                oath_paper.status = "learned"
+                
+                await session.commit()
+                await session.refresh(oath_paper)
+                
+                logger.info(f"Enhanced subject learning completed for {request.subject}")
+                
+            except Exception as learning_error:
+                logger.error(f"Enhanced learning failed", subject=request.subject, error=str(learning_error))
+                # Continue with basic analysis even if enhanced learning fails
+        
+        # Basic AI analysis
         ai_learning = AILearningService()
         analysis = await ai_learning.analyze_oath_paper(oath_paper)
         
@@ -101,11 +130,13 @@ async def create_oath_paper(
             "oath_paper": {
                 "id": str(oath_paper.id),
                 "title": oath_paper.title,
+                "subject": oath_paper.subject,
                 "content": oath_paper.content,
                 "category": oath_paper.category,
                 "created_at": oath_paper.created_at.isoformat()
             },
             "ai_analysis": analysis,
+            "enhanced_learning": oath_paper.ai_insights if request.subject else None,
             "proposal_created": analysis.get("needs_improvement", False),
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -114,159 +145,123 @@ async def create_oath_paper(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/enhanced-learning")
-async def enhanced_oath_paper_learning(request: EnhancedOathPaperRequest):
-    """Enhanced oath paper learning with keyword extraction, internet search, and git integration"""
+@router.post("/enhanced")
+async def create_enhanced_oath_paper(
+    request: EnhancedOathPaperRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Create an enhanced oath paper with advanced AI learning"""
     try:
-        logger.info("Processing enhanced oath paper", subject=request.subject, target_ai=request.targetAI)
-        
-        # Create oath paper record
-        session = get_session()
-        async with session as s:
-            oath_paper = OathPaper(
-                title=request.subject,
-                content=request.description or "",
-                category="enhanced",
-                created_at=datetime.utcnow(),
-                status="processing"
-            )
-            s.add(oath_paper)
-            await s.commit()
-            await s.refresh(oath_paper)
-            
-            # Initialize AI learning service
-            ai_learning = AILearningService()
-            
-            # Process with enhanced learning
-            learning_result = await ai_learning.process_enhanced_oath_paper(
-                oath_paper_id=str(oath_paper.id),
-                subject=request.subject,
-                tags=request.tags,
-                description=request.description,
-                code=request.code,
-                target_ai=request.targetAI,
-                ai_weights=request.aiWeights,
-                extract_keywords=request.extractKeywords,
-                internet_search=request.internetSearch,
-                git_integration=request.gitIntegration,
-                learning_instructions=request.learningInstructions
-            )
-            
-            # Update oath paper status
-            oath_paper.status = "completed"
-            oath_paper.ai_insights = learning_result.get("ai_insights", {})
-            oath_paper.learning_value = learning_result.get("learning_value", 0.0)
-            oath_paper.ai_responses = learning_result.get("ai_responses", {})
-            await s.commit()
-            
-            # Create proposals for each AI if specified
-            proposals_created = []
-            if request.targetAI and request.targetAI != "All AIs":
-                # Create proposal for specific AI
-                proposal = Proposal(
-                    ai_type=request.targetAI.lower(),
-                    file_path=f"oath_papers/{oath_paper.id}",
-                    code_before=request.description or "",
-                    code_after=learning_result.get("improvement_suggestions", ""),
-                    status="pending",
-                    created_at=datetime.utcnow()
-                )
-                s.add(proposal)
-                proposals_created.append(str(proposal.id))
-            else:
-                # Create proposals for all AIs
-                ai_types = ["imperium", "guardian", "sandbox", "conquest"]
-                for ai_type in ai_types:
-                    proposal = Proposal(
-                        ai_type=ai_type,
-                        file_path=f"oath_papers/{oath_paper.id}",
-                        code_before=request.description or "",
-                        code_after=learning_result.get("improvement_suggestions", ""),
-                        status="pending",
-                        created_at=datetime.utcnow()
-                    )
-                    s.add(proposal)
-                    proposals_created.append(str(proposal.id))
-            
-            await s.commit()
-            
-            return {
-                "status": "success",
-                "oath_paper_id": str(oath_paper.id),
-                "learning_result": learning_result,
-                "proposals_created": proposals_created,
-                "processing_time": learning_result.get("processing_time", 0),
-                "timestamp": datetime.utcnow().isoformat()
-            }
-            
-    except Exception as e:
-        logger.error("Error processing enhanced oath paper", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/ai-insights")
-async def get_oath_papers_ai_insights(session: AsyncSession = Depends(get_db)):
-    """Get AI insights for all oath papers"""
-    try:
-        ai_learning = AILearningService()
-        insights = await ai_learning.get_oath_papers_insights()
-        
-        return {
-            "insights": insights,
-            "learning_progress": await ai_learning.get_learning_progress(),
-            "recommendations": await ai_learning.get_oath_papers_recommendations(),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error("Error getting AI insights", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/learn/{paper_id}")
-async def trigger_learning(paper_id: str):
-    session = get_session()
-    async with session as s:
-        paper = await s.get(OathPaper, paper_id)
-        if not paper:
-            raise HTTPException(status_code=404, detail="Oath Paper not found")
-        # Simulate learning for all AIs
-        ai_names = ["Imperium", "Guardian", "Sandbox", "Conquest"]
-        ai_responses = {}
-        for ai in ai_names:
-            # Simulate learning result
-            ai_responses[ai] = "learned"
-        paper.status = "learned"
-        paper.ai_responses = ai_responses
-        await s.commit()
-        return {"status": "success", "ai_responses": ai_responses}
-
-
-@router.get("/categories")
-async def get_oath_paper_categories(session: AsyncSession = Depends(get_db)):
-    """Get oath paper categories with AI analysis"""
-    try:
-        from sqlalchemy import select, func
-        result = await session.execute(
-            select(OathPaper.category, func.count(OathPaper.id))
-            .group_by(OathPaper.category)
+        # Create oath paper with subject
+        oath_paper = OathPaper(
+            title=request.subject,  # Use subject as title
+            subject=request.subject,
+            content=request.description or f"Learning about {request.subject}",
+            category="enhanced_learning",
+            created_at=datetime.utcnow()
         )
-        categories = result.all()
+        session.add(oath_paper)
+        await session.commit()
+        await session.refresh(oath_paper)
         
+        # Enhanced subject learning
+        enhanced_learning = EnhancedSubjectLearningService()
+        knowledge_base = await enhanced_learning.build_subject_knowledge_base(
+            subject=request.subject,
+            context=request.description or ""
+        )
+        
+        # Update oath paper with comprehensive insights
+        oath_paper.ai_insights = knowledge_base
+        oath_paper.learning_value = knowledge_base.get("learning_value", 0.0)
+        oath_paper.status = "learned"
+        
+        # Process with AI learning service
         ai_learning = AILearningService()
-        category_insights = await ai_learning.analyze_oath_paper_categories()
+        processing_result = await ai_learning.process_enhanced_oath_paper(
+            oath_paper_id=str(oath_paper.id),
+            subject=request.subject,
+            tags=request.tags,
+            description=request.description,
+            code=request.code,
+            target_ai=request.targetAI,
+            ai_weights=request.aiWeights,
+            extract_keywords=request.extractKeywords,
+            internet_search=request.internetSearch,
+            git_integration=request.gitIntegration,
+            learning_instructions=request.learningInstructions
+        )
+        
+        # Update with processing results
+        oath_paper.ai_responses = processing_result.get("ai_responses", {})
+        oath_paper.learning_value = processing_result.get("learning_value", 0.0)
+        
+        await session.commit()
+        await session.refresh(oath_paper)
         
         return {
-            "categories": [
-                {
-                    "category": cat,
-                    "count": count,
-                    "ai_insights": category_insights.get(cat, {})
-                }
-                for cat, count in categories
-            ],
-            "total_categories": len(categories),
+            "oath_paper": {
+                "id": str(oath_paper.id),
+                "title": oath_paper.title,
+                "subject": oath_paper.subject,
+                "content": oath_paper.content,
+                "category": oath_paper.category,
+                "created_at": oath_paper.created_at.isoformat()
+            },
+            "enhanced_learning": knowledge_base,
+            "ai_processing": processing_result,
             "timestamp": datetime.utcnow().isoformat()
         }
+        
     except Exception as e:
-        logger.error("Error getting categories", error=str(e))
+        logger.error("Error creating enhanced oath paper", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/subject/{subject}")
+async def get_oath_papers_by_subject(
+    subject: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get oath papers by subject"""
+    try:
+        result = await session.execute(
+            select(OathPaper).where(OathPaper.subject == subject).order_by(OathPaper.created_at.desc())
+        )
+        papers = result.scalars().all()
+        
+        return [OathPaperResponse(
+            id=str(p.id),
+            title=p.title,
+            subject=p.subject,
+            content=p.content,
+            category=p.category,
+            ai_insights=p.ai_insights,
+            learning_value=p.learning_value,
+            status=p.status,
+            ai_responses=p.ai_responses,
+            created_at=p.created_at,
+            updated_at=p.updated_at
+        ) for p in papers]
+        
+    except Exception as e:
+        logger.error("Error getting oath papers by subject", subject=subject, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/research-subject")
+async def research_subject(subject: str, context: str = ""):
+    """Research a subject using enhanced AI learning"""
+    try:
+        enhanced_learning = EnhancedSubjectLearningService()
+        knowledge_base = await enhanced_learning.build_subject_knowledge_base(subject, context)
+        
+        return {
+            "subject": subject,
+            "knowledge_base": knowledge_base,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error("Error researching subject", subject=subject, error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) 
