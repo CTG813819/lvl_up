@@ -77,6 +77,29 @@ class EnhancedAdversarialTestingService:
         self.ai_performance_metrics = {}
         self.ai_strengths_weaknesses = {}
         
+        # Dynamic difficulty scaling system
+        self.ai_difficulty_multipliers = {
+            "imperium": 1.0,
+            "guardian": 1.0,
+            "sandbox": 1.0,
+            "conquest": 1.0
+        }
+        
+        # AI learning and win/loss tracking
+        self.ai_learning_history = {
+            "imperium": [],
+            "guardian": [],
+            "sandbox": [],
+            "conquest": []
+        }
+        
+        self.ai_win_loss_records = {
+            "imperium": {"wins": 0, "losses": 0, "total_games": 0},
+            "guardian": {"wins": 0, "losses": 0, "total_games": 0},
+            "sandbox": {"wins": 0, "losses": 0, "total_games": 0},
+            "conquest": {"wins": 0, "losses": 0, "total_games": 0}
+        }
+        
     async def initialize(self):
         """Initialize the enhanced adversarial testing service"""
         self.custody_service = await CustodyProtocolService.initialize()
@@ -486,24 +509,84 @@ class EnhancedAdversarialTestingService:
     async def generate_diverse_adversarial_scenario(self, ai_types: List[str], 
                                                   target_domain: Optional[ScenarioDomain] = None,
                                                   complexity: Optional[ScenarioComplexity] = None) -> Dict[str, Any]:
-        """Generate a dynamic adversarial scenario for the specified AIs"""
+        """Generate a dynamic adversarial scenario for the specified AIs with dynamic difficulty scaling"""
         try:
+            # Calculate dynamic scenario difficulty based on AI difficulty multipliers
+            scenario_difficulty = self._calculate_scenario_difficulty(ai_types)
+            
             # Select domain and complexity if not specified
             if target_domain is None:
                 target_domain = random.choice(list(ScenarioDomain))
             
             if complexity is None:
                 complexity = random.choice(list(ScenarioComplexity))
+                # Adjust complexity based on dynamic difficulty
+                complexity = self._adjust_complexity_for_difficulty(complexity, scenario_difficulty)
             
             # Generate dynamic scenario using AI capabilities
             scenario = await self._generate_dynamic_scenario(ai_types, target_domain, complexity)
             
-            logger.info(f"Generated dynamic adversarial scenario: {scenario['scenario_id']} for domain {target_domain.value}")
+            # Add dynamic difficulty information to scenario
+            scenario["dynamic_difficulty"] = {
+                "scenario_difficulty": scenario_difficulty,
+                "ai_difficulty_multipliers": {
+                    ai_type: self.ai_difficulty_multipliers.get(ai_type, 1.0)
+                    for ai_type in ai_types
+                },
+                "win_loss_records": {
+                    ai_type: self.ai_win_loss_records.get(ai_type, {"wins": 0, "losses": 0, "total_games": 0})
+                    for ai_type in ai_types
+                }
+            }
+            
+            logger.info(f"Generated dynamic adversarial scenario: {scenario['scenario_id']} for domain {target_domain.value} with difficulty {scenario_difficulty:.2f}")
             return scenario
             
         except Exception as e:
             logger.error(f"Error generating diverse adversarial scenario: {str(e)}")
             return {"error": str(e)}
+    
+    def _adjust_complexity_for_difficulty(self, base_complexity: ScenarioComplexity, difficulty_multiplier: float) -> ScenarioComplexity:
+        """Adjust scenario complexity based on dynamic difficulty multiplier"""
+        try:
+            # Define complexity progression
+            complexity_levels = [
+                ScenarioComplexity.BASIC,
+                ScenarioComplexity.INTERMEDIATE,
+                ScenarioComplexity.ADVANCED,
+                ScenarioComplexity.EXPERT,
+                ScenarioComplexity.MASTER
+            ]
+            
+            # Find current complexity index
+            try:
+                current_index = complexity_levels.index(base_complexity)
+            except ValueError:
+                current_index = 1  # Default to intermediate
+            
+            # Adjust based on difficulty multiplier
+            if difficulty_multiplier >= 2.0:
+                # High difficulty - increase complexity
+                new_index = min(current_index + 2, len(complexity_levels) - 1)
+            elif difficulty_multiplier >= 1.5:
+                # Medium-high difficulty - increase complexity slightly
+                new_index = min(current_index + 1, len(complexity_levels) - 1)
+            elif difficulty_multiplier <= 0.75:
+                # Low difficulty - decrease complexity
+                new_index = max(current_index - 1, 0)
+            else:
+                # Normal difficulty - keep current complexity
+                new_index = current_index
+            
+            adjusted_complexity = complexity_levels[new_index]
+            
+            logger.info(f"Adjusted complexity: {base_complexity} → {adjusted_complexity} (difficulty: {difficulty_multiplier:.2f})")
+            
+            return adjusted_complexity
+            
+        except Exception as e:
+            logger.error(f"Error adjusting complexity for difficulty: {str(e)}")
+            return base_complexity
     
     async def _generate_dynamic_scenario(self, ai_types: List[str], target_domain: ScenarioDomain, complexity: ScenarioComplexity) -> Dict[str, Any]:
         """Generate a dynamic scenario without relying on templates"""
@@ -2426,13 +2509,24 @@ class EnhancedAdversarialTestingService:
             else:
                 competition_type = "no_winners"
             
+            # Update win/loss records and apply dynamic difficulty scaling
+            await self._update_win_loss_records(winners, losers)
+            await self._apply_dynamic_difficulty_scaling(winners, losers)
+            
+            # Trigger learning from winners and losers
+            await self._trigger_ai_learning(winners, losers, results)
+            
             return {
                 "winners": winners,
                 "losers": losers,
                 "rankings": rankings,
                 "competition_type": competition_type,
                 "max_score": max_score,
-                "participant_count": len(valid_results)
+                "participant_count": len(valid_results),
+                "difficulty_changes": {
+                    ai_type: self.ai_difficulty_multipliers[ai_type] 
+                    for ai_type in valid_results.keys()
+                }
             }
             
         except Exception as e:
@@ -2443,6 +2537,211 @@ class EnhancedAdversarialTestingService:
                 "rankings": [],
                 "competition_type": "error"
             }
+    
+    async def _update_win_loss_records(self, winners: List[str], losers: List[str]):
+        """Update win/loss records for all participating AIs"""
+        try:
+            all_participants = winners + losers
+            
+            for ai_type in all_participants:
+                if ai_type in self.ai_win_loss_records:
+                    self.ai_win_loss_records[ai_type]["total_games"] += 1
+                    
+                    if ai_type in winners:
+                        self.ai_win_loss_records[ai_type]["wins"] += 1
+                    else:
+                        self.ai_win_loss_records[ai_type]["losses"] += 1
+                    
+                    logger.info(f"Updated {ai_type} record: {self.ai_win_loss_records[ai_type]}")
+                    
+        except Exception as e:
+            logger.error(f"Error updating win/loss records: {str(e)}")
+    
+    async def _apply_dynamic_difficulty_scaling(self, winners: List[str], losers: List[str]):
+        """Apply dynamic difficulty scaling based on win/loss results"""
+        try:
+            # Winners get +0.5 difficulty multiplier
+            for winner in winners:
+                if winner in self.ai_difficulty_multipliers:
+                    current_multiplier = self.ai_difficulty_multipliers[winner]
+                    new_multiplier = min(current_multiplier + 0.5, 3.0)  # Cap at 3.0
+                    self.ai_difficulty_multipliers[winner] = new_multiplier
+                    logger.info(f"🏆 {winner} WON! Difficulty increased: {current_multiplier:.2f} → {new_multiplier:.2f}")
+            
+            # Losers get -0.25 difficulty multiplier
+            for loser in losers:
+                if loser in self.ai_difficulty_multipliers:
+                    current_multiplier = self.ai_difficulty_multipliers[loser]
+                    new_multiplier = max(current_multiplier - 0.25, 0.5)  # Minimum 0.5
+                    self.ai_difficulty_multipliers[loser] = new_multiplier
+                    logger.info(f"💔 {loser} LOST! Difficulty decreased: {current_multiplier:.2f} → {new_multiplier:.2f}")
+            
+            # Log current difficulty multipliers
+            logger.info(f"Current difficulty multipliers: {self.ai_difficulty_multipliers}")
+            
+        except Exception as e:
+            logger.error(f"Error applying dynamic difficulty scaling: {str(e)}")
+    
+    async def _trigger_ai_learning(self, winners: List[str], losers: List[str], results: Dict[str, Any]):
+        """Trigger learning for winners and losers based on competition results"""
+        try:
+            # Winners learn from their success
+            for winner in winners:
+                await self._learn_from_victory(winner, results.get(winner, {}))
+            
+            # Losers learn from their failure and winners' success
+            for loser in losers:
+                winner_results = {}
+                if winners:
+                    # Get the best winner's result for learning
+                    best_winner = winners[0]
+                    winner_results = results.get(best_winner, {})
+                
+                await self._learn_from_defeat(loser, results.get(loser, {}), winner_results)
+            
+        except Exception as e:
+            logger.error(f"Error triggering AI learning: {str(e)}")
+    
+    async def _learn_from_victory(self, ai_type: str, result: Dict[str, Any]):
+        """AI learns from victory - reinforces successful strategies"""
+        try:
+            learning_event = {
+                "type": "victory_learning",
+                "ai_type": ai_type,
+                "timestamp": datetime.utcnow().isoformat(),
+                "score": result.get("score", 0),
+                "feedback": result.get("feedback", ""),
+                "lessons_learned": [
+                    "Reinforce successful strategies",
+                    "Maintain high performance standards",
+                    "Continue innovative approaches"
+                ],
+                "difficulty_multiplier": self.ai_difficulty_multipliers[ai_type]
+            }
+            
+            self.ai_learning_history[ai_type].append(learning_event)
+            
+            # Apply learning to AI agent
+            await self._apply_victory_learning(ai_type, learning_event)
+            
+            logger.info(f"🎓 {ai_type} learned from victory: {len(learning_event['lessons_learned'])} lessons")
+            
+        except Exception as e:
+            logger.error(f"Error in victory learning for {ai_type}: {str(e)}")
+    
+    async def _learn_from_defeat(self, ai_type: str, loser_result: Dict[str, Any], winner_result: Dict[str, Any]):
+        """AI learns from defeat - analyzes what went wrong and what winners did right"""
+        try:
+            learning_event = {
+                "type": "defeat_learning",
+                "ai_type": ai_type,
+                "timestamp": datetime.utcnow().isoformat(),
+                "loser_score": loser_result.get("score", 0),
+                "winner_score": winner_result.get("score", 0),
+                "loser_feedback": loser_result.get("feedback", ""),
+                "winner_feedback": winner_result.get("feedback", ""),
+                "lessons_learned": [
+                    "Analyze what went wrong",
+                    "Study winner's successful strategies",
+                    "Improve weak areas",
+                    "Adapt to new challenges"
+                ],
+                "difficulty_multiplier": self.ai_difficulty_multipliers[ai_type]
+            }
+            
+            self.ai_learning_history[ai_type].append(learning_event)
+            
+            # Apply learning to AI agent
+            await self._apply_defeat_learning(ai_type, learning_event, winner_result)
+            
+            logger.info(f"📚 {ai_type} learned from defeat: {len(learning_event['lessons_learned'])} lessons")
+            
+        except Exception as e:
+            logger.error(f"Error in defeat learning for {ai_type}: {str(e)}")
+    
+    async def _apply_victory_learning(self, ai_type: str, learning_event: Dict[str, Any]):
+        """Apply victory learning to the AI agent"""
+        try:
+            # Update AI agent's learning with successful strategies
+            if hasattr(self, 'learning_service') and self.learning_service:
+                await self.learning_service.record_learning_event(
+                    ai_type=ai_type,
+                    event_type="victory",
+                    score=learning_event["score"],
+                    feedback=learning_event["feedback"],
+                    lessons=learning_event["lessons_learned"]
+                )
+            
+            # Update agent metrics with success
+            if hasattr(self, 'agent_metrics_service') and self.agent_metrics_service:
+                await self.agent_metrics_service.update_agent_metrics(
+                    ai_type=ai_type,
+                    success=True,
+                    score=learning_event["score"],
+                    difficulty_multiplier=learning_event["difficulty_multiplier"]
+                )
+                
+        except Exception as e:
+            logger.error(f"Error applying victory learning for {ai_type}: {str(e)}")
+    
+    async def _apply_defeat_learning(self, ai_type: str, learning_event: Dict[str, Any], winner_result: Dict[str, Any]):
+        """Apply defeat learning to the AI agent"""
+        try:
+            # Update AI agent's learning with failure analysis and winner strategies
+            if hasattr(self, 'learning_service') and self.learning_service:
+                await self.learning_service.record_learning_event(
+                    ai_type=ai_type,
+                    event_type="defeat",
+                    score=learning_event["loser_score"],
+                    feedback=f"Lost to winner with score {learning_event['winner_score']}. {learning_event['loser_feedback']}",
+                    lessons=learning_event["lessons_learned"],
+                    winner_strategies=winner_result.get("approach", "")
+                )
+            
+            # Update agent metrics with failure
+            if hasattr(self, 'agent_metrics_service') and self.agent_metrics_service:
+                await self.agent_metrics_service.update_agent_metrics(
+                    ai_type=ai_type,
+                    success=False,
+                    score=learning_event["loser_score"],
+                    difficulty_multiplier=learning_event["difficulty_multiplier"]
+                )
+                
+        except Exception as e:
+            logger.error(f"Error applying defeat learning for {ai_type}: {str(e)}")
+    
+    def _calculate_scenario_difficulty(self, ai_types: List[str]) -> float:
+        """Calculate scenario difficulty based on AI difficulty multipliers"""
+        try:
+            if not ai_types:
+                return 1.0
+            
+            # Calculate average difficulty multiplier of participating AIs
+            total_multiplier = sum(self.ai_difficulty_multipliers.get(ai_type, 1.0) for ai_type in ai_types)
+            average_difficulty = total_multiplier / len(ai_types)
+            
+            # Ensure difficulty is within reasonable bounds (0.5 to 3.0)
+            scenario_difficulty = max(0.5, min(3.0, average_difficulty))
+            
+            logger.info(f"Calculated scenario difficulty: {scenario_difficulty:.2f} (AIs: {ai_types}, multipliers: {[self.ai_difficulty_multipliers.get(ai, 1.0) for ai in ai_types]})")
+            
+            return scenario_difficulty
+            
+        except Exception as e:
+            logger.error(f"Error calculating scenario difficulty: {str(e)}")
+            return 1.0
+    
+    def get_ai_difficulty_multipliers(self) -> Dict[str, float]:
+        """Get current difficulty multipliers for all AIs"""
+        return self.ai_difficulty_multipliers.copy()
+    
+    def get_ai_win_loss_records(self) -> Dict[str, Dict[str, int]]:
+        """Get current win/loss records for all AIs"""
+        return self.ai_win_loss_records.copy()
+    
+    def get_ai_learning_history(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get learning history for all AIs"""
+        return self.ai_learning_history.copy()
     
     def _calculate_xp_award(self, complexity: str) -> int:
         """Calculate XP award based on scenario complexity"""
