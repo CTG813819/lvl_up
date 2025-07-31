@@ -1,0 +1,96 @@
+{
+  "category_generation": {
+    "base_categories": {
+      "knowledge_verification": {
+        "base_topics": [
+          "general knowledge",
+          "basic concepts"
+        ],
+        "growth_pattern": "expands with learned subjects",
+        "difficulty_scaling": "based on AI level and learning depth"
+      },
+      "code_quality": {
+        "base_topics": [
+          "code review",
+          "best practices"
+        ],
+        "growth_pattern": "adds new languages and frameworks learned",
+        "difficulty_scaling": "based on complexity of learned code"
+      },
+      "security_awareness": {
+        "base_topics": [
+          "basic security",
+          "input validation"
+        ],
+        "growth_pattern": "adds new security threats and vulnerabilities learned",
+        "difficulty_scaling": "based on security knowledge depth"
+      },
+      "performance_optimization": {
+        "base_topics": [
+          "basic optimization",
+          "resource management"
+        ],
+        "growth_pattern": "adds new optimization techniques learned",
+        "difficulty_scaling": "based on performance knowledge"
+      },
+      "innovation_capability": {
+        "base_topics": [
+          "creative thinking",
+          "problem solving"
+        ],
+        "growth_pattern": "adds new innovation patterns learned",
+        "difficulty_scaling": "based on innovation track record"
+      },
+      "self_improvement": {
+        "base_topics": [
+          "learning ability",
+          "adaptation"
+        ],
+        "growth_pattern": "adds new self-improvement methods learned",
+        "difficulty_scaling": "based on improvement rate"
+      },
+      "cross_ai_collaboration": {
+        "base_topics": [
+          "communication",
+          "coordination"
+        ],
+        "growth_pattern": "adds new collaboration patterns learned",
+        "difficulty_scaling": "based on collaboration success"
+      },
+      "experimental_validation": {
+        "base_topics": [
+          "hypothesis testing",
+          "experiment design"
+        ],
+        "growth_pattern": "adds new experimental methods learned",
+        "difficulty_scaling": "based on experimental complexity"
+      }
+    },
+    "learning_based_expansion": {
+      "trigger": "new_subject_learned",
+      "expansion_rules": {
+        "knowledge_verification": "Add learned subjects to test topics",
+        "code_quality": "Add new programming languages/frameworks",
+        "security_awareness": "Add new security threats/vulnerabilities",
+        "performance_optimization": "Add new optimization techniques",
+        "innovation_capability": "Add new innovation patterns",
+        "self_improvement": "Add new learning methods",
+        "cross_ai_collaboration": "Add new collaboration patterns",
+        "experimental_validation": "Add new experimental methods"
+      }
+    },
+    "difficulty_calculation": {
+      "base_difficulty": "AI level * 10",
+      "learning_bonus": "Number of subjects learned * 5",
+      "success_bonus": "Recent test success rate * 20",
+      "max_difficulty": 100
+    }
+  },
+  "ai_learning_tracking": {
+    "subjects_learned": {},
+    "learning_depth": {},
+    "innovation_patterns": {},
+    "collaboration_success": {},
+    "experimental_methods": {}
+  }
+}

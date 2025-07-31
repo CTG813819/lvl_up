@@ -1,0 +1,260 @@
+{
+  "timestamp": "2025-07-18T21:35:46.579545",
+  "files_analyzed": [
+    "lib\\ai_brain.dart",
+    "lib\\guardian_service.dart",
+    "lib\\main.dart",
+    "lib\\mechanicum.dart",
+    "lib\\mission_provider.dart",
+    "lib\\side_menu.dart",
+    "lib\\terra_extension_screen.dart",
+    "lib\\providers\\ai_growth_analytics_provider.dart",
+    "lib\\providers\\ai_learning_provider.dart",
+    "lib\\providers\\autonomous_ai_orchestrator.dart",
+    "lib\\providers\\conquest_ai_provider.dart",
+    "lib\\providers\\proposal_provider.dart",
+    "lib\\screens\\audit_results_screen.dart",
+    "lib\\screens\\black_library_screen.dart",
+    "lib\\screens\\book_of_lorgar_screen.dart",
+    "lib\\screens\\custodes_protocol_screen.dart",
+    "lib\\screens\\imperium_proposals_screen.dart",
+    "lib\\services\\conquest_app_learning_service.dart",
+    "lib\\services\\mission_sync_service.dart",
+    "lib\\services\\websocket_service.dart",
+    "lib\\widgets\\ai_growth_analytics_dashboard.dart",
+    "lib\\widgets\\ai_learning_dashboard.dart",
+    "lib\\widgets\\approval_dashboard.dart",
+    "lib\\widgets\\front_view.dart"
+  ],
+  "endpoints_found": {
+    "lib\\ai_brain.dart": [
+      "ws://34.202.215.209:8000/api/notifications/ws"
+    ],
+    "lib\\guardian_service.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/guardian/security-status",
+      "${NetworkConfig.apiBaseUrl}/api/codex/",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/status",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/issues",
+      "${NetworkConfig.apiBaseUrl}/api/guardian/code-review",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/monitoring",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/trigger-scan",
+      "${NetworkConfig.apiBaseUrl}/api/guardian/health-status",
+      "${NetworkConfig.apiBaseUrl}/api/guardian/",
+      "${NetworkConfig.apiBaseUrl}/api/codex/log",
+      "${NetworkConfig.apiBaseUrl}/api/guardian/threat-detection",
+      "${NetworkConfig.apiBaseUrl}/api/guardian/health-check",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/improvements"
+    ],
+    "lib\\main.dart": [
+      "ws://34.202.215.209:8000/api/notifications/ws"
+    ],
+    "lib\\mechanicum.dart": [
+      "ws://34.202.215.209:8000/api/notifications/ws"
+    ],
+    "lib\\mission_provider.dart": [
+      "ws://34.202.215.209:8000/api/notifications/ws"
+    ],
+    "lib\\side_menu.dart": [
+      "http://34.202.215.209:8000/api/terra/extensions/{id}"
+    ],
+    "lib\\terra_extension_screen.dart": [
+      "http://34.202.215.209:8000/api/terra/extensions"
+    ],
+    "lib\\providers\\ai_growth_analytics_provider.dart": [
+      "$backendUrl/api/growth/analysis",
+      "$backendUrl/api/proposals",
+      "$backendUrl/api/imperium/agents/{id}/topics",
+      "$backendUrl/api/learning/data",
+      "$backendUrl/api/growth/insights",
+      "$backendUrl/api/learning/insights/{id}",
+      "$backendUrl/api/imperium/agents"
+    ],
+    "lib\\providers\\ai_learning_provider.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/imperium/learning/data",
+      "${ProposalProvider.backendUrl}/api/proposals/quotas",
+      "${ProposalProvider.backendUrl}/api/imperium/agents",
+      "${ProposalProvider.backendUrl}/api/imperium/dashboard",
+      "${ProposalProvider.backendUrl}/api/learning/debug-log"
+    ],
+    "lib\\providers\\autonomous_ai_orchestrator.dart": [
+      "$_currentBackendUrl/api/ai/learning/cross-ai"
+    ],
+    "lib\\providers\\conquest_ai_provider.dart": [
+      "${NetworkConfig.backendUrl}/api/conquest/improve-app",
+      "${NetworkConfig.backendUrl}/api/conquest/force-work",
+      "${NetworkConfig.backendUrl}/api/conquest/deployments"
+    ],
+    "lib\\providers\\proposal_provider.dart": [
+      "$_backendUrl/api/proposals/accept-all",
+      "$_backendUrl/api/proposals/reset-all",
+      "$_backendUrl/api/proposals/{id}/reject",
+      "$_backendUrl/api/notifications/send",
+      "$_backendUrl/api/guardian/suggestions",
+      "ws://34.202.215.209:8000/api/notifications/ws",
+      "$_backendUrl/api/sandbox/experiments",
+      "$_backendUrl/api/proposals/cleanup-daily",
+      "$_backendUrl/api/oath-papers/enhanced-learning",
+      "$_backendUrl/api/oath-papers",
+      "$_backendUrl/api/proposals",
+      "$_backendUrl/api/proposals/{id}/accept",
+      "$_backendUrl/api/proposals?status=pending"
+    ],
+    "lib\\screens\\audit_results_screen.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/guardian/health-check",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/status"
+    ],
+    "lib\\screens\\black_library_screen.dart": [
+      "${NetworkConfig.baseUrl}/api/custody/",
+      "${NetworkConfig.baseUrl}/api/agents/status"
+    ],
+    "lib\\screens\\book_of_lorgar_screen.dart": [
+      "http://34.202.215.209:8000/api/ai/research-subject",
+      "http://34.202.215.209:8000/api/ai/upload-training-data"
+    ],
+    "lib\\screens\\custodes_protocol_screen.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/custody/",
+      "${NetworkConfig.apiBaseUrl}/api/custody/test/{id}/force"
+    ],
+    "lib\\screens\\imperium_proposals_screen.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/proposals/{id}/accept",
+      "${NetworkConfig.apiBaseUrl}/api/proposals?status=pending",
+      "${NetworkConfig.apiBaseUrl}/api/proposals/{id}/apply"
+    ],
+    "lib\\services\\conquest_app_learning_service.dart": [
+      "$_conquestBackendUrl/api/conquest/app-performance",
+      "$_baseUrl/api/error",
+      "$_baseUrl/api/feedback",
+      "$_baseUrl/api/analytics",
+      "$_conquestBackendUrl/api/conquest/app-usage",
+      "$_baseUrl/api/performance",
+      "$_conquestBackendUrl/api/conquest/app-feedback",
+      "$_conquestBackendUrl/api/conquest/app-error",
+      "$_baseUrl/api/usage"
+    ],
+    "lib\\services\\mission_sync_service.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/missions/statistics",
+      "${NetworkConfig.apiBaseUrl}/api/missions/health-check",
+      "${NetworkConfig.apiBaseUrl}/api/missions/sync"
+    ],
+    "lib\\services\\websocket_service.dart": [
+      "ws://34.202.215.209:8000/api/notifications/ws"
+    ],
+    "lib\\widgets\\ai_growth_analytics_dashboard.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/imperium/agents"
+    ],
+    "lib\\widgets\\ai_learning_dashboard.dart": [
+      "${ProposalProvider.backendUrl}/api/learning/test",
+      "${ProposalProvider.backendUrl}/api/learning/effectiveness"
+    ],
+    "lib\\widgets\\approval_dashboard.dart": [
+      "${NetworkConfig.backendUrl}/api/approval/pending",
+      "${NetworkConfig.backendUrl}/api/approval/stats/overview"
+    ],
+    "lib\\widgets\\front_view.dart": [
+      "${NetworkConfig.apiBaseUrl}/api/imperium/trusted-sources",
+      "${NetworkConfig.apiBaseUrl}/api/imperium/agents"
+    ]
+  },
+  "working_endpoints_used": [],
+  "failed_endpoints_used": [],
+  "unknown_endpoints": [
+    "ws://34.202.215.209:8000/api/notifications/ws",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/security-status",
+    "${NetworkConfig.apiBaseUrl}/api/codex/",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/status",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/issues",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/code-review",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/monitoring",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/trigger-scan",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/health-status",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/",
+    "${NetworkConfig.apiBaseUrl}/api/codex/log",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/threat-detection",
+    "${NetworkConfig.apiBaseUrl}/api/guardian/health-check",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/improvements",
+    "http://34.202.215.209:8000/api/terra/extensions/{id}",
+    "http://34.202.215.209:8000/api/terra/extensions",
+    "$backendUrl/api/growth/analysis",
+    "$backendUrl/api/proposals",
+    "$backendUrl/api/imperium/agents/{id}/topics",
+    "$backendUrl/api/learning/data",
+    "$backendUrl/api/growth/insights",
+    "$backendUrl/api/learning/insights/{id}",
+    "$backendUrl/api/imperium/agents",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/learning/data",
+    "${ProposalProvider.backendUrl}/api/proposals/quotas",
+    "${ProposalProvider.backendUrl}/api/imperium/agents",
+    "${ProposalProvider.backendUrl}/api/imperium/dashboard",
+    "${ProposalProvider.backendUrl}/api/learning/debug-log",
+    "$_currentBackendUrl/api/ai/learning/cross-ai",
+    "${NetworkConfig.backendUrl}/api/conquest/improve-app",
+    "${NetworkConfig.backendUrl}/api/conquest/force-work",
+    "${NetworkConfig.backendUrl}/api/conquest/deployments",
+    "$_backendUrl/api/proposals/accept-all",
+    "$_backendUrl/api/proposals/reset-all",
+    "$_backendUrl/api/proposals/{id}/reject",
+    "$_backendUrl/api/notifications/send",
+    "$_backendUrl/api/guardian/suggestions",
+    "$_backendUrl/api/sandbox/experiments",
+    "$_backendUrl/api/proposals/cleanup-daily",
+    "$_backendUrl/api/oath-papers/enhanced-learning",
+    "$_backendUrl/api/oath-papers",
+    "$_backendUrl/api/proposals",
+    "$_backendUrl/api/proposals/{id}/accept",
+    "$_backendUrl/api/proposals?status=pending",
+    "${NetworkConfig.baseUrl}/api/custody/",
+    "${NetworkConfig.baseUrl}/api/agents/status",
+    "http://34.202.215.209:8000/api/ai/research-subject",
+    "http://34.202.215.209:8000/api/ai/upload-training-data",
+    "${NetworkConfig.apiBaseUrl}/api/custody/",
+    "${NetworkConfig.apiBaseUrl}/api/custody/test/{id}/force",
+    "${NetworkConfig.apiBaseUrl}/api/proposals/{id}/accept",
+    "${NetworkConfig.apiBaseUrl}/api/proposals?status=pending",
+    "${NetworkConfig.apiBaseUrl}/api/proposals/{id}/apply",
+    "$_conquestBackendUrl/api/conquest/app-performance",
+    "$_baseUrl/api/error",
+    "$_baseUrl/api/feedback",
+    "$_baseUrl/api/analytics",
+    "$_conquestBackendUrl/api/conquest/app-usage",
+    "$_baseUrl/api/performance",
+    "$_conquestBackendUrl/api/conquest/app-feedback",
+    "$_conquestBackendUrl/api/conquest/app-error",
+    "$_baseUrl/api/usage",
+    "${NetworkConfig.apiBaseUrl}/api/missions/statistics",
+    "${NetworkConfig.apiBaseUrl}/api/missions/health-check",
+    "${NetworkConfig.apiBaseUrl}/api/missions/sync",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/agents",
+    "${ProposalProvider.backendUrl}/api/learning/test",
+    "${ProposalProvider.backendUrl}/api/learning/effectiveness",
+    "${NetworkConfig.backendUrl}/api/approval/pending",
+    "${NetworkConfig.backendUrl}/api/approval/stats/overview",
+    "${NetworkConfig.apiBaseUrl}/api/imperium/trusted-sources"
+  ],
+  "files_with_issues": [
+    "lib\\ai_brain.dart",
+    "lib\\guardian_service.dart",
+    "lib\\main.dart",
+    "lib\\mechanicum.dart",
+    "lib\\mission_provider.dart",
+    "lib\\side_menu.dart",
+    "lib\\terra_extension_screen.dart",
+    "lib\\providers\\ai_growth_analytics_provider.dart",
+    "lib\\providers\\ai_learning_provider.dart",
+    "lib\\providers\\autonomous_ai_orchestrator.dart",
+    "lib\\providers\\conquest_ai_provider.dart",
+    "lib\\providers\\proposal_provider.dart",
+    "lib\\screens\\audit_results_screen.dart",
+    "lib\\screens\\black_library_screen.dart",
+    "lib\\screens\\book_of_lorgar_screen.dart",
+    "lib\\screens\\custodes_protocol_screen.dart",
+    "lib\\screens\\imperium_proposals_screen.dart",
+    "lib\\services\\conquest_app_learning_service.dart",
+    "lib\\services\\mission_sync_service.dart",
+    "lib\\services\\websocket_service.dart",
+    "lib\\widgets\\ai_growth_analytics_dashboard.dart",
+    "lib\\widgets\\ai_learning_dashboard.dart",
+    "lib\\widgets\\approval_dashboard.dart",
+    "lib\\widgets\\front_view.dart"
+  ],
+  "files_clean": []
+}

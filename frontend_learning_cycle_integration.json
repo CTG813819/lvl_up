@@ -1,0 +1,37 @@
+{
+  "frontend_learning_cycle_integration": {
+    "black_library_screen": {
+      "learning_cycle_widget": {
+        "type": "LearningCycleStatusWidget",
+        "features": [
+          "Real-time cycle status display",
+          "Learning progress visualization",
+          "AI participation indicators",
+          "Knowledge point counters"
+        ],
+        "data_sources": [
+          "/api/learning-cycles/status",
+          "/api/custody/analytics",
+          "/api/agents"
+        ]
+      },
+      "enhanced_learning_trees": {
+        "real_time_updates": "Update based on learning cycle data",
+        "knowledge_flow": "Animated knowledge flow visualization",
+        "cycle_progress": "Show learning cycle progress in trees"
+      }
+    },
+    "custody_analytics_screen": {
+      "learning_cycle_metrics": {
+        "cycle_history": "Historical learning cycle data",
+        "effectiveness_metrics": "Test effectiveness based on learning",
+        "ai_progression": "AI progression through learning cycles"
+      }
+    },
+    "real_time_updates": {
+      "polling_interval": "30 seconds",
+      "websocket_support": "For real-time updates",
+      "offline_caching": "Local storage for offline viewing"
+    }
+  }
+}
