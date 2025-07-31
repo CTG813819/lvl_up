@@ -56,29 +56,46 @@ class _TerminalWidgetState extends State<TerminalWidget> {
   void _connectToBackend() async {
     try {
       final service = AILearningService();
-      final status = await service.getSystemStatus();
-      
-      setState(() {
-        _isConnected = true;
-        _currentStatus = 'Connected';
-        _statusColor = Colors.green;
-      });
-      
-      _addLine('✅ Connected to AI Learning System', TerminalType.success);
-      _addLine('System Status: ${status['status']}', TerminalType.info);
-      _addLine('Active AIs: ${status['activeAIs']?.join(', ') ?? 'None'}', TerminalType.info);
-      _addLine('Ready for commands. Type "help" for available commands.', TerminalType.system);
-      
+      final isConnected = await service.testBackendConnection(
+        userId: 'terminal-user',
+      );
+
+      if (isConnected) {
+        final status = await service.getSystemStatus();
+
+        setState(() {
+          _isConnected = true;
+          _currentStatus = 'Connected';
+          _statusColor = Colors.green;
+        });
+
+        _addLine('✅ Connected to AI Learning System', TerminalType.success);
+        _addLine('System Status: ${status['status']}', TerminalType.info);
+        _addLine(
+          'Active AIs: ${status['activeAIs']?.join(', ') ?? 'None'}',
+          TerminalType.info,
+        );
+        _addLine(
+          'Ready for commands. Type "help" for available commands.',
+          TerminalType.system,
+        );
+      } else {
+        throw Exception('Connection test failed');
+      }
     } catch (e) {
       setState(() {
         _isConnected = false;
         _currentStatus = 'Connection Failed';
         _statusColor = Colors.red;
       });
-      
+
       _addLine('❌ Failed to connect to backend: $e', TerminalType.error);
+      _addLine(
+        'Connection errors are being tracked and will be summarized in the next connection notification.',
+        TerminalType.info,
+      );
       _addLine('Retrying in 5 seconds...', TerminalType.warning);
-      
+
       Future.delayed(const Duration(seconds: 5), () {
         if (mounted) _connectToBackend();
       });
@@ -97,11 +114,14 @@ class _TerminalWidgetState extends State<TerminalWidget> {
     try {
       final service = AILearningService();
       final status = await service.getSystemStatus();
-      
+
       if (mounted) {
         _addLine('📊 System Update: ${status['status']}', TerminalType.info);
         if (status['recentActivity'] != null) {
-          _addLine('Recent Activity: ${status['recentActivity']}', TerminalType.info);
+          _addLine(
+            'Recent Activity: ${status['recentActivity']}',
+            TerminalType.info,
+          );
         }
       }
     } catch (e) {
@@ -111,20 +131,18 @@ class _TerminalWidgetState extends State<TerminalWidget> {
 
   void _addLine(String text, TerminalType type) {
     if (!mounted) return;
-    
+
     setState(() {
-      _lines.add(TerminalLine(
-        text: text,
-        type: type,
-        timestamp: DateTime.now(),
-      ));
-      
+      _lines.add(
+        TerminalLine(text: text, type: type, timestamp: DateTime.now()),
+      );
+
       // Keep only the last maxLines
       if (_lines.length > widget.maxLines) {
         _lines.removeRange(0, _lines.length - widget.maxLines);
       }
     });
-    
+
     if (widget.autoScroll) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -140,7 +158,7 @@ class _TerminalWidgetState extends State<TerminalWidget> {
 
   void _executeCommand(String command) {
     _addLine('> $command', TerminalType.command);
-    
+
     switch (command.toLowerCase().trim()) {
       case 'help':
         _showHelp();
@@ -178,7 +196,10 @@ class _TerminalWidgetState extends State<TerminalWidget> {
     _addLine('  status        - Show system status', TerminalType.info);
     _addLine('  ai status     - Show AI learning status', TerminalType.info);
     _addLine('  learning cycle - Trigger AI learning cycle', TerminalType.info);
-    _addLine('  github status - Show GitHub integration status', TerminalType.info);
+    _addLine(
+      '  github status - Show GitHub integration status',
+      TerminalType.info,
+    );
     _addLine('  deploy        - Trigger deployment', TerminalType.info);
     _addLine('  logs          - Show recent system logs', TerminalType.info);
     _addLine('  clear         - Clear terminal', TerminalType.info);
@@ -188,13 +209,22 @@ class _TerminalWidgetState extends State<TerminalWidget> {
     try {
       final service = AILearningService();
       final status = await service.getSystemStatus();
-      
+
       _addLine('📊 System Status:', TerminalType.info);
       _addLine('  Status: ${status['status']}', TerminalType.info);
-      _addLine('  Active AIs: ${status['activeAIs']?.join(', ') ?? 'None'}', TerminalType.info);
-      _addLine('  Learning Cycles: ${status['learningCycles'] ?? 0}', TerminalType.info);
+      _addLine(
+        '  Active AIs: ${status['activeAIs']?.join(', ') ?? 'None'}',
+        TerminalType.info,
+      );
+      _addLine(
+        '  Learning Cycles: ${status['learningCycles'] ?? 0}',
+        TerminalType.info,
+      );
       _addLine('  GitHub PRs: ${status['githubPRs'] ?? 0}', TerminalType.info);
-      _addLine('  Last Update: ${status['lastUpdate'] ?? 'Unknown'}', TerminalType.info);
+      _addLine(
+        '  Last Update: ${status['lastUpdate'] ?? 'Unknown'}',
+        TerminalType.info,
+      );
     } catch (e) {
       _addLine('❌ Failed to get status: $e', TerminalType.error);
     }
@@ -204,15 +234,27 @@ class _TerminalWidgetState extends State<TerminalWidget> {
     try {
       final service = AILearningService();
       final aiStatus = await service.getAIStatus();
-      
+
       _addLine('🤖 AI Learning Status:', TerminalType.info);
       for (final ai in ['Imperium', 'Guardian', 'Sandbox']) {
         final status = aiStatus[ai] ?? {};
         _addLine('  $ai:', TerminalType.info);
-        _addLine('    Status: ${status['status'] ?? 'Unknown'}', TerminalType.info);
-        _addLine('    Learning Cycles: ${status['learningCycles'] ?? 0}', TerminalType.info);
-        _addLine('    Success Rate: ${status['successRate'] ?? 0}%', TerminalType.info);
-        _addLine('    Last Activity: ${status['lastActivity'] ?? 'Unknown'}', TerminalType.info);
+        _addLine(
+          '    Status: ${status['status'] ?? 'Unknown'}',
+          TerminalType.info,
+        );
+        _addLine(
+          '    Learning Cycles: ${status['learningCycles'] ?? 0}',
+          TerminalType.info,
+        );
+        _addLine(
+          '    Success Rate: ${status['successRate'] ?? 0}%',
+          TerminalType.info,
+        );
+        _addLine(
+          '    Last Activity: ${status['lastActivity'] ?? 'Unknown'}',
+          TerminalType.info,
+        );
       }
     } catch (e) {
       _addLine('❌ Failed to get AI status: $e', TerminalType.error);
@@ -221,11 +263,15 @@ class _TerminalWidgetState extends State<TerminalWidget> {
 
   void _triggerLearningCycle() async {
     _addLine('🔄 Triggering AI learning cycle...', TerminalType.system);
-    
+
     try {
       final service = AILearningService();
-      final result = await service.triggerLearningCycle('Imperium', 'test-proposal', 'passed');
-      
+      final result = await service.triggerLearningCycle(
+        'Imperium',
+        'test-proposal',
+        'passed',
+      );
+
       _addLine('✅ Learning cycle triggered successfully', TerminalType.success);
       _addLine('Result: $result', TerminalType.info);
     } catch (e) {
@@ -237,12 +283,24 @@ class _TerminalWidgetState extends State<TerminalWidget> {
     try {
       final service = AILearningService();
       final githubStatus = await service.getGitHubStatus();
-      
+
       _addLine('🔗 GitHub Integration Status:', TerminalType.info);
-      _addLine('  Repository: ${githubStatus['repository'] ?? 'Unknown'}', TerminalType.info);
-      _addLine('  Status: ${githubStatus['status'] ?? 'Unknown'}', TerminalType.info);
-      _addLine('  Last Push: ${githubStatus['lastPush'] ?? 'Unknown'}', TerminalType.info);
-      _addLine('  Open PRs: ${githubStatus['openPRs'] ?? 0}', TerminalType.info);
+      _addLine(
+        '  Repository: ${githubStatus['repository'] ?? 'Unknown'}',
+        TerminalType.info,
+      );
+      _addLine(
+        '  Status: ${githubStatus['status'] ?? 'Unknown'}',
+        TerminalType.info,
+      );
+      _addLine(
+        '  Last Push: ${githubStatus['lastPush'] ?? 'Unknown'}',
+        TerminalType.info,
+      );
+      _addLine(
+        '  Open PRs: ${githubStatus['openPRs'] ?? 0}',
+        TerminalType.info,
+      );
     } catch (e) {
       _addLine('❌ Failed to get GitHub status: $e', TerminalType.error);
     }
@@ -250,21 +308,21 @@ class _TerminalWidgetState extends State<TerminalWidget> {
 
   void _triggerDeployment() async {
     _addLine('🚀 Triggering deployment...', TerminalType.system);
-    
+
     try {
       // Simulate deployment process
       _addLine('📦 Building application...', TerminalType.info);
       await Future.delayed(const Duration(seconds: 2));
-      
+
       _addLine('🧪 Running tests...', TerminalType.info);
       await Future.delayed(const Duration(seconds: 2));
-      
+
       _addLine('🔒 Security scan...', TerminalType.info);
       await Future.delayed(const Duration(seconds: 1));
-      
+
       _addLine('📱 Creating APK...', TerminalType.info);
       await Future.delayed(const Duration(seconds: 3));
-      
+
       _addLine('✅ Deployment completed successfully!', TerminalType.success);
       _addLine('APK ready for download', TerminalType.info);
     } catch (e) {
@@ -274,11 +332,26 @@ class _TerminalWidgetState extends State<TerminalWidget> {
 
   void _showSystemLogs() async {
     _addLine('📋 Recent System Logs:', TerminalType.info);
-    _addLine('  [2024-01-15 10:30:15] AI Learning cycle completed', TerminalType.log);
-    _addLine('  [2024-01-15 10:25:42] GitHub PR #123 created', TerminalType.log);
-    _addLine('  [2024-01-15 10:20:18] Code update applied to Imperium', TerminalType.log);
-    _addLine('  [2024-01-15 10:15:33] Internet research completed', TerminalType.log);
-    _addLine('  [2024-01-15 10:10:07] Learning cycle initiated', TerminalType.log);
+    _addLine(
+      '  [2024-01-15 10:30:15] AI Learning cycle completed',
+      TerminalType.log,
+    );
+    _addLine(
+      '  [2024-01-15 10:25:42] GitHub PR #123 created',
+      TerminalType.log,
+    );
+    _addLine(
+      '  [2024-01-15 10:20:18] Code update applied to Imperium',
+      TerminalType.log,
+    );
+    _addLine(
+      '  [2024-01-15 10:15:33] Internet research completed',
+      TerminalType.log,
+    );
+    _addLine(
+      '  [2024-01-15 10:10:07] Learning cycle initiated',
+      TerminalType.log,
+    );
   }
 
   void _clearTerminal() {
@@ -330,20 +403,25 @@ class _TerminalWidgetState extends State<TerminalWidget> {
                 const Spacer(),
                 Text(
                   _currentStatus,
-                  style: TextStyle(
-                    color: _statusColor,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: _statusColor, fontSize: 12),
                 ),
                 if (widget.showControls) ...[
                   const SizedBox(width: 16),
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 16),
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     onPressed: _updateSystemStatus,
                     tooltip: 'Refresh Status',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white, size: 16),
+                    icon: const Icon(
+                      Icons.clear,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                     onPressed: _clearTerminal,
                     tooltip: 'Clear Terminal',
                   ),
@@ -351,7 +429,7 @@ class _TerminalWidgetState extends State<TerminalWidget> {
               ],
             ),
           ),
-          
+
           // Terminal Output
           Expanded(
             child: Container(
@@ -391,7 +469,7 @@ class _TerminalWidgetState extends State<TerminalWidget> {
               ),
             ),
           ),
-          
+
           // Command Input
           if (widget.showControls)
             Container(
@@ -474,12 +552,4 @@ class TerminalLine {
   });
 }
 
-enum TerminalType {
-  info,
-  success,
-  error,
-  warning,
-  system,
-  command,
-  log,
-} 
+enum TerminalType { info, success, error, warning, system, command, log }

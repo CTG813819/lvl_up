@@ -50,7 +50,7 @@ async def submit_extension(
 ):
     """Submit a new extension for Terra."""
     logger.info("DEBUG: submit_extension function called")
-    sckipit_service = SckipitService()
+    sckipit_service = await SckipitService.initialize()
     # If dart_code is not provided, generate it using sckipit
     dart_code = extension.dart_code
     if not dart_code:
@@ -382,7 +382,7 @@ async def analyze_with_ai(dart_code: str, description: str) -> Dict[str, Any]:
 async def ai_generate_dart_code(description: str) -> str:
     """Generate Dart code using AI based on description"""
     try:
-        sckipit_service = SckipitService()
+        sckipit_service = await SckipitService.initialize()
         return await sckipit_service.generate_dart_code_from_description_async(description)
     except Exception as e:
         logger.error(f"Error generating Dart code: {str(e)}")

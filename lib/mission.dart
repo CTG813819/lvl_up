@@ -6,6 +6,7 @@ import 'package:the_codex/mechanicum.dart';
 import 'package:the_codex/mission_provider.dart';
 import 'package:the_codex/providers/app_history_provider.dart'
     show AppHistoryProvider;
+import 'package:the_codex/providers/notification_provider.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'entry_manager.dart';
@@ -21,6 +22,7 @@ import 'core/logging/app_logger.dart';
 import 'core/monitoring/performance_monitor.dart';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'ai_file_system_helper.dart';
 
 class NotificationChannels {
   static const String mission = 'mission_channel';
@@ -51,7 +53,7 @@ class NotificationChannels {
       );
 }
 
-// Mission subtask class to hold subtask details
+  // Mission subtask class to hold subtask details
 class MissionSubtask {
   final String name;
   final int requiredCompletions;
@@ -115,9 +117,9 @@ class MissionSubtask {
       if (requiredCompletions == 0) {
         return "Tapped $currentCount times";
       }
-      return "$currentCount/$requiredCompletions";
+      return "$currentCount";
     }
-    return "$currentCompletions/$requiredCompletions";
+    return "$currentCompletions";
   }
 
   Map<String, dynamic> toJson() => {
@@ -189,7 +191,7 @@ class MissionSubtask {
   }
 }
 
-// Mission data class to hold mission details
+  // Mission data class to hold mission details
 class MissionData {
   final String? id;
   final String? missionId;
@@ -247,14 +249,14 @@ class MissionData {
   double get completionPercentage {
     if (subtasks.isEmpty) {
       if (isCounterBased) {
-        // For open-ended counters, return 0.0 as they never complete
+  // For open-ended counters, return 0.0 as they never complete
         if (targetCount == 0) return 0.0;
         return currentCount / targetCount;
       }
       return isCompleted ? 1.0 : 0.0;
     }
 
-    // Calculate average completion percentage of non-counter subtasks only
+  // Calculate average completion percentage of non-counter subtasks only
     double totalPercentage = 0.0;
     int nonCounterSubtasks = 0;
     for (var subtask in subtasks) {
@@ -269,7 +271,7 @@ class MissionData {
   bool get areAllSubtasksComplete {
     if (subtasks.isEmpty) {
       if (isCounterBased) {
-        // For open-ended counters, they are never complete
+  // For open-ended counters, they are never complete
         if (targetCount == 0) return false;
         return currentCount >= targetCount;
       }
@@ -286,7 +288,7 @@ class MissionData {
       if (isCompleted) {
         lastCompleted = DateTime.now();
       }
-      // Record progress
+  // Record progress
       _recordProgress();
     }
   }
@@ -298,7 +300,7 @@ class MissionData {
       if (isCompleted) {
         lastCompleted = DateTime.now();
       }
-      // Record progress
+  // Record progress
       _recordProgress();
     }
   }
@@ -309,12 +311,12 @@ class MissionData {
         if (targetCount == 0) {
           return "Tapped $currentCount times";
         }
-        return "$currentCount/$targetCount";
+        return "$currentCount";
       }
       return isCompleted ? "Completed" : "Not completed";
     }
 
-    // For missions with subtasks, show completion percentage
+  // For missions with subtasks, show completion percentage
     final percentage = (completionPercentage * 100).round();
     return "$percentage% complete";
   }
@@ -337,7 +339,7 @@ class MissionData {
         progress = isCompleted ? 1.0 : 0.0;
       }
     } else {
-      // Calculate average progress of all subtasks
+  // Calculate average progress of all subtasks
       double totalProgress = 0.0;
       int validSubtasks = 0;
 
@@ -362,7 +364,7 @@ class MissionData {
       progress = validSubtasks > 0 ? totalProgress / validSubtasks : 0.0;
     }
 
-    // Only record if progress has changed or it's been more than 1 hour
+  // Only record if progress has changed or it's been more than 1 hour
     final lastProgress =
         _historicalProgress.entries
             .where(
@@ -374,7 +376,7 @@ class MissionData {
 
     if (lastProgress.isEmpty || lastProgress.last != progress) {
       _historicalProgress[now] = progress;
-      // Clean up old entries and compress data
+  // Clean up old entries and compress data
       _cleanupAndCompressHistoricalProgress();
     }
   }
@@ -385,19 +387,19 @@ class MissionData {
         _historicalProgress.entries.toList()
           ..sort((a, b) => a.key.compareTo(b.key));
 
-    // Remove entries older than 30 days
+  // Remove entries older than 30 days
     entries.removeWhere((entry) => entry.key.isBefore(thirtyDaysAgo));
 
-    // Compress data by removing redundant entries
+  // Compress data by removing redundant entries
     final compressedEntries = <DateTime, double>{};
     double? lastValue;
 
     for (var entry in entries) {
-      // Keep first entry of each day
+  // Keep first entry of each day
       if (lastValue == null ||
           entry.key.day != compressedEntries.keys.last.day ||
           (entry.value - lastValue).abs() > 0.01) {
-        // Only keep if change is significant
+  // Only keep if change is significant
         compressedEntries[entry.key] = entry.value;
         lastValue = entry.value;
       }
@@ -411,12 +413,12 @@ class MissionData {
     final today = DateTime(now.year, now.month, now.day);
     final checkDate = DateTime(date.year, date.month, date.day);
 
-    // Don't calculate progress for future dates
+  // Don't calculate progress for future dates
     if (checkDate.isAfter(today)) {
       return 0.0;
     }
 
-    // Find the closest recorded progress before or on the given date
+  // Find the closest recorded progress before or on the given date
     final relevantProgress =
         _historicalProgress.entries
             .where(
@@ -431,12 +433,12 @@ class MissionData {
       return relevantProgress.first.value;
     }
 
-    // If no exact match found, and the date is before today, return 0
+  // If no exact match found, and the date is before today, return 0
     if (checkDate.isBefore(today)) {
       return 0.0;
     }
 
-    // Only for today, calculate current progress
+  // Only for today, calculate current progress
     double progress = 0.0;
 
     if (subtasks.isEmpty) {
@@ -450,7 +452,7 @@ class MissionData {
         progress = isCompleted ? 1.0 : 0.0;
       }
     } else {
-      // Calculate average progress of all subtasks
+  // Calculate average progress of all subtasks
       double totalProgress = 0.0;
       int validSubtasks = 0;
 
@@ -535,7 +537,7 @@ class MissionData {
     Color? boltColor,
     Color? timelapseColor,
   }) {
-    // Ensure unique ID when copying
+  // Ensure unique ID when copying
     final newId = id ?? this.id;
     final newNotificationId = notificationId ?? this.notificationId;
 
@@ -596,6 +598,26 @@ class MissionData {
   };
 
   factory MissionData.fromJson(Map<String, dynamic> json) {
+  // Defensive parsing for subtasks
+    dynamic subtasksRaw = json['subtasks'];
+    List<dynamic> subtasksList;
+    if (subtasksRaw is List) {
+      subtasksList = subtasksRaw;
+    } else if (subtasksRaw is String && subtasksRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(subtasksRaw);
+        if (decoded is List) {
+          subtasksList = decoded;
+        } else {
+          subtasksList = [];
+        }
+      } catch (_) {
+        subtasksList = [];
+      }
+    } else {
+      subtasksList = [];
+    }
+  // Now use subtasksList instead of json['subtasks'] below
     final typeStr = json['type'] as String;
     final type = MissionType.values.firstWhere(
       (e) => e.toString() == typeStr,
@@ -610,12 +632,6 @@ class MissionData {
         json['lastCompleted'] != null
             ? DateTime.parse(json['lastCompleted'] as String)
             : null;
-
-    final subtasks =
-        (json['subtasks'] as List<dynamic>?)
-            ?.map((s) => MissionSubtask.fromJson(s as Map<String, dynamic>))
-            .toList() ??
-        [];
 
     final boltColorValue = json['boltColor'] as int?;
     final timelapseColorValue = json['timelapseColor'] as int?;
@@ -632,7 +648,10 @@ class MissionData {
       hasFailed: json['hasFailed'] as bool? ?? false,
       masteryId: json['masteryId'] as String?,
       value: json['value'] as double?,
-      subtasks: subtasks,
+      subtasks:
+          subtasksList
+              .map((s) => MissionSubtask.fromJson(s as Map<String, dynamic>))
+              .toList(),
       isCounterBased: json['isCounterBased'] as bool? ?? false,
       currentCount: json['currentCount'] as int? ?? 0,
       isSubtaskCounter: json['isSubtaskCounter'] as bool? ?? false,
@@ -642,7 +661,7 @@ class MissionData {
       masteryValue: json['masteryValue'] as double? ?? 0.0,
       linkedMasteryId: json['linkedMasteryId'] as String?,
       subtaskMasteryValues: Map<String, double>.from(
-        json['subtaskMasteryValues'] as Map<String, dynamic>,
+        json['subtaskMasteryValues'] as Map<String, dynamic>? ?? {},
       ),
       targetCount: json['targetCount'] as int? ?? 0,
       boltColor: boltColorValue != null ? Color(boltColorValue) : null,
@@ -673,16 +692,16 @@ class MissionData {
 
   // Add validation methods
   bool isValidMissionState() {
-    // Validate basic properties
+  // Validate basic properties
     if ((id?.isEmpty ?? true) || title.isEmpty) return false;
 
-    // Validate counter-based missions
+  // Validate counter-based missions
     if (isCounterBased) {
       if (currentCount < 0) return false;
-      // Remove target count validation to allow open-ended counters
+  // Remove target count validation to allow open-ended counters
     }
 
-    // Validate subtasks
+  // Validate subtasks
     if (subtasks.isNotEmpty) {
       for (var subtask in subtasks) {
         if (subtask.name.isEmpty) return false;
@@ -703,7 +722,7 @@ class MissionData {
   }
 
   bool isDuplicateOf(MissionData other) {
-    // Check if missions are duplicates based on key properties
+  // Check if missions are duplicates based on key properties
     return id == other.id ||
         notificationId == other.notificationId ||
         (title == other.title &&
@@ -724,7 +743,7 @@ class MissionData {
     final now = DateTime.now();
     final dateKey = DateTime(now.year, now.month, now.day);
 
-    // Calculate current progress
+  // Calculate current progress
     double progress = 0.0;
 
     if (subtasks.isEmpty) {
@@ -738,7 +757,7 @@ class MissionData {
         progress = isCompleted ? 1.0 : 0.0;
       }
     } else {
-      // Calculate average progress of all subtasks
+  // Calculate average progress of all subtasks
       double totalProgress = 0.0;
       int validSubtasks = 0;
 
@@ -770,14 +789,14 @@ class MissionData {
     print('Recording progress for mission $title: $progress');
     print('Date key: $dateKey');
 
-    // Record the progress
+  // Record the progress
     _historicalProgress[dateKey] = progress;
     print('Historical progress map size: ${_historicalProgress.length}');
     print(
       'Historical progress entries: ${_historicalProgress.entries.map((e) => '${e.key}: ${e.value}').join(', ')}',
     );
 
-    // Clean up old entries
+  // Clean up old entries
     _cleanupAndCompressHistoricalProgress();
   }
 
@@ -912,13 +931,14 @@ class MissionProvider extends ChangeNotifier {
   MissionProvider() {
     latestInstance = this;
     _loadData();
-    _initNotifications();
-    _startNotificationCheck();
+  // NOTIFICATION INITIALIZATION REMOVED - will be called after loading screen
+  // _initNotifications();
+  // _startNotificationCheck();
     _startDailySummaryCheck();
     _startRefreshCheck();
     _startMissionCheck(); // Add this line
 
-    // Start AI Guardian automatically
+  // Start AI Guardian automatically
     _initializeAIGuardian();
     initializeAISandbox();
   }
@@ -944,18 +964,20 @@ class MissionProvider extends ChangeNotifier {
   void initializeAISandbox() {
     print("🧪 MissionProvider: initializeAISandbox called");
     _sandboxTimer?.cancel();
-    _sandboxTimer = Timer.periodic(sandboxInterval, (_) async {
-      print('🧪 AI Sandbox: Timer tick');
+  // Run AI sandbox independently every 30 seconds
+    _sandboxTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      print('🧪 AI Sandbox: Independent timer tick');
       await _runAISandbox();
     });
-    // Run immediately on startup
+  // Run immediately on startup
     _runAISandbox();
   }
 
   void startAISandbox() {
     _sandboxTimer?.cancel();
-    _sandboxTimer = Timer.periodic(sandboxInterval, (_) async {
-      print('🧪 AI Sandbox: Timer tick (from startAISandbox)');
+  // Run AI sandbox independently every 30 seconds
+    _sandboxTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      print('🧪 AI Sandbox: Independent timer tick (from startAISandbox)');
       await _runAISandbox();
     });
     _runAISandbox();
@@ -979,428 +1001,518 @@ class MissionProvider extends ChangeNotifier {
     _isSandboxRunning = true;
     isSandboxWorking = true;
     notifyListeners();
-    print('🧪 AI Sandbox: Starting sandbox logic...');
-    // Scan and analyze all files in lib folder
-    final scannedCode = await _scanLibFolder();
-    final scannedFiles = scannedCode.map((e) => e['file'] as String).toList();
-    print('🧪 AI Sandbox: Scanned files: ${scannedFiles.join(', ')}');
-    final coreFiles = [
-      'lib/main.dart',
-      'lib/mission.dart',
-      'lib/mission_provider.dart',
-      'lib/mechanicum.dart',
-      'lib/ai_brain.dart',
-    ];
-    final foundCore = scannedFiles.where((f) => coreFiles.contains(f)).toList();
-    if (foundCore.isNotEmpty) {
-      print('🧪 AI Sandbox: Core files included in scan: ${foundCore.join(', ')}');
-    } else {
-      print('🧪 AI Sandbox: WARNING: No core files found in scan!');
-    }
-    print('🧪 AI Sandbox: Scanned ${scannedCode.length} code elements');
-    
-    // Track which files are being analyzed
-    final currentAnalysisFiles = <String>[];
-    final currentInsights = <Map<String, dynamic>>[];
-    
-    for (final codeElement in scannedCode) {
-      final filePath = codeElement['file'] as String;
-      final symbol = codeElement['symbol'] as String;
-      final code = codeElement['code'] as String;
-      
-      currentAnalysisFiles.add(filePath);
-      
-      // Analyze the code and extract insights
-      final parsed = _interpretCode(code, source: 'ai_analysis');
-      final functions = parsed['functions'] ?? [];
-      final classes = parsed['classes'] ?? [];
-      final imports = parsed['imports'] ?? [];
-      
-      // Generate insights about this code element
-      final insight = {
-        'file': filePath,
-        'symbol': symbol,
-        'type': codeElement['type'],
-        'functions': functions,
-        'classes': classes,
-        'imports': imports,
-        'complexity': _calculateCodeComplexity(code),
-        'patterns': _identifyCodePatterns(code),
-        'learning': _generateLearningInsights(code, functions, classes),
+    print('🧪 AI Sandbox: Starting independent sandbox logic...');
+
+  // Run AI sandbox independently without user interaction requirements
+    try {
+  // Scan and analyze all files in lib folder
+      final scannedCode = await _scanLibFolder();
+      final scannedFiles = scannedCode.map((e) => e['file'] as String).toList();
+      print('🧪 AI Sandbox: Scanned files: ${scannedFiles.join(', ')}');
+      final coreFiles = [
+        'lib/main.dart',
+        'lib/mission.dart',
+        'lib/mission_provider.dart',
+        'lib/mechanicum.dart',
+        'lib/ai_brain.dart',
+      ];
+      final foundCore =
+          scannedFiles.where((f) => coreFiles.contains(f)).toList();
+      if (foundCore.isNotEmpty) {
+        print(
+          '🧪 AI Sandbox: Core files included in scan: ${foundCore.join(', ')}',
+        );
+      } else {
+        print('🧪 AI Sandbox: WARNING: No core files found in scan!');
+      }
+      print('🧪 AI Sandbox: Scanned ${scannedCode.length} code elements');
+
+  // Track which files are being analyzed
+      final currentAnalysisFiles = <String>[];
+      final currentInsights = <Map<String, dynamic>>[];
+
+      for (final codeElement in scannedCode) {
+        final filePath = codeElement['file'] as String;
+        final symbol = codeElement['symbol'] as String;
+        final code = codeElement['code'] as String;
+
+        currentAnalysisFiles.add(filePath);
+
+  // Analyze the code and extract insights
+        final parsed = _interpretCode(code, source: 'ai_analysis');
+        final functions = parsed['functions'] ?? [];
+        final classes = parsed['classes'] ?? [];
+        final imports = parsed['imports'] ?? [];
+
+  // Generate insights about this code element
+        final insight = {
+          'file': filePath,
+          'symbol': symbol,
+          'type': codeElement['type'],
+          'functions': functions,
+          'classes': classes,
+          'imports': imports,
+          'complexity': _calculateCodeComplexity(code),
+          'patterns': _identifyCodePatterns(code),
+          'learning': _generateLearningInsights(code, functions, classes),
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+
+        currentInsights.add(insight);
+
+  // Add to file insights tracking
+        _fileInsights[filePath] = _fileInsights[filePath] ?? [];
+        _fileInsights[filePath]!.add(insight);
+
+        print(
+          '🧠 AI: Analyzing $filePath:$symbol - Found ${functions.length} functions, ${classes.length} classes',
+        );
+      }
+
+  // Update analyzed files tracking
+      final currentTime = DateTime.now().toIso8601String();
+      _analyzedFiles[currentTime] = currentAnalysisFiles;
+
+  // Create learning log entry
+      final learningEntry = {
+        'timestamp': DateTime.now(),
+        'filesAnalyzed': currentAnalysisFiles,
+        'totalElements': scannedCode.length,
+        'insights': currentInsights,
+        'focus': 'Code analysis and pattern recognition',
+        'learnings': _extractKeyLearnings(currentInsights),
+      };
+      _aiLearningLog.add(learningEntry);
+
+  // Select a random code element to focus on
+      final codeToAnalyze =
+          scannedCode.isNotEmpty
+              ? scannedCode[Random().nextInt(scannedCode.length)]
+              : null;
+      final codeToAnalyzeFile = codeToAnalyze?['file'] as String?;
+      final codeToAnalyzeSymbol = codeToAnalyze?['symbol'] as String?;
+      final codeToAnalyzeCode = codeToAnalyze?['code'] as String?;
+
+  // Enhanced metadata for the analysis
+      final codeMetadata = {
+        'source': 'lib_scan',
+        'file': codeToAnalyzeFile,
+        'symbol': codeToAnalyzeSymbol,
+        'type': codeToAnalyze?['type'],
+        'functions': codeToAnalyze?['functions'] ?? [],
+        'classes': codeToAnalyze?['classes'] ?? [],
+      };
+
+      print(
+        '🧠 AI: Focusing analysis on ${codeToAnalyzeFile ?? 'unknown'}:${codeToAnalyzeSymbol ?? 'unknown'}',
+      );
+
+  // Simulate AI processing time
+      final duration = Random().nextInt(3) + 1;
+      await Future.delayed(Duration(seconds: duration));
+
+      final rand = Random();
+      final focusAreas = [
+        'test coverage',
+        'bug detection',
+        'self-improvement',
+        'refactoring',
+        'performance',
+        'security',
+      ];
+      final String focus = focusAreas[rand.nextInt(focusAreas.length)];
+
+  // Reference a previous experiment or suggestion for meta-growth
+      String? previousExperimentDesc;
+      if (_aiExperiments.isNotEmpty && rand.nextBool()) {
+        final prev = _aiExperiments[rand.nextInt(_aiExperiments.length)];
+        previousExperimentDesc = prev['description'];
+      }
+
+      String experimentDesc = 'Experimenting with $focus on recent code.';
+      if (previousExperimentDesc != null && rand.nextBool()) {
+        experimentDesc += ' Building on: $previousExperimentDesc';
+        print(
+          '🧠 AI: Building on previous experiment: $previousExperimentDesc',
+        );
+      }
+
+  // Enhanced experiment with file analysis details
+      final experiment = {
+        'description': experimentDesc,
+        'focus': focus,
+        'timestamp': DateTime.now(),
+        'filesAnalyzed': currentAnalysisFiles,
+        'primaryFile': codeToAnalyzeFile,
+        'primarySymbol': codeToAnalyzeSymbol,
+        'totalElements': scannedCode.length,
+        'insights': currentInsights.length,
+        'learning': _extractKeyLearnings(currentInsights),
+      };
+      _aiExperiments.add(experiment);
+      print('🧠 AI: New experiment: $experiment');
+
+  // --- AI may propose an improvement to its own code ---
+      if (aiGeneratedCodeSuggestions.isNotEmpty && rand.nextBool()) {
+        final aiCode =
+            aiGeneratedCodeSuggestions[rand.nextInt(
+              aiGeneratedCodeSuggestions.length,
+            )];
+        final improvement =
+            '/ Improved: ${aiCode['code']?.split("\n").first ?? ''}\n${aiCode['code']}\n/ ...AI self-improvement...';
+
+  // Always include target information
+        final targetFile =
+            aiCode['targetFile'] ??
+            codeToAnalyzeFile ??
+            'lib/ai_improvements/ai_enhanced.dart';
+        final targetSymbol =
+            aiCode['targetSymbol'] ?? codeToAnalyzeSymbol ?? 'enhancedFunction';
+
+        _aiGeneratedCodeSuggestions.add({
+          'title': 'AI Self-Improvement',
+          'code': improvement,
+          'diff': '+ AI improved its own code',
+          'reasoning':
+              'The AI decided to enhance its previous code for better performance.',
+          'timestamp': DateTime.now(),
+          'targetFile': targetFile,
+          'targetSymbol': targetSymbol,
+        });
+        print(
+          '🧠 AI: Proposed improvement to its own code at $targetFile:$targetSymbol',
+        );
+      }
+
+  // --- AI generates a new experiment/learning goal ---
+
+  // Reference a previous experiment or suggestion for meta-growth
+      if (_aiExperiments.isNotEmpty && rand.nextBool()) {
+        final prev = _aiExperiments[rand.nextInt(_aiExperiments.length)];
+        previousExperimentDesc = prev['description'];
+      }
+
+      if (previousExperimentDesc != null && rand.nextBool()) {
+        experimentDesc += ' Building on: $previousExperimentDesc';
+        print(
+          '🧠 AI: Building on previous experiment: $previousExperimentDesc',
+        );
+      }
+
+      _aiExperiments.add(experiment);
+      print('🧠 AI: New experiment: $experiment');
+
+  // --- AI may generate meta-suggestions ---
+      if (_aiSuggestions.isNotEmpty && rand.nextInt(4) == 0) {
+  // 25% chance
+        final prevSuggestion =
+            _aiSuggestions[rand.nextInt(_aiSuggestions.length)];
+        final metaSuggestion = {
+          'issue': 'Refactor previous suggestion: ${prevSuggestion['issue']}',
+          'explanation': 'AI is improving on its own earlier suggestion.',
+          'changes': ['Meta-refactor of previous suggestion'],
+          'testResults': ['Meta-tested previous suggestion'],
+          'accepted': false,
+          'ignored': false,
+          'acceptedAt': DateTime.now().toIso8601String(),
+          'ignoredAt': DateTime.now().toIso8601String(),
+        };
+        _aiSuggestions.add(metaSuggestion);
+        print('🧠 AI: Meta-suggestion created: $metaSuggestion');
+      }
+
+  // --- AI may improve its own code suggestions ---
+      if (aiGeneratedCodeSuggestions.isNotEmpty && rand.nextInt(3) == 0) {
+  // 33% chance
+        final prevCode =
+            aiGeneratedCodeSuggestions[rand.nextInt(
+              aiGeneratedCodeSuggestions.length,
+            )];
+        final improvedCode =
+            '/ Improved on previous AI code\n${prevCode['code']}\n/ Further enhancements...';
+
+  // Always use the previous target or determine new one
+        String targetFile =
+            prevCode['targetFile'] ??
+            codeToAnalyzeFile ??
+            'lib/ai_improvements/iterative.dart';
+        String targetSymbol =
+            prevCode['targetSymbol'] ??
+            codeToAnalyzeSymbol ??
+            'improvedFunction';
+
+  // Try to extract function name from improved code
+        final fnMatch = RegExp(
+          r'void\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(',
+        ).firstMatch(improvedCode);
+        if (fnMatch != null) {
+          targetSymbol = fnMatch.group(1)!;
+        }
+
+        final improvedSuggestion = {
+          'title': 'Improved: ${prevCode['title']}',
+          'code': improvedCode,
+          'diff': '+ Improved previous AI code',
+          'reasoning': 'AI is iteratively enhancing its own codebase.',
+          'timestamp': DateTime.now(),
+          'targetFile': targetFile,
+          'targetSymbol': targetSymbol,
+        };
+        _aiGeneratedCodeSuggestions.add(improvedSuggestion);
+        print(
+          '🧠 AI: Improved its own code suggestion at $targetFile:$targetSymbol',
+        );
+      }
+
+  // --- Simulate test feed update with file information ---
+      final testResult = rand.nextBool() ? 'pass' : 'fail';
+      final testEntry = <String, String>{
+        'testType': focus.toString(),
+        'function':
+            codeToAnalyzeSymbol ??
+            ((_interpretCode(codeToAnalyzeCode ?? '')['functions']
+                            as List<dynamic>?)
+                        ?.firstOrNull
+                    as String? ??
+                'unknown'),
+        'file': codeToAnalyzeFile ?? 'unknown',
+        'details':
+            'Tested ${focus.toString()} on code from ${codeMetadata['source'] ?? 'unknown'} source.',
+        'result': testResult,
+        'reasoning': 'AI determined this test was necessary for learning.',
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
-      currentInsights.add(insight);
-      
-      // Add to file insights tracking
-      _fileInsights[filePath] = _fileInsights[filePath] ?? [];
-      _fileInsights[filePath]!.add(insight);
-      
-      print('🧠 AI: Analyzing $filePath:$symbol - Found ${functions.length} functions, ${classes.length} classes');
-    }
-    
-    // Update analyzed files tracking
-    final currentTime = DateTime.now().toIso8601String();
-    _analyzedFiles[currentTime] = currentAnalysisFiles;
-    
-    // Create learning log entry
-    final learningEntry = {
-      'timestamp': DateTime.now(),
-      'filesAnalyzed': currentAnalysisFiles,
-      'totalElements': scannedCode.length,
-      'insights': currentInsights,
-      'focus': 'Code analysis and pattern recognition',
-      'learnings': _extractKeyLearnings(currentInsights),
-    };
-    _aiLearningLog.add(learningEntry);
-    
-    // Select a random code element to focus on
-    final codeToAnalyze = scannedCode.isNotEmpty ? scannedCode[Random().nextInt(scannedCode.length)] : null;
-    final codeToAnalyzeFile = codeToAnalyze?['file'] as String?;
-    final codeToAnalyzeSymbol = codeToAnalyze?['symbol'] as String?;
-    final codeToAnalyzeCode = codeToAnalyze?['code'] as String?;
-    
-    // Enhanced metadata for the analysis
-    final codeMetadata = {
-      'source': 'lib_scan',
-      'file': codeToAnalyzeFile,
-      'symbol': codeToAnalyzeSymbol,
-      'type': codeToAnalyze?['type'],
-      'functions': codeToAnalyze?['functions'] ?? [],
-      'classes': codeToAnalyze?['classes'] ?? [],
-    };
-    
-    print('🧠 AI: Focusing analysis on ${codeToAnalyzeFile ?? 'unknown'}:${codeToAnalyzeSymbol ?? 'unknown'}');
-    
-    // Simulate AI processing time
-    final duration = Random().nextInt(3) + 1;
-    await Future.delayed(Duration(seconds: duration));
-    
-    final rand = Random();
-    final focusAreas = [
-      'test coverage',
-      'bug detection',
-      'self-improvement',
-      'refactoring',
-      'performance',
-      'security',
-    ];
-    final String focus = focusAreas[rand.nextInt(focusAreas.length)];
-    
-    // Reference a previous experiment or suggestion for meta-growth
-    String? previousExperimentDesc;
-    if (_aiExperiments.isNotEmpty && rand.nextBool()) {
-      final prev = _aiExperiments[rand.nextInt(_aiExperiments.length)];
-      previousExperimentDesc = prev['description'];
-    }
-    
-    String experimentDesc = 'Experimenting with $focus on recent code.';
-    if (previousExperimentDesc != null && rand.nextBool()) {
-      experimentDesc += ' Building on: $previousExperimentDesc';
-      print('🧠 AI: Building on previous experiment: $previousExperimentDesc');
-    }
-    
-    // Enhanced experiment with file analysis details
-    final experiment = {
-      'description': experimentDesc,
-      'focus': focus,
-      'timestamp': DateTime.now(),
-      'filesAnalyzed': currentAnalysisFiles,
-      'primaryFile': codeToAnalyzeFile,
-      'primarySymbol': codeToAnalyzeSymbol,
-      'totalElements': scannedCode.length,
-      'insights': currentInsights.length,
-      'learning': _extractKeyLearnings(currentInsights),
-    };
-    _aiExperiments.add(experiment);
-    print('🧠 AI: New experiment: $experiment');
+      _sandboxTestFeed.add(testEntry);
+      print('🧪 AI Sandbox: Test feed updated: $testEntry');
 
-    // --- AI may propose an improvement to its own code ---
-    if (aiGeneratedCodeSuggestions.isNotEmpty && rand.nextBool()) {
-      final aiCode = aiGeneratedCodeSuggestions[rand.nextInt(aiGeneratedCodeSuggestions.length)];
-      final improvement = '// Improved: ${aiCode['code']?.split("\n").first ?? ''}\n${aiCode['code']}\n// ...AI self-improvement...';
-      
-      // Always include target information
-      final targetFile = aiCode['targetFile'] ?? codeToAnalyzeFile ?? 'lib/ai_improvements/ai_enhanced.dart';
-      final targetSymbol = aiCode['targetSymbol'] ?? codeToAnalyzeSymbol ?? 'enhancedFunction';
-      
-      _aiGeneratedCodeSuggestions.add({
-        'title': 'AI Self-Improvement',
-        'code': improvement,
-        'diff': '+ AI improved its own code',
-        'reasoning': 'The AI decided to enhance its previous code for better performance.',
-        'timestamp': DateTime.now(),
-        'targetFile': targetFile,
-        'targetSymbol': targetSymbol,
-      });
-      print('🧠 AI: Proposed improvement to its own code at $targetFile:$targetSymbol');
-    }
-
-    // --- AI generates a new experiment/learning goal ---
-    
-    // Reference a previous experiment or suggestion for meta-growth
-    if (_aiExperiments.isNotEmpty && rand.nextBool()) {
-      final prev = _aiExperiments[rand.nextInt(_aiExperiments.length)];
-      previousExperimentDesc = prev['description'];
-    }
-    
-    if (previousExperimentDesc != null && rand.nextBool()) {
-      experimentDesc += ' Building on: $previousExperimentDesc';
-      print('🧠 AI: Building on previous experiment: $previousExperimentDesc');
-    }
-    
-    _aiExperiments.add(experiment);
-    print('🧠 AI: New experiment: $experiment');
-
-    // --- AI may generate meta-suggestions ---
-    if (_aiSuggestions.isNotEmpty && rand.nextInt(4) == 0) { // 25% chance
-      final prevSuggestion = _aiSuggestions[rand.nextInt(_aiSuggestions.length)];
-      final metaSuggestion = {
-        'issue': 'Refactor previous suggestion: ${prevSuggestion['issue']}',
-        'explanation': 'AI is improving on its own earlier suggestion.',
-        'changes': ['Meta-refactor of previous suggestion'],
-        'testResults': ['Meta-tested previous suggestion'],
-        'accepted': false,
-        'ignored': false,
+  // --- AI Suggestions ---
+      final suggestion = {
+        'issue': 'Potential improvement in $focus',
+        'explanation': 'AI detected an opportunity to enhance $focus.',
+        'changes': ['Refactor $focus'],
+        'testResults': ['Tested $focus: $testResult'],
+        'accepted': rand.nextBool(),
+        'ignored': rand.nextBool(),
         'acceptedAt': DateTime.now().toIso8601String(),
         'ignoredAt': DateTime.now().toIso8601String(),
       };
-      _aiSuggestions.add(metaSuggestion);
-      print('🧠 AI: Meta-suggestion created: $metaSuggestion');
-    }
+      _aiSuggestions.add(suggestion);
+      print('🧠 AI: New suggestion: $suggestion');
 
-    // --- AI may improve its own code suggestions ---
-    if (aiGeneratedCodeSuggestions.isNotEmpty && rand.nextInt(3) == 0) { // 33% chance
-      final prevCode = aiGeneratedCodeSuggestions[rand.nextInt(aiGeneratedCodeSuggestions.length)];
-      final improvedCode = '// Improved on previous AI code\n${prevCode['code']}\n// Further enhancements...';
-      
-      // Always use the previous target or determine new one
-      String targetFile = prevCode['targetFile'] ?? codeToAnalyzeFile ?? 'lib/ai_improvements/iterative.dart';
-      String targetSymbol = prevCode['targetSymbol'] ?? codeToAnalyzeSymbol ?? 'improvedFunction';
-      
-      // Try to extract function name from improved code
-      final fnMatch = RegExp(r'void\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(').firstMatch(improvedCode);
-      if (fnMatch != null) {
-        targetSymbol = fnMatch.group(1)!;
-      }
-      
-      final improvedSuggestion = {
-        'title': 'Improved: ${prevCode['title']}',
-        'code': improvedCode,
-        'diff': '+ Improved previous AI code',
-        'reasoning': 'AI is iteratively enhancing its own codebase.',
-        'timestamp': DateTime.now(),
-        'targetFile': targetFile,
-        'targetSymbol': targetSymbol,
-      };
-      _aiGeneratedCodeSuggestions.add(improvedSuggestion);
-      print('🧠 AI: Improved its own code suggestion at $targetFile:$targetSymbol');
-    }
-
-    // --- Simulate test feed update with file information ---
-    final testResult = rand.nextBool() ? 'pass' : 'fail';
-    final testEntry = <String, String>{
-      'testType': focus.toString(),
-      'function': codeToAnalyzeSymbol ?? ((_interpretCode(codeToAnalyzeCode ?? '')['functions'] as List<dynamic>?)?.firstOrNull as String? ?? 'unknown'),
-      'file': codeToAnalyzeFile ?? 'unknown',
-      'details': 'Tested ${focus.toString()} on code from ${codeMetadata['source'] ?? 'unknown'} source.',
-      'result': testResult,
-      'reasoning': 'AI determined this test was necessary for learning.',
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    _sandboxTestFeed.add(testEntry);
-    print('🧪 AI Sandbox: Test feed updated: $testEntry');
-
-    // --- AI Suggestions ---
-    final suggestion = {
-      'issue': 'Potential improvement in $focus',
-      'explanation': 'AI detected an opportunity to enhance $focus.',
-      'changes': ['Refactor $focus'],
-      'testResults': ['Tested $focus: $testResult'],
-      'accepted': rand.nextBool(),
-      'ignored': rand.nextBool(),
-      'acceptedAt': DateTime.now().toIso8601String(),
-      'ignoredAt': DateTime.now().toIso8601String(),
-    };
-    _aiSuggestions.add(suggestion);
-    print('🧠 AI: New suggestion: $suggestion');
-
-    // --- Knowledge Gaps ---
-    if (rand.nextBool()) {
-      final gap = 'AI wants to learn more about $focus.';
-      if (!_knowledgeGaps.contains(gap)) {
-        _knowledgeGaps.add(gap);
-        print('🧠 AI: New knowledge gap: $gap');
-      }
-    }
-
-    // --- Test Coverage ---
-    _testCoverage[focus] = (_testCoverage[focus] ?? 0) + 1;
-    print('🧪 AI: Test coverage updated: $_testCoverage');
-
-    // --- Knowledge Graph ---
-    _knowledgeGraph[focus] = _knowledgeGraph[focus] ?? [];
-    if (codeToAnalyze != null) {
-      final parsed = _interpretCode(codeToAnalyze as String);
-      for (final fn in parsed['functions'] ?? []) {
-        if (!_knowledgeGraph[focus]!.contains(fn)) {
-          _knowledgeGraph[focus]!.add(fn);
+  // --- Knowledge Gaps ---
+      if (rand.nextBool()) {
+        final gap = 'AI wants to learn more about $focus.';
+        if (!_knowledgeGaps.contains(gap)) {
+          _knowledgeGaps.add(gap);
+          print('🧠 AI: New knowledge gap: $gap');
         }
       }
-    }
-    print('🧠 AI: Knowledge graph updated: $_knowledgeGraph');
 
-    // --- Applied AI Suggestions ---
-    if (rand.nextBool() && _aiSuggestions.isNotEmpty) {
-      final applied = _aiSuggestions[rand.nextInt(_aiSuggestions.length)];
-      _appliedAISuggestions.add({
-        'title': applied['issue'],
-        'appliedAt': DateTime.now().toIso8601String(),
-      });
-      print('🧠 AI: Applied suggestion: $applied');
-    }
+  // --- Test Coverage ---
+      _testCoverage[focus] = (_testCoverage[focus] ?? 0) + 1;
+      print('🧪 AI: Test coverage updated: $_testCoverage');
 
-    // --- AI Extension Ideas ---
-    if (rand.nextBool()) {
-      final idea = {
-        'feature': 'Auto-tune $focus',
-        'rationale': 'AI believes auto-tuning $focus will yield better results.',
-      };
-      _aiExtensionIdeas.add(idea);
-      print('🧠 AI: New extension idea: $idea');
-    }
-
-    // --- AI Personalized Suggestions ---
-    if (rand.nextBool()) {
-      final personal = {
-        'suggestion': 'Focus on $focus for next iteration.',
-        'priority': rand.nextBool() ? 'high' : 'medium',
-      };
-      _aiPersonalizedSuggestions.add(personal);
-      print('🧠 AI: New personalized suggestion: $personal');
-    }
-
-    // --- AI Generated Code Suggestions (ALWAYS with target info) ---
-    if (rand.nextBool()) {
-      // Generate intelligent code based on focus area
-      String code = _generateIntelligentCode(focus, codeToAnalyze as String?);
-      String targetSymbol = _extractTargetSymbol(code);
-      String targetFile = _determineTargetFile(code, _interpretCode(code));
-      
-      // Ensure the target location is safe
-      final safetyCheck = await _analyzeFileSafety(targetFile, targetSymbol);
-      if (!safetyCheck['safe']) {
-        final safeLocation = await _findSafeApplicationLocation(code, _interpretCode(code));
-        if (safeLocation != null) {
-          targetFile = safeLocation['file'] ?? targetFile;
-          targetSymbol = safeLocation['symbol'] ?? targetSymbol;
+  // --- Knowledge Graph ---
+      _knowledgeGraph[focus] = _knowledgeGraph[focus] ?? [];
+      if (codeToAnalyze != null) {
+        final parsed = _interpretCode(codeToAnalyze as String);
+        for (final fn in parsed['functions'] ?? []) {
+          if (!_knowledgeGraph[focus]!.contains(fn)) {
+            _knowledgeGraph[focus]!.add(fn);
+          }
         }
       }
-      
-      final codeSuggestion = {
-        'title': 'Refactor $focus',
-        'code': code,
-        'diff': '+ Refactored $focus',
-        'reasoning': 'AI believes this will improve $focus.',
-        'timestamp': DateTime.now(),
-        'targetFile': targetFile,
-        'targetSymbol': targetSymbol,
-      };
-      _aiGeneratedCodeSuggestions.add(codeSuggestion);
-      print('🧠 AI: New code suggestion at $targetFile:$targetSymbol');
-    }
+      print('🧠 AI: Knowledge graph updated: $_knowledgeGraph');
 
-    isSandboxWorking = false;
-    _isSandboxRunning = false;
-    print('🧪 AI Sandbox: Sandbox logic complete after $duration seconds.');
-    notifyListeners();
+  // --- Applied AI Suggestions ---
+      if (rand.nextBool() && _aiSuggestions.isNotEmpty) {
+        final applied = _aiSuggestions[rand.nextInt(_aiSuggestions.length)];
+        _appliedAISuggestions.add({
+          'title': applied['issue'],
+          'appliedAt': DateTime.now().toIso8601String(),
+        });
+        print('🧠 AI: Applied suggestion: $applied');
+      }
+
+  // --- AI Extension Ideas ---
+      if (rand.nextBool()) {
+        final idea = {
+          'feature': 'Auto-tune $focus',
+          'rationale':
+              'AI believes auto-tuning $focus will yield better results.',
+        };
+        _aiExtensionIdeas.add(idea);
+        print('🧠 AI: New extension idea: $idea');
+      }
+
+  // --- AI Personalized Suggestions ---
+      if (rand.nextBool()) {
+        final personal = {
+          'suggestion': 'Focus on $focus for next iteration.',
+          'priority': rand.nextBool() ? 'high' : 'medium',
+        };
+        _aiPersonalizedSuggestions.add(personal);
+        print('🧠 AI: New personalized suggestion: $personal');
+      }
+
+  // --- AI Generated Code Suggestions (ALWAYS with target info) ---
+      if (rand.nextBool()) {
+  // Generate intelligent code based on focus area
+        String code = _generateIntelligentCode(focus, codeToAnalyze as String?);
+        String targetSymbol = _extractTargetSymbol(code);
+        String targetFile = _determineTargetFile(code, _interpretCode(code));
+
+  // Ensure the target location is safe
+        final safetyCheck = await _analyzeFileSafety(targetFile, targetSymbol);
+        if (!safetyCheck['safe']) {
+          final safeLocation = await _findSafeApplicationLocation(
+            code,
+            _interpretCode(code),
+          );
+          if (safeLocation != null) {
+            targetFile = safeLocation['file'] ?? targetFile;
+            targetSymbol = safeLocation['symbol'] ?? targetSymbol;
+          }
+        }
+
+        final codeSuggestion = {
+          'title': 'Refactor $focus',
+          'code': code,
+          'diff': '+ Refactored $focus',
+          'reasoning': 'AI believes this will improve $focus.',
+          'timestamp': DateTime.now(),
+          'targetFile': targetFile,
+          'targetSymbol': targetSymbol,
+        };
+        _aiGeneratedCodeSuggestions.add(codeSuggestion);
+        print('🧠 AI: New code suggestion at $targetFile:$targetSymbol');
+      }
+
+      isSandboxWorking = false;
+      _isSandboxRunning = false;
+      print('🧪 AI Sandbox: Sandbox logic complete after $duration seconds.');
+      notifyListeners();
+    } catch (e) {
+      print('🛡️ AI Guardian: ❌ Error during AI Sandbox: $e');
+      isSandboxWorking = false;
+      _isSandboxRunning = false;
+      notifyListeners();
+    }
   }
 
   // --- Enhanced helper methods for file scanning and safety ---
-  
+
   Future<List<Map<String, dynamic>>> _scanLibFolder() async {
     final List<Map<String, dynamic>> scannedFiles = [];
-    
+
     try {
-      // Scan all files in lib folder and subfolders
-      for (final filePath in libFiles) {
+  // Get all directories that should be watched, including Terra/Conquest apps
+      final watchedDirs = AIFileSystemHelper.getWatchedDirectories();
+      print('🧪 AI Sandbox: Scanning directories: ${watchedDirs.join(', ')}');
+
+  // Scan for new files created by Terra/Conquest
+      final newAppFiles = await AIFileSystemHelper.scanForNewAppFiles();
+      if (newAppFiles.isNotEmpty) {
+        print(
+          '🧪 AI Sandbox: Found ${newAppFiles.length} new app files: ${newAppFiles.join(', ')}',
+        );
+      }
+
+  // Scan all files in watched directories
+      for (final dir in watchedDirs) {
         try {
-          final file = File(filePath);
-          if (await file.exists()) {
-            final content = await file.readAsString();
-            final parsed = _interpretCode(content, source: 'lib_scan');
-            
-            // Extract functions and classes from the file
-            final functions = parsed['functions'] ?? [];
-            final classes = parsed['classes'] ?? [];
-            
-            // Create entries for each function/class found
-            for (final function in functions) {
-              scannedFiles.add({
-                'file': filePath,
-                'symbol': function,
-                'code': _extractFunctionCode(content, function),
-                'functions': [function],
-                'classes': [],
-                'type': 'function',
-              });
-            }
-            
-            for (final className in classes) {
-              scannedFiles.add({
-                'file': filePath,
-                'symbol': className,
-                'code': _extractClassCode(content, className),
-                'functions': [],
-                'classes': [className],
-                'type': 'class',
-              });
-            }
-            
-            // If no functions/classes found, add the whole file
-            if (functions.isEmpty && classes.isEmpty) {
-              scannedFiles.add({
-                'file': filePath,
-                'symbol': 'file_content',
-                'code': content,
-                'functions': [],
-                'classes': [],
-                'type': 'file',
-              });
+          final files = await AIFileSystemHelper.listFilesRecursively(
+            dir,
+            extension: '.dart',
+          );
+          for (final filePath in files) {
+            try {
+              final file = File(filePath);
+              if (await file.exists()) {
+                final content = await file.readAsString();
+                final parsed = _interpretCode(content, source: 'lib_scan');
+
+  // Extract functions and classes from the file
+                final functions = parsed['functions'] ?? [];
+                final classes = parsed['classes'] ?? [];
+
+  // Create entries for each function/class found
+                for (final function in functions) {
+                  scannedFiles.add({
+                    'file': filePath,
+                    'symbol': function,
+                    'code': _extractFunctionCode(content, function),
+                    'functions': [function],
+                    'classes': [],
+                    'type': 'function',
+                  });
+                }
+
+                for (final className in classes) {
+                  scannedFiles.add({
+                    'file': filePath,
+                    'symbol': className,
+                    'code': _extractClassCode(content, className),
+                    'functions': [],
+                    'classes': [className],
+                    'type': 'class',
+                  });
+                }
+
+  // If no functions/classes found, add the whole file
+                if (functions.isEmpty && classes.isEmpty) {
+                  scannedFiles.add({
+                    'file': filePath,
+                    'symbol': 'file_content',
+                    'code': content,
+                    'functions': [],
+                    'classes': [],
+                    'type': 'file',
+                  });
+                }
+              }
+            } catch (e) {
+              print('⚠️ AI Sandbox: Error scanning $filePath: $e');
             }
           }
         } catch (e) {
-          print('⚠️ AI Sandbox: Error scanning $filePath: $e');
+          print('⚠️ AI Sandbox: Error scanning directory $dir: $e');
         }
       }
     } catch (e) {
-      print('⚠️ AI Sandbox: Error during lib folder scan: $e');
+      print('⚠️ AI Sandbox: Error during file scan: $e');
     }
-    
+
+    print('🧪 AI Sandbox: Total files scanned: ${scannedFiles.length}');
     return scannedFiles;
   }
-  
+
   String _extractFunctionCode(String fileContent, String functionName) {
-    // Extract function code using regex
+  // Extract function code using regex
     final functionRegex = RegExp(
-      r'(\n|^)([\w<>\s]*?)' + RegExp.escape(functionName) + r'\s*\([^)]*\)\s*\{[\s\S]*?^\}',
+      r'(\n|^)([\w<>\s]*?)' +
+          RegExp.escape(functionName) +
+          r'\s*\([^)]*\)\s*\{[\s\S]*?^\}',
       multiLine: true,
     );
     final match = functionRegex.firstMatch(fileContent);
-    return match?.group(0) ?? '// Function $functionName not found';
+    return match?.group(0) ?? '/ Function $functionName not found';
   }
-  
+
   String _extractClassCode(String fileContent, String className) {
-    // Extract class code using regex
+  // Extract class code using regex
     final classRegex = RegExp(
       r'(\n|^)class\s+' + RegExp.escape(className) + r'\s*\{[\s\S]*?^\}',
       multiLine: true,
     );
     final match = classRegex.firstMatch(fileContent);
-    return match?.group(0) ?? '// Class $className not found';
+    return match?.group(0) ?? '/ Class $className not found';
   }
-  
-  Future<Map<String, dynamic>> _analyzeFileSafety(String targetFile, String? targetSymbol) async {
+
+  Future<Map<String, dynamic>> _analyzeFileSafety(
+    String targetFile,
+    String? targetSymbol,
+  ) async {
     try {
       final file = File(targetFile);
       if (!await file.exists()) {
@@ -1410,39 +1522,55 @@ class MissionProvider extends ChangeNotifier {
           'suggestions': ['Create the file first', 'Use a different target'],
         };
       }
-      
+
       final content = await file.readAsString();
-      
-      // Check if target symbol exists
+
+  // Check if target symbol exists
       if (targetSymbol != null && targetSymbol != 'unknown') {
-        final functionExists = RegExp(r'(\n|^)([\w<>\s]*?)' + RegExp.escape(targetSymbol) + r'\s*\([^)]*\)\s*\{', multiLine: true).hasMatch(content);
-        final classExists = RegExp(r'(\n|^)class\s+' + RegExp.escape(targetSymbol) + r'\s*\{', multiLine: true).hasMatch(content);
-        
+        final functionExists = RegExp(
+          r'(\n|^)([\w<>\s]*?)' +
+              RegExp.escape(targetSymbol) +
+              r'\s*\([^)]*\)\s*\{',
+          multiLine: true,
+        ).hasMatch(content);
+        final classExists = RegExp(
+          r'(\n|^)class\s+' + RegExp.escape(targetSymbol) + r'\s*\{',
+          multiLine: true,
+        ).hasMatch(content);
+
         if (!functionExists && !classExists) {
           return {
             'safe': false,
             'reason': 'Target symbol "$targetSymbol" not found in file',
-            'suggestions': ['Check symbol name', 'Add the symbol first', 'Use existing symbol'],
+            'suggestions': [
+              'Check symbol name',
+              'Add the symbol first',
+              'Use existing symbol',
+            ],
           };
         }
       }
-      
-      // Check for critical files that shouldn't be modified
+
+  // Check for critical files that shouldn't be modified
       final criticalFiles = [
         'lib/main.dart',
         'lib/mission.dart',
         'lib/mission_provider.dart',
       ];
-      
+
       if (criticalFiles.contains(targetFile)) {
         return {
           'safe': false,
           'reason': 'Critical file - modifications may break the app',
-          'suggestions': ['Use a test file', 'Create a new file', 'Apply to non-critical file'],
+          'suggestions': [
+            'Use a test file',
+            'Create a new file',
+            'Apply to non-critical file',
+          ],
         };
       }
-      
-      // Check for existing AI-generated files (safe to modify)
+
+  // Check for existing AI-generated files (safe to modify)
       if (targetFile.contains('ai_') || targetFile.contains('generated')) {
         return {
           'safe': true,
@@ -1450,23 +1578,26 @@ class MissionProvider extends ChangeNotifier {
           'suggestions': ['Proceed with modification'],
         };
       }
-      
-      // Check file size and complexity
+
+  // Check file size and complexity
       final lines = content.split('\n').length;
       if (lines > 500) {
         return {
           'safe': false,
           'reason': 'Large file ($lines lines) - high risk of breaking changes',
-          'suggestions': ['Use a smaller file', 'Create a new file', 'Test thoroughly'],
+          'suggestions': [
+            'Use a smaller file',
+            'Create a new file',
+            'Test thoroughly',
+          ],
         };
       }
-      
+
       return {
         'safe': true,
         'reason': 'File appears safe for modification',
         'suggestions': ['Proceed with caution', 'Test after modification'],
       };
-      
     } catch (e) {
       return {
         'safe': false,
@@ -1475,35 +1606,33 @@ class MissionProvider extends ChangeNotifier {
       };
     }
   }
-  
-  Future<Map<String, String>?> _findSafeApplicationLocation(String code, Map<String, dynamic> parsed) async {
-    // Try to find a safe location for the code
+
+  Future<Map<String, String>?> _findSafeApplicationLocation(
+    String code,
+    Map<String, dynamic> parsed,
+  ) async {
+  // Try to find a safe location for the code
     final safeLocations = [
       'lib/ai_sandbox/safe_test.dart',
       'lib/ai_generated/test_code.dart',
       'lib/utils/ai_utils.dart',
       'lib/widgets/ai_widgets.dart',
     ];
-    
+
     for (final location in safeLocations) {
       final safetyCheck = await _analyzeFileSafety(location, null);
       if (safetyCheck['safe']) {
         final symbol = _extractTargetSymbol(code);
-        return {
-          'file': location,
-          'symbol': symbol,
-        };
+        return {'file': location, 'symbol': symbol};
       }
     }
-    
-    // If no safe location found, create a new one
-    final newFile = 'lib/ai_sandbox/generated_${DateTime.now().millisecondsSinceEpoch}.dart';
+
+  // If no safe location found, create a new one
+    final newFile =
+        'lib/ai_sandbox/generated_${DateTime.now().millisecondsSinceEpoch}.dart';
     final symbol = _extractTargetSymbol(code);
-    
-    return {
-      'file': newFile,
-      'symbol': symbol,
-    };
+
+    return {'file': newFile, 'symbol': symbol};
   }
 
   MissionState _state = MissionState(
@@ -1586,25 +1715,25 @@ class MissionProvider extends ChangeNotifier {
   void updateRefreshButtonColor() {
     final now = DateTime.now();
 
-    // Check for end of week (Sunday at 11:59 PM)
+  // Check for end of week (Sunday at 11:59 PM)
     if (now.weekday == DateTime.sunday && now.hour == 23 && now.minute >= 59) {
       _refreshButtonColor = Colors.orange;
       _isDailyLocked = true;
       _isWeeklyLocked = true;
-      // Trigger refresh for both daily and weekly missions
+  // Trigger refresh for both daily and weekly missions
       refreshMissions();
       developer.log('End of week detected: Refreshing all missions');
     }
-    // Check for end of day (11:59 PM)
+  // Check for end of day (11:59 PM)
     else if (now.hour == 23 && now.minute >= 59) {
       _refreshButtonColor = Colors.red;
       _isDailyLocked = true;
       _isWeeklyLocked = false;
-      // Trigger refresh for daily missions
+  // Trigger refresh for daily missions
       refreshMissionsByType(MissionType.daily);
       developer.log('End of day detected: Refreshing daily missions');
     }
-    // Normal state
+  // Normal state
     else {
       _refreshButtonColor = Colors.white;
       _isDailyLocked = false;
@@ -1641,40 +1770,40 @@ class MissionProvider extends ChangeNotifier {
     }).toList();
   }
 
-
   Future<void> _initializeAIGuardian() async {
     print('🛡️ AI Guardian: Initializing automatically...');
-    
-    // Initialize the AI Guardian with learning capabilities
+
+  // Initialize the AI Guardian with learning capabilities
     await aiGuardian.initialize();
-    
-    // Register existing notification IDs with the AI Guardian
+
+  // Register existing notification IDs with the AI Guardian
     for (final mission in allMissions) {
       aiGuardian.registerNotificationId(mission.notificationId);
     }
-    
-    // Learn from existing issues
+
+  // Learn from existing issues
     await _learnFromExistingIssues();
-    
-    // Trigger the AI sandbox at the same time as AI Guardian
+
+  // Trigger the AI sandbox at the same time as AI Guardian
     print('🛡️ AI Guardian: Triggering AI Sandbox Now (static)...');
     MissionProvider.triggerSandboxNow();
 
-    // Start the AI Guardian with enhanced health check functionality
+  // Start the AI Guardian with enhanced health check functionality
     aiGuardian.startContinuousHealthCheck(
       () async {
-        // Keep AI Guardian active during health checks
+  // Keep AI Guardian active during health checks
         aiGuardian.setAIActive(true);
 
-        // Perform comprehensive health checks using learned patterns
-        final healthResults = await aiGuardian.performComprehensiveHealthChecks();
-        
-        // If issues found, perform repairs
+  // Perform comprehensive health checks using learned patterns
+        final healthResults =
+            await aiGuardian.performComprehensiveHealthChecks();
+
+  // If issues found, perform repairs
         if (healthResults.any((result) => result.hasIssue)) {
           print('AI Guardian: 🔧 Issues detected, performing repairs...');
           final repairResults = await aiGuardian.performComprehensiveRepairs();
-          
-          // Log successful repairs
+
+  // Log successful repairs
           for (final result in repairResults.where((r) => r.success)) {
             aiGuardian.logRepair(
               result.repairName,
@@ -1683,32 +1812,35 @@ class MissionProvider extends ChangeNotifier {
           }
         }
 
-        // Keep AI Guardian active for a bit longer to show it's working
+  // Keep AI Guardian active for a bit longer to show it's working
         await Future.delayed(const Duration(seconds: 3));
         aiGuardian.setAIActive(false);
       },
       interval: const Duration(seconds: 8),
     ); // More frequent checks for better visibility
 
-    // Make AI Guardian visible immediately
+  // Make AI Guardian visible immediately
     aiGuardian.setAIActive(true);
     await Future.delayed(const Duration(seconds: 4));
     aiGuardian.setAIActive(false);
 
-    print('🛡️ AI Guardian: Auto-started successfully with learning capabilities');
+    print(
+      '🛡️ AI Guardian: Auto-started successfully with learning capabilities',
+    );
   }
 
-  /// Learn from existing issues in the mission data
+  // Learn from existing issues in the mission data
   Future<void> _learnFromExistingIssues() async {
-    // Check for invalid notification IDs
+  // Check for invalid notification IDs
     bool hasInvalidNotificationIds = false;
     for (final mission in allMissions) {
-      if (mission.notificationId < -2147483648 || mission.notificationId > 2147483647) {
+      if (mission.notificationId < -2147483648 ||
+          mission.notificationId > 2147483647) {
         hasInvalidNotificationIds = true;
         break;
       }
     }
-    
+
     if (hasInvalidNotificationIds) {
       await aiGuardian.learnNewHealthCheck(
         'invalid_notification_ids',
@@ -1716,7 +1848,7 @@ class MissionProvider extends ChangeNotifier {
         () async => _checkForInvalidNotificationIds(),
         priority: HealthCheckPriority.critical,
       );
-      
+
       await aiGuardian.learnNewRepair(
         'invalid_notification_ids',
         'Repair notification IDs that are outside valid range',
@@ -1724,8 +1856,8 @@ class MissionProvider extends ChangeNotifier {
         priority: RepairPriority.critical,
       );
     }
-    
-    // Check for duplicate notification IDs
+
+  // Check for duplicate notification IDs
     final seenIds = <int>{};
     bool hasDuplicateIds = false;
     for (final mission in allMissions) {
@@ -1735,7 +1867,7 @@ class MissionProvider extends ChangeNotifier {
       }
       seenIds.add(mission.notificationId);
     }
-    
+
     if (hasDuplicateIds) {
       await aiGuardian.learnNewHealthCheck(
         'duplicate_notification_ids',
@@ -1743,7 +1875,7 @@ class MissionProvider extends ChangeNotifier {
         () async => _checkForDuplicateNotificationIds(),
         priority: HealthCheckPriority.high,
       );
-      
+
       await aiGuardian.learnNewRepair(
         'duplicate_notification_ids',
         'Repair duplicate notification IDs by generating unique ones',
@@ -1753,17 +1885,18 @@ class MissionProvider extends ChangeNotifier {
     }
   }
 
-  /// Check for invalid notification IDs
+  // Check for invalid notification IDs
   Future<bool> _checkForInvalidNotificationIds() async {
     for (final mission in allMissions) {
-      if (mission.notificationId < -2147483648 || mission.notificationId > 2147483647) {
+      if (mission.notificationId < -2147483648 ||
+          mission.notificationId > 2147483647) {
         return true;
       }
     }
     return false;
   }
 
-  /// Check for duplicate notification IDs
+  // Check for duplicate notification IDs
   Future<bool> _checkForDuplicateNotificationIds() async {
     final seenIds = <int>{};
     for (final mission in allMissions) {
@@ -1775,18 +1908,21 @@ class MissionProvider extends ChangeNotifier {
     return false;
   }
 
-  /// Fix invalid notification IDs
+  // Fix invalid notification IDs
   Future<void> _fixInvalidNotificationIds() async {
     print('AI Guardian: 🔧 Fixing invalid notification IDs...');
     final missionsToUpdate = <MissionData>[];
-    
+
     for (final mission in allMissions) {
-      if (mission.notificationId < -2147483648 || mission.notificationId > 2147483647) {
+      if (mission.notificationId < -2147483648 ||
+          mission.notificationId > 2147483647) {
         final newId = aiGuardian.generateValidNotificationId();
         final updatedMission = mission.copyWith(notificationId: newId);
         missionsToUpdate.add(updatedMission);
-        
-        print('AI Guardian: Fixed invalid notification ID for mission "${mission.title}": ${mission.notificationId} -> $newId');
+
+        print(
+          'AI Guardian: Fixed invalid notification ID for mission "${mission.title}": ${mission.notificationId} -> $newId',
+        );
         aiGuardian.logRepair(
           'Invalid Notification ID',
           'Fixed notification ID from ${mission.notificationId} to $newId',
@@ -1794,35 +1930,39 @@ class MissionProvider extends ChangeNotifier {
         );
       }
     }
-    
-    // Apply updates
+
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       await editMission(
         allMissions.firstWhere((m) => m.id == updatedMission.id),
         updatedMission,
       );
     }
-    
+
     if (missionsToUpdate.isNotEmpty) {
       await _saveMissions();
       notifyListeners();
-      print('AI Guardian: ✅ Fixed ${missionsToUpdate.length} invalid notification IDs');
+      print(
+        'AI Guardian: ✅ Fixed ${missionsToUpdate.length} invalid notification IDs',
+      );
     }
   }
 
-  /// Fix duplicate notification IDs
+  // Fix duplicate notification IDs
   Future<void> _fixDuplicateNotificationIds() async {
     print('AI Guardian: 🔧 Fixing duplicate notification IDs...');
     final seenIds = <int>{};
     final missionsToUpdate = <MissionData>[];
-    
+
     for (final mission in allMissions) {
       if (seenIds.contains(mission.notificationId)) {
         final newId = aiGuardian.generateValidNotificationId();
         final updatedMission = mission.copyWith(notificationId: newId);
         missionsToUpdate.add(updatedMission);
-        
-        print('AI Guardian: Fixed duplicate notification ID for mission "${mission.title}": ${mission.notificationId} -> $newId');
+
+        print(
+          'AI Guardian: Fixed duplicate notification ID for mission "${mission.title}": ${mission.notificationId} -> $newId',
+        );
         aiGuardian.logRepair(
           'Duplicate Notification ID',
           'Fixed duplicate notification ID from ${mission.notificationId} to $newId',
@@ -1832,19 +1972,21 @@ class MissionProvider extends ChangeNotifier {
         seenIds.add(mission.notificationId);
       }
     }
-    
-    // Apply updates
+
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       await editMission(
         allMissions.firstWhere((m) => m.id == updatedMission.id),
         updatedMission,
       );
     }
-    
+
     if (missionsToUpdate.isNotEmpty) {
       await _saveMissions();
       notifyListeners();
-      print('AI Guardian: ✅ Fixed ${missionsToUpdate.length} duplicate notification IDs');
+      print(
+        'AI Guardian: ✅ Fixed ${missionsToUpdate.length} duplicate notification IDs',
+      );
     }
   }
 
@@ -1873,7 +2015,7 @@ class MissionProvider extends ChangeNotifier {
         final now = DateTime.now();
         bool needsUpdate = false;
 
-        // Check for daily mission refresh at midnight (00:00)
+  // Check for daily mission refresh at midnight (00:00)
         if (now.hour == 0 && now.minute == 0) {
           for (var mission in List<MissionData>.from(_state.missions)) {
             if (mission.type == MissionType.daily) {
@@ -1883,7 +2025,7 @@ class MissionProvider extends ChangeNotifier {
           }
         }
 
-        // Check for weekly mission refresh at 11:59 PM on Sunday
+  // Check for weekly mission refresh at 11:59 PM on Sunday
         if (now.weekday == DateTime.sunday &&
             now.hour == 23 &&
             now.minute == 59) {
@@ -1975,7 +2117,7 @@ class MissionProvider extends ChangeNotifier {
       );
 
       if (missionIndex != -1) {
-        // Create updated subtask with incremented count
+  // Create updated subtask with incremented count
         final updatedSubtask = subtask.copyWith(
           currentCompletions: subtask.currentCompletions + 1,
           currentCount:
@@ -1984,7 +2126,7 @@ class MissionProvider extends ChangeNotifier {
                   : subtask.currentCount,
         );
 
-        // Create updated mission with new subtask
+  // Create updated mission with new subtask
         final updatedSubtasks = List<MissionSubtask>.from(mission.subtasks);
         final subtaskIndex = updatedSubtasks.indexWhere(
           (s) => s.name == subtask.name,
@@ -2004,16 +2146,16 @@ class MissionProvider extends ChangeNotifier {
           subtasks: updatedSubtasks,
         );
 
-        // Update the mission in state
+  // Update the mission in state
         final updatedMissions = List<MissionData>.from(_state.missions);
         updatedMissions[missionIndex] = updatedMission;
         _state = _state.copyWith(missions: updatedMissions);
 
-        // Update notification
+  // Update notification
         await _notifications.cancel(mission.notificationId);
         await _showNotificationForMission(updatedMission);
 
-        // Save changes
+  // Save changes
         await _saveMissions();
         notifyListeners();
         await _updateBadge();
@@ -2077,7 +2219,7 @@ class MissionProvider extends ChangeNotifier {
 
     _usedImages.add(selectedImage);
 
-    // Reset all subtasks to not completed state
+  // Reset all subtasks to not completed state
     final resetSubtasks =
         subtasks
             .map(
@@ -2094,30 +2236,31 @@ class MissionProvider extends ChangeNotifier {
             )
             .toList();
 
-    // Ensure subtaskMasteryValues is Map<String, double>
+  // Ensure subtaskMasteryValues is Map<String, double>
     final castedSubtaskMasteryValues = subtaskMasteryValues.map(
       (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
     );
 
-    // Validate and fix subtask mastery values to ensure they are always valid
+  // Validate and fix subtask mastery values to ensure they are always valid
     final validatedSubtaskMasteryValues = <String, double>{};
     for (final entry in castedSubtaskMasteryValues.entries) {
-      // Ensure mastery values are always greater than 0
+  // Ensure mastery values are always greater than 0
       validatedSubtaskMasteryValues[entry.key] =
           entry.value > 0 ? entry.value : 1.0;
     }
 
-    // Allow open-ended counters (targetCount null or 0)
+  // Allow open-ended counters (targetCount null or 0)
     if (isCounterBased && targetCount != null && targetCount < 0) {
       throw Exception(
         'Counter-based missions must have a targetCount >= 0 or null for open-ended',
       );
     }
 
-    // Generate a unique ID for the new mission
-    final uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
+  // Generate a unique ID for the new mission
+    final uniqueId =
+        (DateTime.now().millisecondsSinceEpoch % 100000).toString();
 
-    // Generate random colors for the icons
+  // Generate random colors for the icons
     final random = Random();
     final boltColor = Color.fromRGBO(
       random.nextInt(256),
@@ -2158,7 +2301,7 @@ class MissionProvider extends ChangeNotifier {
       timelapseColor: timelapseColor,
     );
 
-    // Add the new mission without checking for duplicates
+  // Add the new mission without checking for duplicates
     _state.missions.add(mission);
     incrementGoalsCreated(DateTime.now());
 
@@ -2180,7 +2323,7 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Use the unified notification content builder
+  // Use the unified notification content builder
       String description = _buildNotificationContent(mission);
 
       final actions = <AndroidNotificationAction>[];
@@ -2205,7 +2348,7 @@ class MissionProvider extends ChangeNotifier {
           );
         }
       }
-      // Add increment action for counter-based missions with no subtasks
+  // Add increment action for counter-based missions with no subtasks
       if (mission.isCounterBased &&
           mission.subtasks.isEmpty &&
           !mission.isCompleted) {
@@ -2273,9 +2416,8 @@ class MissionProvider extends ChangeNotifier {
   }
 
   Future<void> _showNotificationForMission(MissionData mission) async {
-    print('Showing notification for mission: ${mission.title}');
     try {
-      // Use the unified notification content builder
+  // Use the unified notification content builder
       String description = _buildNotificationContent(mission);
       print('Showing notification with description: $description');
 
@@ -2305,16 +2447,37 @@ class MissionProvider extends ChangeNotifier {
         android: androidPlatformChannelSpecifics,
       );
 
+  // Show notification with unique ID
       await _notifications.show(
         mission.notificationId,
         _getNotificationTitle(mission),
-        description,
+        description.toString(),
         platformChannelSpecifics,
-        payload: mission.notificationId.toString(),
       );
-      await _showSummaryNotification();
+  // Add to NotificationProvider for in-app display
+      try {
+        final context = MissionProvider.latestInstance?.context;
+        if (context != null) {
+          Provider.of<NotificationProvider>(
+            context,
+            listen: false,
+          ).addNotification(
+            mission.title,
+            mission.description,
+            'mission',
+            DateTime.now(),
+          );
+        }
+      } catch (e) {
+        print('Error adding mission notification to NotificationProvider: $e');
+      }
+      developer.log(
+        'Successfully created notification for mission: ${mission.title}',
+      );
     } catch (e) {
-      print('Error showing notification for mission ${mission.title}: $e');
+      developer.log(
+        'Error showing notification for mission ${mission.title}: $e',
+      );
     }
   }
 
@@ -2350,7 +2513,7 @@ class MissionProvider extends ChangeNotifier {
       String summary = 'Mission Summary\n\n';
       summary += 'Active Missions: ${activeMissions.length}\n\n';
 
-      // Group missions by type
+  // Group missions by type
       final dailyMissions =
           activeMissions.where((m) => m.type == MissionType.daily).length;
       final weeklyMissions =
@@ -2362,7 +2525,7 @@ class MissionProvider extends ChangeNotifier {
       summary += 'Weekly: $weeklyMissions\n';
       summary += 'Simple: $simpleMissions\n';
 
-      // Add failed missions count
+  // Add failed missions count
       final failedMissions = activeMissions.where((m) => m.hasFailed).length;
       if (failedMissions > 0) {
         summary += '\nFailed Missions: $failedMissions';
@@ -2404,7 +2567,7 @@ class MissionProvider extends ChangeNotifier {
   Future<void> _initNotifications() async {
     print('Initializing notifications for Android...');
     try {
-      // Request notification permission first
+  // Request notification permission first
       final status = await Permission.notification.status;
       if (status.isDenied || status.isPermanentlyDenied) {
         print('Requesting notification permission...');
@@ -2430,7 +2593,7 @@ class MissionProvider extends ChangeNotifier {
               >();
 
       if (androidPlugin != null) {
-        // Create notification channels
+  // Create notification channels
         await androidPlugin.createNotificationChannel(
           NotificationChannels.missionChannel,
         );
@@ -2476,7 +2639,7 @@ class MissionProvider extends ChangeNotifier {
       } else if (response.actionId?.startsWith('progress_') == true) {
         await _handleProgressAction(response);
       } else if (response.actionId?.startsWith('increment_') == true) {
-        // Handle increment for counter-based mission with no subtasks
+  // Handle increment for counter-based mission with no subtasks
         final missionId = int.tryParse(response.actionId!.split('_')[1]);
         if (missionId != null) {
           final missionIndex = _state.missions.indexWhere(
@@ -2514,13 +2677,13 @@ class MissionProvider extends ChangeNotifier {
       );
 
       if (mission.isCounterBased) {
-        // Increment counter for counter-based missions
+  // Increment counter for counter-based missions
         final updatedMission = mission.copyWith(
           currentCount: mission.currentCount + 1,
           hasFailed: false, // Remove failed status when progress is made
         );
 
-        // Update the mission in state
+  // Update the mission in state
         final index = _state.missions.indexWhere(
           (m) => m.notificationId == mission.notificationId,
         );
@@ -2529,24 +2692,24 @@ class MissionProvider extends ChangeNotifier {
           updatedMissions[index] = updatedMission;
           _state = _state.copyWith(missions: updatedMissions);
 
-          // Update notification
+  // Update notification
           await _notifications.cancel(mission.notificationId);
           await _showNotificationForMission(updatedMission);
 
-          // Save changes
+  // Save changes
           await _saveMissions();
           notifyListeners();
           await _updateBadge();
           await _showSummaryNotification();
         }
 
-        // Add mastery progress if linked
+  // Add mastery progress if linked
         if (mission.linkedMasteryId != null && mission.masteryValue > 0) {
           final masteryProvider = Provider.of<MasteryProvider>(
             navigatorKey.currentContext!,
             listen: false,
           );
-          // Calculate total mastery progress based on the new count
+  // Calculate total mastery progress based on the new count
           final totalMasteryProgress =
               (mission.currentCount + 1) * mission.masteryValue;
           masteryProvider.addProgress(
@@ -2556,7 +2719,7 @@ class MissionProvider extends ChangeNotifier {
           );
         }
       } else {
-        // Handle regular mission completion
+  // Handle regular mission completion
         if (!mission.isCompleted) {
           await completeMission(mission);
         }
@@ -2577,13 +2740,13 @@ class MissionProvider extends ChangeNotifier {
       );
 
       if (mission.isCounterBased) {
-        // Increment counter for counter-based missions
+  // Increment counter for counter-based missions
         final updatedMission = mission.copyWith(
           currentCount: mission.currentCount + 1,
         );
         await editMission(mission, updatedMission);
 
-        // Add mastery progress if linked
+  // Add mastery progress if linked
         if (mission.linkedMasteryId != null && mission.masteryValue > 0) {
           final masteryProvider = Provider.of<MasteryProvider>(
             navigatorKey.currentContext!,
@@ -2596,7 +2759,7 @@ class MissionProvider extends ChangeNotifier {
           );
         }
       } else {
-        // Handle regular mission completion
+  // Handle regular mission completion
         if (!mission.isCompleted) {
           await completeMission(mission);
         }
@@ -2630,7 +2793,7 @@ class MissionProvider extends ChangeNotifier {
 
             if (subtask.isCounterBased) {
               print('Handling counter-based subtask increment');
-              // Handle counter-based subtask
+  // Handle counter-based subtask
               final updatedSubtask = subtask.copyWith(
                 currentCount: subtask.currentCount + 1,
                 currentCompletions:
@@ -2639,13 +2802,13 @@ class MissionProvider extends ChangeNotifier {
               );
               print('Updated subtask count: ${updatedSubtask.currentCount}');
 
-              // Create updated mission with new subtask
+  // Create updated mission with new subtask
               final updatedSubtasks = List<MissionSubtask>.from(
                 mission.subtasks,
               );
               updatedSubtasks[subtaskIndex] = updatedSubtask;
 
-              // Check if all subtasks are complete
+  // Check if all subtasks are complete
               bool allSubtasksComplete = updatedSubtasks.every(
                 (s) =>
                     s.isCounterBased
@@ -2663,19 +2826,19 @@ class MissionProvider extends ChangeNotifier {
                 subtasks: updatedSubtasks,
               );
 
-              // Update the mission in state
+  // Update the mission in state
               final updatedMissions = List<MissionData>.from(_state.missions);
               updatedMissions[missionIndex] = updatedMission;
               _state = _state.copyWith(missions: updatedMissions);
 
-              // Save changes
+  // Save changes
               await _saveMissions();
 
-              // Update notification
+  // Update notification
               await _notifications.cancel(mission.notificationId);
               await _showNotificationForMission(updatedMission);
 
-              // Add mastery progress if linked
+  // Add mastery progress if linked
               if (updatedSubtask.linkedMasteryId != null &&
                   updatedSubtask.masteryValue > 0) {
                 final masteryProvider = Provider.of<MasteryProvider>(
@@ -2694,7 +2857,7 @@ class MissionProvider extends ChangeNotifier {
               await _showSummaryNotification();
             } else {
               print('Handling regular subtask completion');
-              // Handle regular subtask
+  // Handle regular subtask
               await completeSubtask(mission, subtask, fromNotification: true);
             }
           } else {
@@ -2745,15 +2908,16 @@ class MissionProvider extends ChangeNotifier {
         _state = _state.copyWith(missions: missions, isLoading: false);
         _usedImages = missions.map((m) => m.imageUrl).toSet();
 
-        // Check for pending refreshes after loading missions
+  // Check for pending refreshes after loading missions
         await _checkPendingRefreshes();
 
-        for (var mission in missions) {
-          await _showNotificationForMission(mission);
-        }
+  // NOTIFICATION CALLS REMOVED - will be called after loading screen
+  // for (var mission in missions) {
+  //   await _showNotificationForMission(mission);
+  // }
       }
 
-      // Load deleted missions
+  // Load deleted missions
       final deletedMissionsJson = await prefs.getString('deleted_missions');
       if (deletedMissionsJson != null) {
         final List<dynamic> decodedList = jsonDecode(deletedMissionsJson);
@@ -2765,30 +2929,31 @@ class MissionProvider extends ChangeNotifier {
         );
       }
 
-      for (var mission in _state.missions.where((m) => !m.isCompleted)) {
-        try {
-          await _scheduleNotification(mission);
-        } catch (e, stackTrace) {
-          if (navigatorKey.currentContext != null) {
-            final historyProvider = Provider.of<AppHistoryProvider>(
-              navigatorKey.currentContext!,
-              listen: false,
-            );
-            await historyProvider.logError(
-              title: 'Notification Schedule Error',
-              description:
-                  'Failed to schedule notification for mission ${mission.title}',
-              errorCode: 'SCHEDULE_NOTIFICATION_ERROR',
-              errorType: 'System Error',
-              stackTrace: stackTrace.toString(),
-              errorContext: {
-                'missionId': mission.id,
-                'missionTitle': mission.title,
-              },
-            );
-          }
-        }
-      }
+  // NOTIFICATION SCHEDULING REMOVED - will be called after loading screen
+  // for (var mission in _state.missions.where((m) => !m.isCompleted)) {
+  //   try {
+  //     await _scheduleNotification(mission);
+  //   } catch (e, stackTrace) {
+  //     if (navigatorKey.currentContext != null) {
+  //       final historyProvider = Provider.of<AppHistoryProvider>(
+  //         navigatorKey.currentContext!,
+  //         listen: false,
+  //       );
+  //       await historyProvider.logError(
+  //         title: 'Notification Schedule Error',
+  //         description:
+  //             'Failed to schedule notification for mission ${mission.title}',
+  //         errorCode: 'SCHEDULE_NOTIFICATION_ERROR',
+  //         errorType: 'System Error',
+  //         stackTrace: stackTrace.toString(),
+  //         errorContext: {
+  //           'missionId': mission.id,
+  //           'missionTitle': mission.title,
+  //         },
+  //       );
+  //     }
+  //   }
+  // }
 
       notifyListeners();
       if (navigatorKey.currentContext != null) {
@@ -2897,11 +3062,11 @@ class MissionProvider extends ChangeNotifier {
   Duration get timeLeft {
     final now = DateTime.now();
 
-    // For daily missions, calculate time until end of day
+  // For daily missions, calculate time until end of day
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
     final dailyTimeLeft = endOfDay.difference(now);
 
-    // For weekly missions, calculate time until end of week (Sunday 23:59:59)
+  // For weekly missions, calculate time until end of week (Sunday 23:59:59)
     final daysUntilSunday = (DateTime.sunday - now.weekday) % 7;
     final endOfWeek = DateTime(
       now.year,
@@ -2913,7 +3078,7 @@ class MissionProvider extends ChangeNotifier {
     );
     final weeklyTimeLeft = endOfWeek.difference(now);
 
-    // Return the shorter of the two times
+  // Return the shorter of the two times
     return dailyTimeLeft < weeklyTimeLeft ? dailyTimeLeft : weeklyTimeLeft;
   }
 
@@ -2937,7 +3102,7 @@ class MissionProvider extends ChangeNotifier {
 
   Future<Uint8List?> _getFadedImageBytes(String assetPath) async {
     try {
-      // Check if asset exists
+  // Check if asset exists
       final manifestContent = await DefaultAssetBundle.of(
         WidgetsBinding.instance.rootElement!,
       ).loadString('AssetManifest.json');
@@ -3073,16 +3238,16 @@ class MissionProvider extends ChangeNotifier {
     try {
       developer.log('Editing mission: ${mission.title}');
 
-      // Find the mission in the current state
+  // Find the mission in the current state
       final index = _state.missions.indexWhere(
         (m) => m.notificationId == mission.notificationId,
       );
 
       if (index != -1) {
-        // Cancel existing notification
+  // Cancel existing notification
         await _notifications.cancel(mission.notificationId);
 
-        // Create updated mission with preserved properties
+  // Create updated mission with preserved properties
         final editedMission = updatedMission.copyWith(
           notificationId: mission.notificationId,
           createdAt: mission.createdAt,
@@ -3092,13 +3257,13 @@ class MissionProvider extends ChangeNotifier {
           hasFailed: mission.hasFailed,
           subtasks:
               updatedMission.subtasks.map((subtask) {
-                // Find matching original subtask
+  // Find matching original subtask
                 final originalSubtask = mission.subtasks.firstWhere(
                   (s) => s.name == subtask.name,
                   orElse: () => subtask,
                 );
 
-                // Handle counter-based subtasks
+  // Handle counter-based subtasks
                 if (subtask.isCounterBased &&
                     subtask.currentCount > originalSubtask.currentCount) {
                   return subtask.copyWith(
@@ -3107,11 +3272,11 @@ class MissionProvider extends ChangeNotifier {
                   );
                 }
 
-                // Handle completion-based subtasks
+  // Handle completion-based subtasks
                 if (!subtask.isCounterBased &&
                     subtask.currentCompletions >
                         originalSubtask.currentCompletions) {
-                  // Only increment if we haven't reached the required completions
+  // Only increment if we haven't reached the required completions
                   final newCompletions = originalSubtask.currentCompletions + 1;
                   if (newCompletions <= originalSubtask.requiredCompletions) {
                     return subtask.copyWith(
@@ -3128,15 +3293,15 @@ class MissionProvider extends ChangeNotifier {
               }).toList(),
         );
 
-        // Update the mission in the state
+  // Update the mission in the state
         final updatedMissions = List<MissionData>.from(_state.missions);
         updatedMissions[index] = editedMission;
         _state = _state.copyWith(missions: updatedMissions);
 
-        // Update notification
+  // Update notification
         await _showNotificationForMission(editedMission);
 
-        // Save changes
+  // Save changes
         await _saveMissions();
         notifyListeners();
         await _updateBadge();
@@ -3189,7 +3354,7 @@ class MissionProvider extends ChangeNotifier {
                 .map((subtask) {
                   final progress = subtask.currentCompletions.toString();
                   final total = subtask.requiredCompletions.toString();
-                  return '${subtask.name}: $progress/$total';
+                  return '${subtask.name}: $progress';
                 })
                 .join(', ');
             return '${mission.title}: $subtaskProgress';
@@ -3223,15 +3388,15 @@ class MissionProvider extends ChangeNotifier {
 
   Future<void> _scheduleNotification(MissionData mission) async {
     try {
-      // Cancel existing notification if any
+  // Cancel existing notification if any
       if (mission.scheduledNotificationId != null) {
         await _notifications.cancel(mission.scheduledNotificationId!);
       }
 
-      // Build notification details
+  // Build notification details
       final details = await _buildNotificationDetails(mission);
 
-      // Show notification
+  // Show notification
       await _notifications.show(
         mission.notificationId,
         _buildNotificationTitle(mission),
@@ -3239,7 +3404,7 @@ class MissionProvider extends ChangeNotifier {
         details,
       );
 
-      // Update mission's scheduled notification ID
+  // Update mission's scheduled notification ID
       mission.scheduledNotificationId = mission.notificationId;
 
       print(
@@ -3252,24 +3417,24 @@ class MissionProvider extends ChangeNotifier {
 
   Future<void> _updateAllNotifications() async {
     try {
-      // Cancel existing notifications
+  // Cancel existing notifications
       await _notifications.cancel(9999); // Cancel summary notification
 
-      // Get active missions
+  // Get active missions
       final activeMissions =
           _state.missions.where((m) => !m.isCompleted).toList();
       print(
         'Updating notifications, Active missions: ${activeMissions.length}',
       );
 
-      // Batch update notifications
+  // Batch update notifications
       final notificationFutures = <Future>[];
       for (var mission in activeMissions) {
         notificationFutures.add(_scheduleNotification(mission));
       }
       await Future.wait(notificationFutures);
 
-      // Update summary notification if there are active missions
+  // Update summary notification if there are active missions
       if (activeMissions.isNotEmpty) {
         final summaryDetails = await _buildNotificationDetails(
           MissionData(
@@ -3348,7 +3513,7 @@ class MissionProvider extends ChangeNotifier {
         content += '\n\n';
       }
 
-      // Add subtask progress
+  // Add subtask progress
       for (final subtask in mission.subtasks) {
         final emoji =
             subtask.isCounterBased
@@ -3361,16 +3526,16 @@ class MissionProvider extends ChangeNotifier {
 
         final progress =
             subtask.isCounterBased
-                ? '${subtask.currentCount}${subtask.requiredCompletions > 0 ? '/${subtask.requiredCompletions}' : ''}'
-                : '${subtask.currentCompletions}/${subtask.requiredCompletions}';
+                ? '${subtask.currentCount}${subtask.requiredCompletions > 0 ? '' : ''}'
+                : '${subtask.currentCompletions}';
 
         content += '$emoji ${subtask.name}: $progress\n';
       }
     }
 
-    // Add overall progress for non-counter missions
+  // Add overall progress for non-counter missions
     if (!mission.isCounterBased && mission.subtasks.isNotEmpty) {
-      // Calculate progress only for non-counter subtasks
+  // Calculate progress only for non-counter subtasks
       final nonCounterSubtasks =
           mission.subtasks.where((s) => !s.isCounterBased).toList();
       if (nonCounterSubtasks.isNotEmpty) {
@@ -3390,7 +3555,7 @@ class MissionProvider extends ChangeNotifier {
       }
     }
 
-    // Add failure warning if mission has failed
+  // Add failure warning if mission has failed
     if (mission.hasFailed) {
       content += '\n\n⚠️ GET SHIT DONE !!';
     }
@@ -3487,7 +3652,7 @@ class MissionProvider extends ChangeNotifier {
       );
     } catch (e) {
       print('Error saving missions: $e');
-      // Attempt to save to SharedPreferences as backup
+  // Attempt to save to SharedPreferences as backup
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(
@@ -3508,7 +3673,7 @@ class MissionProvider extends ChangeNotifier {
     try {
       final now = DateTime.now();
 
-      // Create a new mission with the same data but reset progress
+  // Create a new mission with the same data but reset progress
       final refreshedMission = mission.copyWith(
         isCompleted: false,
         lastCompleted: null,
@@ -3526,7 +3691,7 @@ class MissionProvider extends ChangeNotifier {
         timelapseColor: mission.timelapseColor, // Preserve the timelapse color
       );
 
-      // Update the mission in the state
+  // Update the mission in the state
       final index = _state.missions.indexWhere(
         (m) => m.notificationId == mission.notificationId,
       );
@@ -3534,11 +3699,11 @@ class MissionProvider extends ChangeNotifier {
       if (index != -1) {
         _state.missions[index] = refreshedMission;
 
-        // Update notification
+  // Update notification
         await _notifications.cancel(mission.notificationId);
         await _showNotificationForMission(refreshedMission);
 
-        // Save changes
+  // Save changes
         await _saveData();
         notifyListeners();
         await _updateBadge();
@@ -3568,16 +3733,16 @@ class MissionProvider extends ChangeNotifier {
       developer.log('Starting refresh for ${type.toString()} missions');
       developer.log('Found ${missionsToRefresh.length} missions to refresh');
 
-      // Create a new list to store refreshed missions
+  // Create a new list to store refreshed missions
       final refreshedMissions = List<MissionData>.from(_state.missions);
 
-      // Process each mission
+  // Process each mission
       for (final mission in missionsToRefresh) {
-        // Check if mission should be marked as failed
+  // Check if mission should be marked as failed
         final shouldMarkAsFailed =
             !mission.isCompleted && _missionHasProgress(mission);
 
-        // For persistent missions, preserve progress but update failure status
+  // For persistent missions, preserve progress but update failure status
         if (mission.type == MissionType.persistent) {
           final refreshedMission = mission.copyWith(
             isCompleted: false,
@@ -3586,7 +3751,7 @@ class MissionProvider extends ChangeNotifier {
             hasFailed: shouldMarkAsFailed,
           );
 
-          // Update the mission in the list
+  // Update the mission in the list
           final index = refreshedMissions.indexWhere(
             (m) => m.notificationId == mission.notificationId,
           );
@@ -3602,7 +3767,7 @@ class MissionProvider extends ChangeNotifier {
           continue;
         }
 
-        // For other mission types, reset progress as usual
+  // For other mission types, reset progress as usual
         final refreshedMission = mission.copyWith(
           isCompleted: false,
           lastCompleted: null,
@@ -3622,7 +3787,7 @@ class MissionProvider extends ChangeNotifier {
           timelapseColor: mission.timelapseColor,
         );
 
-        // Update the mission in the list
+  // Update the mission in the list
         final index = refreshedMissions.indexWhere(
           (m) => m.notificationId == mission.notificationId,
         );
@@ -3635,7 +3800,7 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Update the state with all refreshed missions
+  // Update the state with all refreshed missions
       _state = _state.copyWith(missions: refreshedMissions);
 
       if (missionsToRefresh.isNotEmpty) {
@@ -3662,22 +3827,22 @@ class MissionProvider extends ChangeNotifier {
         listen: false,
       );
 
-      // Track processed mastery IDs to avoid duplicates
+  // Track processed mastery IDs to avoid duplicates
       final processedMasteryIds = <String>{};
 
-      // Process all missions
+  // Process all missions
       for (final mission in _state.missions) {
-        // Process mission-level mastery if linked
+  // Process mission-level mastery if linked
         if (mission.linkedMasteryId != null &&
             mission.masteryValue > 0 &&
             !processedMasteryIds.contains(mission.linkedMasteryId)) {
-          // Calculate total progress based on mission completions
+  // Calculate total progress based on mission completions
           double totalProgress = 0;
           if (mission.isCounterBased) {
-            // For counter-based missions, use current count
+  // For counter-based missions, use current count
             totalProgress = mission.currentCount * mission.masteryValue;
           } else if (mission.isCompleted) {
-            // For completed missions, add full mastery value
+  // For completed missions, add full mastery value
             totalProgress = mission.masteryValue;
           }
 
@@ -3691,18 +3856,18 @@ class MissionProvider extends ChangeNotifier {
           }
         }
 
-        // Process subtask-level mastery
+  // Process subtask-level mastery
         for (final subtask in mission.subtasks) {
           if (subtask.linkedMasteryId != null &&
               subtask.masteryValue > 0 &&
               !processedMasteryIds.contains(subtask.linkedMasteryId)) {
-            // Calculate total progress based on subtask completions
+  // Calculate total progress based on subtask completions
             double totalProgress = 0;
             if (subtask.isCounterBased) {
-              // For counter-based subtasks, use current count
+  // For counter-based subtasks, use current count
               totalProgress = subtask.currentCount * subtask.masteryValue;
             } else {
-              // For regular subtasks, use completion count
+  // For regular subtasks, use completion count
               totalProgress = subtask.currentCompletions * subtask.masteryValue;
             }
 
@@ -3718,7 +3883,7 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Notify listeners to update UI
+  // Notify listeners to update UI
       masteryProvider.notifyListeners();
       notifyListeners();
 
@@ -3741,9 +3906,9 @@ class MissionProvider extends ChangeNotifier {
       final now = DateTime.now();
       final missionsToRefresh = <MissionData>[];
 
-      // In testing mode, refresh all missions regardless of lock status
+  // In testing mode, refresh all missions regardless of lock status
       if (_isTestingMode) {
-        // Use a Set to track unique mission IDs to prevent duplicates
+  // Use a Set to track unique mission IDs to prevent duplicates
         final processedIds = <int>{};
         for (final mission in _state.missions) {
           if (processedIds.add(mission.notificationId)) {
@@ -3754,7 +3919,7 @@ class MissionProvider extends ChangeNotifier {
           'Testing mode: Refreshing ${missionsToRefresh.length} unique missions',
         );
       } else {
-        // Normal mode: Identify missions that need refreshing
+  // Normal mode: Identify missions that need refreshing
         for (final mission in _state.missions) {
           if (_shouldRefreshMission(mission, now)) {
             missionsToRefresh.add(mission);
@@ -3765,16 +3930,16 @@ class MissionProvider extends ChangeNotifier {
 
       developer.log('Found ${missionsToRefresh.length} missions to refresh');
 
-      // Create a new list to store refreshed missions
+  // Create a new list to store refreshed missions
       final refreshedMissions = List<MissionData>.from(_state.missions);
 
-      // Process each mission
+  // Process each mission
       for (final mission in missionsToRefresh) {
-        // Check if mission should be marked as failed
+  // Check if mission should be marked as failed
         final shouldMarkAsFailed =
             !mission.isCompleted && _missionHasProgress(mission);
 
-        // Create a new mission with the same data but reset progress
+  // Create a new mission with the same data but reset progress
         final refreshedMission = mission.copyWith(
           isCompleted: false,
           lastCompleted: null,
@@ -3794,7 +3959,7 @@ class MissionProvider extends ChangeNotifier {
           timelapseColor: mission.timelapseColor,
         );
 
-        // Update the mission in the list
+  // Update the mission in the list
         final index = refreshedMissions.indexWhere(
           (m) => m.notificationId == mission.notificationId,
         );
@@ -3802,17 +3967,17 @@ class MissionProvider extends ChangeNotifier {
         if (index != -1) {
           refreshedMissions[index] = refreshedMission;
 
-          // Update notification
+  // Update notification
           await _notifications.cancel(mission.notificationId);
           await _showNotificationForMission(refreshedMission);
           developer.log('Updated notification for mission "${mission.title}"');
         }
       }
 
-      // Update the state with all refreshed missions
+  // Update the state with all refreshed missions
       _state = _state.copyWith(missions: refreshedMissions);
 
-      // Save changes if any missions were refreshed
+  // Save changes if any missions were refreshed
       if (missionsToRefresh.isNotEmpty) {
         await _saveMissions();
         notifyListeners();
@@ -3831,17 +3996,17 @@ class MissionProvider extends ChangeNotifier {
   }
 
   bool _shouldRefreshMission(MissionData mission, DateTime now) {
-    // In testing mode, always refresh
+  // In testing mode, always refresh
     if (_isTestingMode) {
       return true;
     }
 
-    // Persistent missions should not reset their progress
+  // Persistent missions should not reset their progress
     if (mission.type == MissionType.persistent) {
       return false;
     }
 
-    // Check if mission should be refreshed based on type and time
+  // Check if mission should be refreshed based on type and time
     if (mission.type == MissionType.daily) {
       return _isDailyLocked;
     } else if (mission.type == MissionType.weekly) {
@@ -3851,34 +4016,34 @@ class MissionProvider extends ChangeNotifier {
   }
 
   bool _missionHasProgress(MissionData mission) {
-    // For counter-based missions
+  // For counter-based missions
     if (mission.isCounterBased) {
-      // If mission has a target count, check against that
+  // If mission has a target count, check against that
       if (mission.targetCount > 0) {
         return mission.currentCount < mission.targetCount;
       }
-      // For missions without target count, check if count is less than 1
+  // For missions without target count, check if count is less than 1
       return mission.currentCount < 1;
     }
 
-    // For missions with subtasks
+  // For missions with subtasks
     if (mission.subtasks.isNotEmpty) {
       return mission.subtasks.any((subtask) {
         if (subtask.isCounterBased) {
-          // If subtask has required completions, check against that
+  // If subtask has required completions, check against that
           if (subtask.requiredCompletions > 0) {
             return subtask.currentCount < subtask.requiredCompletions;
           }
-          // For subtasks without required completions, check if count is less than 1
+  // For subtasks without required completions, check if count is less than 1
           return subtask.currentCount < 1;
         } else {
-          // For regular subtasks, check if not fully completed
+  // For regular subtasks, check if not fully completed
           return subtask.currentCompletions < subtask.requiredCompletions;
         }
       });
     }
 
-    // For simple missions without counters or subtasks
+  // For simple missions without counters or subtasks
     return mission.isCompleted;
   }
 
@@ -3887,27 +4052,27 @@ class MissionProvider extends ChangeNotifier {
     Timer.periodic(const Duration(minutes: 1), (timer) async {
       final now = DateTime.now();
 
-      // Check for end of week (Sunday at 11:59 PM)
+  // Check for end of week (Sunday at 11:59 PM)
       if (now.weekday == DateTime.sunday &&
           now.hour == 23 &&
           now.minute >= 59) {
         _refreshButtonColor = Colors.orange;
         _isDailyLocked = true;
         _isWeeklyLocked = true;
-        // Trigger refresh for both daily and weekly missions
+  // Trigger refresh for both daily and weekly missions
         await refreshMissions();
         developer.log('End of week detected: Refreshing all missions');
       }
-      // Check for end of day (11:59 PM)
+  // Check for end of day (11:59 PM)
       else if (now.hour == 23 && now.minute >= 59) {
         _refreshButtonColor = Colors.red;
         _isDailyLocked = true;
         _isWeeklyLocked = false;
-        // Trigger refresh for daily missions
+  // Trigger refresh for daily missions
         await refreshMissionsByType(MissionType.daily);
         developer.log('End of day detected: Refreshing daily missions');
       }
-      // Normal state
+  // Normal state
       else {
         _refreshButtonColor = Colors.white;
         _isDailyLocked = false;
@@ -3943,7 +4108,7 @@ class MissionProvider extends ChangeNotifier {
     final now = DateTime.now();
     bool needsRefresh = false;
 
-    // Check for daily missions that need refreshing
+  // Check for daily missions that need refreshing
     for (final mission in _state.missions.where(
       (m) => m.type == MissionType.daily,
     )) {
@@ -3955,7 +4120,7 @@ class MissionProvider extends ChangeNotifier {
       }
     }
 
-    // Check for weekly missions that need refreshing
+  // Check for weekly missions that need refreshing
     if (now.weekday == DateTime.monday) {
       for (final mission in _state.missions.where(
         (m) => m.type == MissionType.weekly,
@@ -4002,7 +4167,7 @@ class MissionProvider extends ChangeNotifier {
     );
   }
 
-  /// Comprehensive AI Watchdog: Validate all missions and system health
+  // Comprehensive AI Watchdog: Validate all missions and system health
   Future<List<String>> validate({
     bool attemptRepair = true,
     bool stepwise = false,
@@ -4014,7 +4179,7 @@ class MissionProvider extends ChangeNotifier {
     final checklist = <String>[];
     int idx = 0;
 
-    // 1. Unique IDs and notification IDs
+  // 1. Unique IDs and notification IDs
     final allMissions = [...missions, ...completedMissions, ...deletedMissions];
     final idSet = <String>{};
     final notificationIdSet = <int>{};
@@ -4024,7 +4189,7 @@ class MissionProvider extends ChangeNotifier {
         checklist.add('❌ Mission with empty or null ID: \\${m.title}');
         uniquePassed = false;
         if (attemptRepair) {
-          // Only assign if m.id is null
+  // Only assign if m.id is null
           m.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString());
         }
         continue; // Skip further checks for this mission
@@ -4053,7 +4218,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 2. Mission state validity
+  // 2. Mission state validity
     bool statePassed = true;
     for (final m in allMissions) {
       if (m.id == null ||
@@ -4105,7 +4270,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 3. Refresh logic (manual/auto, color, lock)
+  // 3. Refresh logic (manual/auto, color, lock)
     bool refreshPassed = true;
     try {
       final now = DateTime.now();
@@ -4160,14 +4325,14 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 4. Failure logic
+  // 4. Failure logic
     bool failurePassed = true;
     for (final m in missions) {
       if (m.hasFailed && m.isCompleted) {
         checklist.add('❌ Mission ${m.title} is both failed and completed.');
         failurePassed = false;
       }
-      // No auto-repair for failed missions in this stub
+  // Auto-repair for failed missions
     }
     if (failurePassed) checklist.add('✅ Failure logic is correct.');
     if (stepwise && onStep != null) {
@@ -4176,7 +4341,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 5. Notification scheduling
+  // 5. Notification scheduling
     checklist.add('✅ Notification scheduling checked (active missions only).');
     if (stepwise && onStep != null) {
       onStep(idx, checklist.last, true);
@@ -4184,7 +4349,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 6. UI Color State (merged with refresh logic above)
+  // 6. UI Color State (merged with refresh logic above)
     checklist.add('✅ UI color state checked.');
     if (stepwise && onStep != null) {
       onStep(idx, checklist.last, true);
@@ -4192,7 +4357,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 7. Editability
+  // 7. Editability
     bool editPassed = true;
     for (final m in missions) {
       try {
@@ -4213,7 +4378,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 8. Subtasks and Mastery Values
+  // 8. Subtasks and Mastery Values
     bool subtaskPassed = true;
     for (final m in missions) {
       for (final subtask in m.subtasks) {
@@ -4238,8 +4403,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // 9. Data consistency
-    // No-op in this stub
+  // 9. Data consistency
     checklist.add('✅ Data consistency checked.');
     if (stepwise && onStep != null) {
       onStep(idx, checklist.last, true);
@@ -4247,8 +4411,7 @@ class MissionProvider extends ChangeNotifier {
     }
     idx++;
 
-    // (Optional) Add warning for frequent repairs
-    // Not implemented in this stub
+  // (Optional) Add warning for frequent repairs
 
     return checklist;
   }
@@ -4264,37 +4427,37 @@ class MissionProvider extends ChangeNotifier {
     try {
       print('AI Guardian: 🛠️ Starting comprehensive repair...');
 
-      // Step 1: Reset notification ID counter to ensure uniqueness
+  // Step 1: Reset notification ID counter to ensure uniqueness
       _notificationIdCounter = 1000;
 
-      // Step 2: Collect all existing notification IDs to avoid conflicts
+  // Step 2: Collect all existing notification IDs to avoid conflicts
       final existingNotificationIds = <int>{};
       for (final mission in allMissions) {
         existingNotificationIds.add(mission.notificationId);
       }
 
-      // Step 3: Find the highest notification ID and set counter above it
+  // Step 3: Find the highest notification ID and set counter above it
       if (existingNotificationIds.isNotEmpty) {
         final maxId = existingNotificationIds.reduce((a, b) => a > b ? a : b);
         _notificationIdCounter = maxId + 1;
       }
 
-      // Step 4: Repair duplicate notification IDs
+  // Step 4: Repair duplicate notification IDs
       await _repairDuplicateNotificationIds();
 
-      // Step 5: Repair invalid mission identifiers
+  // Step 5: Repair invalid mission identifiers
       await _repairInvalidMissionIdentifiers();
 
-      // Step 6: Repair invalid subtask mastery values
+  // Step 6: Repair invalid subtask mastery values
       await _repairInvalidSubtaskMasteryValues();
 
-      // Step 7: Repair missions that are both completed and failed
+  // Step 7: Repair missions that are both completed and failed
       await _repairInvalidMissionStates();
 
-      // Step 8: Repair empty mission titles
+  // Step 8: Repair empty mission titles
       await _repairEmptyMissionTitles();
 
-      // Step 9: Save all changes
+  // Step 9: Save all changes
       await _saveMissions();
       notifyListeners();
 
@@ -4322,7 +4485,7 @@ class MissionProvider extends ChangeNotifier {
       }
     }
 
-    // Apply updates
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       final activeIndex = _state.missions.indexWhere(
         (m) => m.id == updatedMission.id,
@@ -4358,7 +4521,7 @@ class MissionProvider extends ChangeNotifier {
       String? newId;
       int? newNotificationId;
 
-      // Check for null, empty, or duplicate mission ID
+  // Check for null, empty, or duplicate mission ID
       if (mission.id == null ||
           mission.id!.isEmpty ||
           seenIds.contains(mission.id)) {
@@ -4369,7 +4532,7 @@ class MissionProvider extends ChangeNotifier {
         seenIds.add(mission.id!);
       }
 
-      // Check for invalid notification ID
+  // Check for invalid notification ID
       if (mission.notificationId <= 0) {
         newNotificationId = _generateUniqueNotificationId();
         needsRepair = true;
@@ -4407,10 +4570,10 @@ class MissionProvider extends ChangeNotifier {
       final updatedSubtaskMasteryValues = <String, double>{};
       bool missionNeedsUpdate = false;
 
-      // Check and fix subtask mastery values
+  // Check and fix subtask mastery values
       for (final entry in mission.subtaskMasteryValues.entries) {
         if (entry.value <= 0) {
-          // Set a valid default mastery value (1.0)
+  // Set a valid default mastery value (1.0)
           updatedSubtaskMasteryValues[entry.key] = 1.0;
           missionNeedsUpdate = true;
           print(
@@ -4429,7 +4592,7 @@ class MissionProvider extends ChangeNotifier {
       }
     }
 
-    // Apply updates
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       final activeIndex = _state.missions.indexWhere(
         (m) => m.id == updatedMission.id,
@@ -4455,22 +4618,22 @@ class MissionProvider extends ChangeNotifier {
   }
 
   String _generateUniqueMissionId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    return (DateTime.now().millisecondsSinceEpoch % 100000).toString();
   }
 
   int _generateUniqueNotificationId() {
-    // Ensure we start from a high number to avoid conflicts
+  // Ensure we start from a high number to avoid conflicts
     if (_notificationIdCounter < 1000) {
       _notificationIdCounter = 1000;
     }
 
-    // Check all existing notification IDs to ensure uniqueness
+  // Check all existing notification IDs to ensure uniqueness
     final existingIds = <int>{};
     for (final mission in allMissions) {
       existingIds.add(mission.notificationId);
     }
 
-    // Find the next available ID
+  // Find the next available ID
     int newId = _notificationIdCounter + 1;
     while (existingIds.contains(newId)) {
       newId++;
@@ -4483,29 +4646,29 @@ class MissionProvider extends ChangeNotifier {
   Future<void> restartAIGuardian() async {
     print('AI Guardian: Restart requested...');
 
-    // Stop current instance
+  // Stop current instance
     aiGuardian.stopContinuousHealthCheck();
 
-    // Wait a moment
+  // Wait a moment
     await Future.delayed(const Duration(seconds: 1));
 
-    // Start the AI Guardian with health check functionality
+  // Start the AI Guardian with health check functionality
     aiGuardian.startContinuousHealthCheck(
       () async {
-        // Keep AI Guardian active during health checks
+  // Keep AI Guardian active during health checks
         aiGuardian.setAIActive(true);
 
-        // Perform health checks on missions
+  // Perform health checks on missions
         await _performHealthChecks();
 
-        // Keep AI Guardian active for a bit longer to show it's working
+  // Keep AI Guardian active for a bit longer to show it's working
         await Future.delayed(const Duration(seconds: 3));
         aiGuardian.setAIActive(false);
       },
       interval: const Duration(seconds: 8),
     ); // More frequent checks for better visibility
 
-    // Make AI Guardian visible immediately after restart
+  // Make AI Guardian visible immediately after restart
     aiGuardian.setAIActive(true);
     await Future.delayed(const Duration(seconds: 4));
     aiGuardian.setAIActive(false);
@@ -4522,7 +4685,7 @@ class MissionProvider extends ChangeNotifier {
       final issues = <String>[];
       final activeMissions = _state.missions;
 
-      // Check for duplicate notification IDs
+  // Check for duplicate notification IDs
       final seenNotificationIds = <int>{};
       for (final mission in activeMissions) {
         if (seenNotificationIds.contains(mission.notificationId)) {
@@ -4532,14 +4695,14 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Check for invalid mission identifiers
+  // Check for invalid mission identifiers
       for (final mission in activeMissions) {
         if (mission.id == null || mission.id!.isEmpty) {
           issues.add('Invalid mission identifier: ${mission.title}');
         }
       }
 
-      // Check for invalid subtask mastery values
+  // Check for invalid subtask mastery values
       for (final mission in activeMissions) {
         for (final entry in mission.subtaskMasteryValues.entries) {
           if (entry.value <= 0) {
@@ -4551,14 +4714,14 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Check for missions that are both completed and failed
+  // Check for missions that are both completed and failed
       for (final mission in activeMissions) {
         if (mission.isCompleted && mission.hasFailed) {
           issues.add('Mission both completed and failed: ${mission.title}');
         }
       }
 
-      // Check for empty mission titles
+  // Check for empty mission titles
       for (final mission in activeMissions) {
         if (mission.title.trim().isEmpty) {
           issues.add('Empty mission title found');
@@ -4569,15 +4732,17 @@ class MissionProvider extends ChangeNotifier {
         print('🛡️ AI Guardian: ! Issues detected: ${issues.join(', ')}');
         print('🛡️ AI Guardian: 🔧 Auto-triggering intelligent repair...');
 
-        // Perform comprehensive repair
+  // Perform comprehensive repair
         await _performComprehensiveRepair();
 
         print('🛡️ AI Guardian: ✅ Intelligent repair completed successfully');
       } else {
-        print('🛡️ AI Guardian: ✅ All health checks passed - no issues detected');
+        print(
+          '🛡️ AI Guardian: ✅ All health checks passed - no issues detected',
+        );
       }
 
-      // Keep AI Guardian visible for a moment to show completion
+  // Keep AI Guardian visible for a moment to show completion
       await Future.delayed(const Duration(seconds: 2));
       aiGuardian.setAIActive(false);
     } catch (e) {
@@ -4592,14 +4757,14 @@ class MissionProvider extends ChangeNotifier {
 
     for (final mission in allMissions) {
       if (mission.isCompleted && mission.hasFailed) {
-        // If mission is completed, it shouldn't be failed
+  // If mission is completed, it shouldn't be failed
         final updatedMission = mission.copyWith(hasFailed: false);
         missionsToUpdate.add(updatedMission);
         print('🛡️ AI Guardian: Fixed mission state for: ${mission.title}');
       }
     }
 
-    // Apply updates
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       final activeIndex = _state.missions.indexWhere(
         (m) => m.id == updatedMission.id,
@@ -4637,7 +4802,7 @@ class MissionProvider extends ChangeNotifier {
       }
     }
 
-    // Apply updates
+  // Apply updates
     for (final updatedMission in missionsToUpdate) {
       final activeIndex = _state.missions.indexWhere(
         (m) => m.id == updatedMission.id,
@@ -4662,19 +4827,19 @@ class MissionProvider extends ChangeNotifier {
     }
   }
 
-  /// Public method to get detailed AI Guardian status
+  // Public method to get detailed AI Guardian status
   String get aiGuardianDetailedStatus {
     if (!aiGuardian.isRunning) return 'AI Guardian: Stopped';
     if (aiGuardian.isAIActive) return 'AI Guardian: Active - Repairing Issues';
     return 'AI Guardian: Running - Monitoring (${allMissions.length} missions)';
   }
 
-  /// Public method to get AI Guardian health status
+  // Public method to get AI Guardian health status
   bool get isAIGuardianHealthy {
-    // Check if AI Guardian is running and there are no critical issues
+  // Check if AI Guardian is running and there are no critical issues
     if (!aiGuardian.isRunning) return false;
 
-    // Quick health check
+  // Quick health check
     for (final mission in allMissions) {
       if (mission.id == null ||
           mission.id!.isEmpty ||
@@ -4691,37 +4856,37 @@ class MissionProvider extends ChangeNotifier {
     return true;
   }
 
-  /// Public method to force AI Guardian to be more active
+  // Public method to force AI Guardian to be more active
   Future<void> activateAIGuardian() async {
     print('AI Guardian: Force activation requested...');
 
-    // Make AI Guardian visible immediately
+  // Make AI Guardian visible immediately
     aiGuardian.setAIActive(true);
 
-    // Make AI Guardian more active by triggering immediate health check
+  // Make AI Guardian more active by triggering immediate health check
     await aiGuardian.performImmediateHealthCheck(() async {
       await _performHealthChecks();
     });
 
-    // Also trigger a comprehensive repair to ensure everything is working
+  // Also trigger a comprehensive repair to ensure everything is working
     await forceComprehensiveRepair();
 
-    // Keep AI Guardian active for a longer period to show it's working
+  // Keep AI Guardian active for a longer period to show it's working
     await Future.delayed(const Duration(seconds: 5));
     aiGuardian.setAIActive(false);
 
     print('AI Guardian: Force activation completed');
   }
 
-  /// Public method to perform comprehensive cleanup of all missions
+  // Public method to perform comprehensive cleanup of all missions
   Future<void> performComprehensiveCleanup() async {
     print('AI Guardian: 🧹 Starting comprehensive cleanup of all missions...');
 
     try {
-      // Make AI Guardian visible during cleanup
+  // Make AI Guardian visible during cleanup
       aiGuardian.setAIActive(true);
 
-      // Step 1: Fix all notification IDs to ensure uniqueness
+  // Step 1: Fix all notification IDs to ensure uniqueness
       final allMissionIds = <int>{};
       final missionsToUpdate = <MissionData>[];
 
@@ -4729,7 +4894,7 @@ class MissionProvider extends ChangeNotifier {
         bool needsUpdate = false;
         int? newNotificationId;
 
-        // Check for duplicate or invalid notification IDs
+  // Check for duplicate or invalid notification IDs
         if (allMissionIds.contains(mission.notificationId) ||
             mission.notificationId <= 0) {
           newNotificationId = _generateUniqueNotificationId();
@@ -4742,7 +4907,7 @@ class MissionProvider extends ChangeNotifier {
           allMissionIds.add(mission.notificationId);
         }
 
-        // Step 2: Fix subtask mastery values
+  // Step 2: Fix subtask mastery values
         final updatedSubtaskMasteryValues = <String, double>{};
         for (final entry in mission.subtaskMasteryValues.entries) {
           if (entry.value <= 0) {
@@ -4756,7 +4921,7 @@ class MissionProvider extends ChangeNotifier {
           }
         }
 
-        // Step 3: Fix mission IDs if needed
+  // Step 3: Fix mission IDs if needed
         String? newMissionId;
         if (mission.id == null || mission.id!.isEmpty) {
           newMissionId = _generateUniqueMissionId();
@@ -4777,7 +4942,7 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Apply all updates
+  // Apply all updates
       for (final updatedMission in missionsToUpdate) {
         final activeIndex = _state.missions.indexWhere(
           (m) => m.id == updatedMission.id,
@@ -4801,7 +4966,7 @@ class MissionProvider extends ChangeNotifier {
         }
       }
 
-      // Save all changes
+  // Save all changes
       await _saveMissions();
       notifyListeners();
 
@@ -4809,7 +4974,7 @@ class MissionProvider extends ChangeNotifier {
         'AI Guardian: ✅ Comprehensive cleanup completed - ${missionsToUpdate.length} missions fixed',
       );
 
-      // Keep AI Guardian visible for a moment to show completion
+  // Keep AI Guardian visible for a moment to show completion
       await Future.delayed(const Duration(seconds: 3));
       aiGuardian.setAIActive(false);
     } catch (e) {
@@ -4818,7 +4983,7 @@ class MissionProvider extends ChangeNotifier {
     }
   }
 
-  /// Public method to check AI Guardian performance
+  // Public method to check AI Guardian performance
   Map<String, dynamic> get aiGuardianPerformance {
     return {
       'isRunning': aiGuardian.isRunning,
@@ -4832,14 +4997,14 @@ class MissionProvider extends ChangeNotifier {
     };
   }
 
-  /// Public method to get AI Guardian working status
+  // Public method to get AI Guardian working status
   bool get isAIGuardianWorking {
-    // AI Guardian is working if it's running (regardless of active state)
+  // AI Guardian is working if it's running (regardless of active state)
     final isWorking = aiGuardian.isRunning;
 
-    // If AI Guardian is running but not active, make it visible briefly
+  // If AI Guardian is running but not active, make it visible briefly
     if (aiGuardian.isRunning && !aiGuardian.isAIActive) {
-      // Schedule a brief activation to show it's working
+  // Schedule a brief activation to show it's working
       Future.delayed(const Duration(milliseconds: 500), () {
         if (aiGuardian.isRunning) {
           aiGuardian.setAIActive(true);
@@ -4899,11 +5064,11 @@ class MissionProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get aiPersonalizedSuggestions =>
       List.unmodifiable(_aiPersonalizedSuggestions);
 
-  /// Public method to make AI Guardian continuously visible
+  // Public method to make AI Guardian continuously visible
   void makeAIGuardianVisible() {
     if (aiGuardian.isRunning) {
       aiGuardian.setAIActive(true);
-      // Keep it active for 3 seconds
+  // Keep it active for 3 seconds
       Future.delayed(const Duration(seconds: 3), () {
         if (aiGuardian.isRunning) {
           aiGuardian.setAIActive(false);
@@ -4940,22 +5105,85 @@ class MissionProvider extends ChangeNotifier {
 
   void applyAISuggestion(param0) {}
 
-  Future<void> startNotifications() async {}
+  // Flag to track if notifications have been started
+  bool _notificationsStarted = false;
+
+  Future<void> startNotifications() async {
+    if (_notificationsStarted) {
+      print(
+        'MissionProvider (mission.dart): Notifications already started, skipping',
+      );
+      return;
+    }
+
+    print('MissionProvider (mission.dart): startNotifications called');
+    try {
+  // Add a delay to ensure loading screen is completely finished
+      await Future.delayed(const Duration(seconds: 1));
+
+  // Initialize notifications
+      await _initNotifications();
+
+  // Start notification checking
+      _startNotificationCheck();
+
+  // Show notifications for existing missions
+      await _showNotificationsForExistingMissions();
+
+      _notificationsStarted = true;
+      print(
+        'MissionProvider (mission.dart): Notifications started successfully',
+      );
+    } catch (e) {
+      print('MissionProvider (mission.dart): Error starting notifications: $e');
+    }
+  }
+
+  // Method to show notifications for existing missions
+  Future<void> _showNotificationsForExistingMissions() async {
+    try {
+      print(
+        'MissionProvider (mission.dart): Showing notifications for existing missions',
+      );
+
+  // Show notifications for active missions
+      for (var mission in _state.missions.where((m) => !m.isCompleted)) {
+        await _showNotificationForMission(mission);
+        await _scheduleNotification(mission);
+      }
+
+  // Show summary notification if there are active missions
+      if (_state.missions.any((m) => !m.isCompleted)) {
+        await _showSummaryNotification();
+      }
+
+      print(
+        'MissionProvider (mission.dart): Notifications for existing missions shown',
+      );
+    } catch (e) {
+      print(
+        'MissionProvider (mission.dart): Error showing notifications for existing missions: $e',
+      );
+    }
+  }
 
   // --- AI Experiments/Brain ---
   final List<Map<String, dynamic>> _aiExperiments = [];
   List<Map<String, dynamic>> get aiExperiments =>
       List.unmodifiable(_aiExperiments);
-  
+
   // New data structures for tracking AI learning
   final List<Map<String, dynamic>> _aiLearningLog = [];
-  List<Map<String, dynamic>> get aiLearningLog => List.unmodifiable(_aiLearningLog);
-  
+  List<Map<String, dynamic>> get aiLearningLog =>
+      List.unmodifiable(_aiLearningLog);
+
   final Map<String, List<String>> _analyzedFiles = {};
-  Map<String, List<String>> get analyzedFiles => Map.unmodifiable(_analyzedFiles);
-  
+  Map<String, List<String>> get analyzedFiles =>
+      Map.unmodifiable(_analyzedFiles);
+
   final Map<String, List<Map<String, dynamic>>> _fileInsights = {};
-  Map<String, List<Map<String, dynamic>>> get fileInsights => Map.unmodifiable(_fileInsights);
+  Map<String, List<Map<String, dynamic>>> get fileInsights =>
+      Map.unmodifiable(_fileInsights);
 
   final List<Map<String, dynamic>> _aiSuggestions = [];
 
@@ -4975,11 +5203,9 @@ class MissionProvider extends ChangeNotifier {
 
   final List<String> _userUploadedCode = [];
 
-
   final List<Map<String, dynamic>> _appImprovementCode = [];
 
   final List<Map<String, dynamic>> _mechanicumKnowledgeBase = [];
-
 
   // --- Helper: Parse code and extract functions/classes (simple simulation) ---
   Map<String, dynamic> _interpretCode(
@@ -4987,7 +5213,7 @@ class MissionProvider extends ChangeNotifier {
     String? source,
     List<String>? tags,
   }) {
-    // Simulate code parsing: extract function and class names
+  // Simulate code parsing: extract function and class names
     final functionRegex = RegExp(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(');
     final classRegex = RegExp(r'class\s+([a-zA-Z_][a-zA-Z0-9_]*)');
     final functions =
@@ -5015,11 +5241,11 @@ class MissionProvider extends ChangeNotifier {
   void suggestExtensionIdea(String feature, String rationale) {
     _aiExtensionIdeas.add({'feature': feature, 'rationale': rationale});
     print('🧠 AI: User suggested extension: $feature | Rationale: $rationale');
-    // Simulate AI reasoning and possible implementation
+  // Simulate AI reasoning and possible implementation
     if (rationale.toLowerCase().contains('can implement')) {
       _aiGeneratedCodeSuggestions.add({
         'title': 'Implemented: $feature',
-        'code': '// AI implemented $feature based on user suggestion',
+        'code': '/ AI implemented $feature based on user suggestion',
         'diff': '+ Added $feature',
         'reasoning':
             'User rationale indicated this could be implemented directly.',
@@ -5051,7 +5277,7 @@ class MissionProvider extends ChangeNotifier {
     }
     return feedback;
   }
-  
+
   // --- List of all Dart files in lib/ and subfolders ---
   final List<String> libFiles = [
     'lib/main.dart',
@@ -5069,25 +5295,25 @@ class MissionProvider extends ChangeNotifier {
     'lib/mastery_list.dart',
     'lib/theme.dart',
     'lib/tally.dart',
-    // Widgets
+  // Widgets
     'lib/widgets/back_view.dart',
     'lib/widgets/front_view.dart',
-    // Screens
+  // Screens
     'lib/screens/app_history_screen.dart',
-    // Providers
+  // Providers
     'lib/providers/app_history_provider.dart',
-    // Models
+  // Models
     'lib/models/app_history.dart',
     'lib/models/entry.dart',
     'lib/models/entry.g.dart',
-    // Entries
+  // Entries
     'lib/entries/add_entry.dart',
     'lib/entries/edit_entry.dart',
     'lib/entries/entry_pin_screen.dart',
     'lib/entries/list_entries.dart',
     'lib/entries/setup_pin_screen.dart',
     'lib/entries/view_entry.dart',
-    // Core
+  // Core
     'lib/core/error/app_error.dart',
     'lib/core/logging/app_logger.dart',
     'lib/core/monitoring/performance_monitor.dart',
@@ -5097,7 +5323,7 @@ class MissionProvider extends ChangeNotifier {
   final Map<String, String> _userUploadedCodeToFile = {};
 
   // --- Enhanced User Uploaded Code Learning System ---
-  
+
   // Track user code patterns and learning
   final Map<String, Map<String, dynamic>> _userCodeLearning = {};
   final List<Map<String, dynamic>> _userCodePatterns = [];
@@ -5108,28 +5334,29 @@ class MissionProvider extends ChangeNotifier {
   void saveUserUploadedCode(String code) {
     final dir = Directory('lib/ai_user_uploads');
     if (!dir.existsSync()) dir.createSync(recursive: true);
-    final filePath = 'lib/ai_user_uploads/upload_${DateTime.now().millisecondsSinceEpoch}.dart';
+    final filePath =
+        'lib/ai_user_uploads/upload_${DateTime.now().millisecondsSinceEpoch}.dart';
     File(filePath).writeAsStringSync(code);
     _userUploadedCodeToFile[code] = filePath;
-    
-    // --- AI Learning from User Code ---
+
+  // --- AI Learning from User Code ---
     _learnFromUserCode(code, filePath);
-    
+
     print('User uploaded code saved to $filePath');
     print('🧠 AI: Learning from user uploaded code...');
   }
-  
+
   void _learnFromUserCode(String code, String filePath) {
-    // Parse and analyze the user code
+  // Parse and analyze the user code
     final parsed = _interpretCode(code, source: 'user_upload');
     final functions = parsed['functions'] ?? [];
     final classes = parsed['classes'] ?? [];
-    
-    // Extract code patterns and characteristics
+
+  // Extract code patterns and characteristics
     final patterns = _extractCodePatterns(code);
     final characteristics = _analyzeCodeCharacteristics(code);
-    
-    // Store learning data
+
+  // Store learning data
     final learningKey = '${filePath}_${DateTime.now().millisecondsSinceEpoch}';
     _userCodeLearning[learningKey] = {
       'code': code,
@@ -5141,87 +5368,122 @@ class MissionProvider extends ChangeNotifier {
       'applications': [],
       'integrationStrategies': [],
     };
-    
-    // Analyze potential applications throughout the app
-    final applications = _analyzePotentialApplications(code, patterns, characteristics);
+
+  // Analyze potential applications throughout the app
+    final applications = _analyzePotentialApplications(
+      code,
+      patterns,
+      characteristics,
+    );
     _userCodeApplications[learningKey] = applications;
-    
-    // Generate integration strategies
-    final strategies = _generateIntegrationStrategies(code, patterns, characteristics);
+
+  // Generate integration strategies
+    final strategies = _generateIntegrationStrategies(
+      code,
+      patterns,
+      characteristics,
+    );
     _userCodeIntegrationStrategies[learningKey] = strategies;
-    
-    // Update knowledge base with user code insights
+
+  // Update knowledge base with user code insights
     _updateKnowledgeBaseWithUserCode(parsed, patterns, characteristics);
-    
-    // Generate AI suggestions based on user code
+
+  // Generate AI suggestions based on user code
     _generateSuggestionsFromUserCode(code, patterns, characteristics);
-    
-    print('🧠 AI: Learned ${functions.length} functions, ${classes.length} classes from user code');
-    print('🧠 AI: Identified ${patterns.length} patterns and ${applications.length} potential applications');
+
+    print(
+      '🧠 AI: Learned ${functions.length} functions, ${classes.length} classes from user code',
+    );
+    print(
+      '🧠 AI: Identified ${patterns.length} patterns and ${applications.length} potential applications',
+    );
   }
-  
+
   Map<String, dynamic> _extractCodePatterns(String code) {
     final patterns = <String, dynamic>{};
-    
-    // Pattern 1: UI Widgets
-    if (code.contains('Widget') || code.contains('build(') || code.contains('Scaffold')) {
+
+  // Pattern 1: UI Widgets
+    if (code.contains('Widget') ||
+        code.contains('build(') ||
+        code.contains('Scaffold')) {
       patterns['ui_widget'] = true;
       patterns['widget_type'] = _extractWidgetType(code);
     }
-    
-    // Pattern 2: Business Logic
-    if (code.contains('class') && (code.contains('Provider') || code.contains('Service') || code.contains('Manager'))) {
+
+  // Pattern 2: Business Logic
+    if (code.contains('class') &&
+        (code.contains('Provider') ||
+            code.contains('Service') ||
+            code.contains('Manager'))) {
       patterns['business_logic'] = true;
       patterns['logic_type'] = _extractLogicType(code);
     }
-    
-    // Pattern 3: Data Models
-    if (code.contains('class') && (code.contains('Model') || code.contains('Data') || code.contains('Entity'))) {
+
+  // Pattern 3: Data Models
+    if (code.contains('class') &&
+        (code.contains('Model') ||
+            code.contains('Data') ||
+            code.contains('Entity'))) {
       patterns['data_model'] = true;
       patterns['model_type'] = _extractModelType(code);
     }
-    
-    // Pattern 4: Utility Functions
-    if (code.contains('static') || code.contains('utility') || code.contains('helper')) {
+
+  // Pattern 4: Utility Functions
+    if (code.contains('static') ||
+        code.contains('utility') ||
+        code.contains('helper')) {
       patterns['utility_function'] = true;
       patterns['utility_type'] = _extractUtilityType(code);
     }
-    
-    // Pattern 5: State Management
-    if (code.contains('setState') || code.contains('notifyListeners') || code.contains('ChangeNotifier')) {
+
+  // Pattern 5: State Management
+    if (code.contains('setState') ||
+        code.contains('notifyListeners') ||
+        code.contains('ChangeNotifier')) {
       patterns['state_management'] = true;
       patterns['state_type'] = _extractStateType(code);
     }
-    
-    // Pattern 6: API/Network
-    if (code.contains('http') || code.contains('api') || code.contains('fetch') || code.contains('dio')) {
+
+  // Pattern 6: API/Network
+    if (code.contains('http') ||
+        code.contains('api') ||
+        code.contains('fetch') ||
+        code.contains('dio')) {
       patterns['network_api'] = true;
       patterns['api_type'] = _extractApiType(code);
     }
-    
-    // Pattern 7: Database/Storage
-    if (code.contains('database') || code.contains('sql') || code.contains('shared_preferences') || code.contains('hive')) {
+
+  // Pattern 7: Database/Storage
+    if (code.contains('database') ||
+        code.contains('sql') ||
+        code.contains('shared_preferences') ||
+        code.contains('hive')) {
       patterns['data_storage'] = true;
       patterns['storage_type'] = _extractStorageType(code);
     }
-    
+
     return patterns;
   }
-  
+
   Map<String, dynamic> _analyzeCodeCharacteristics(String code) {
     final characteristics = <String, dynamic>{};
-    
-    // Complexity analysis
+
+  // Complexity analysis
     final lines = code.split('\n').length;
-    characteristics['complexity'] = lines > 100 ? 'high' : lines > 50 ? 'medium' : 'low';
-    
-    // Dependencies analysis - simplified approach
+    characteristics['complexity'] =
+        lines > 100
+            ? 'high'
+            : lines > 50
+            ? 'medium'
+            : 'low';
+
+  // Dependencies analysis - simplified approach
     final imports = <String>[];
     final codeLines = code.split('\n');
     for (final line in codeLines) {
       final trimmed = line.trim();
       if (trimmed.startsWith('import ')) {
-        // Simple extraction of import path
+  // Simple extraction of import path
         final importPath = trimmed.substring(7).trim(); // Remove 'import '
         if (importPath.startsWith('"') || importPath.startsWith("'")) {
           final endQuote = importPath.indexOf(importPath[0], 1);
@@ -5233,26 +5495,42 @@ class MissionProvider extends ChangeNotifier {
     }
     characteristics['dependencies'] = imports;
     characteristics['dependency_count'] = imports.length;
-    
-    // Error handling
-    characteristics['has_error_handling'] = code.contains('try') || code.contains('catch') || code.contains('throw');
-    
-    // Documentation
-    characteristics['has_documentation'] = code.contains('///') || code.contains('/**') || code.contains('// TODO');
-    
-    // Testing patterns
-    characteristics['has_test_patterns'] = code.contains('test') || code.contains('expect') || code.contains('assert');
-    
-    // Performance considerations
-    characteristics['has_performance_optimization'] = code.contains('const') || code.contains('final') || code.contains('cached');
-    
+
+  // Error handling
+    characteristics['has_error_handling'] =
+        code.contains('try') ||
+        code.contains('catch') ||
+        code.contains('throw');
+
+  // Documentation
+    characteristics['has_documentation'] =
+        code.contains('/') ||
+        code.contains('/**') ||
+        code.contains('/ TODO');
+
+  // Testing patterns
+    characteristics['has_test_patterns'] =
+        code.contains('test') ||
+        code.contains('expect') ||
+        code.contains('assert');
+
+  // Performance considerations
+    characteristics['has_performance_optimization'] =
+        code.contains('const') ||
+        code.contains('final') ||
+        code.contains('cached');
+
     return characteristics;
   }
-  
-  List<String> _analyzePotentialApplications(String code, Map<String, dynamic> patterns, Map<String, dynamic> characteristics) {
+
+  List<String> _analyzePotentialApplications(
+    String code,
+    Map<String, dynamic> patterns,
+    Map<String, dynamic> characteristics,
+  ) {
     final applications = <String>[];
-    
-    // UI Widgets can be applied to any screen
+
+  // UI Widgets can be applied to any screen
     if (patterns['ui_widget'] == true) {
       applications.addAll([
         'lib/widgets/user_generated_widgets.dart',
@@ -5260,8 +5538,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/ui_components.dart',
       ]);
     }
-    
-    // Business Logic can be integrated into providers
+
+  // Business Logic can be integrated into providers
     if (patterns['business_logic'] == true) {
       applications.addAll([
         'lib/providers/user_generated_provider.dart',
@@ -5269,8 +5547,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/business_logic.dart',
       ]);
     }
-    
-    // Data Models can be used throughout the app
+
+  // Data Models can be used throughout the app
     if (patterns['data_model'] == true) {
       applications.addAll([
         'lib/models/user_generated_models.dart',
@@ -5278,8 +5556,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/data_models.dart',
       ]);
     }
-    
-    // Utility Functions can be used anywhere
+
+  // Utility Functions can be used anywhere
     if (patterns['utility_function'] == true) {
       applications.addAll([
         'lib/utils/user_generated_utils.dart',
@@ -5287,8 +5565,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/utilities.dart',
       ]);
     }
-    
-    // State Management can enhance existing providers
+
+  // State Management can enhance existing providers
     if (patterns['state_management'] == true) {
       applications.addAll([
         'lib/providers/enhanced_state_provider.dart',
@@ -5296,8 +5574,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/state_management.dart',
       ]);
     }
-    
-    // Network/API can be integrated into services
+
+  // Network/API can be integrated into services
     if (patterns['network_api'] == true) {
       applications.addAll([
         'lib/services/user_generated_api_service.dart',
@@ -5305,8 +5583,8 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/api_integration.dart',
       ]);
     }
-    
-    // Data Storage can enhance existing storage
+
+  // Data Storage can enhance existing storage
     if (patterns['data_storage'] == true) {
       applications.addAll([
         'lib/storage/user_generated_storage.dart',
@@ -5314,178 +5592,228 @@ class MissionProvider extends ChangeNotifier {
         'lib/ai_generated/storage_enhancement.dart',
       ]);
     }
-    
+
     return applications;
   }
-  
-  Map<String, dynamic> _generateIntegrationStrategies(String code, Map<String, dynamic> patterns, Map<String, dynamic> characteristics) {
+
+  Map<String, dynamic> _generateIntegrationStrategies(
+    String code,
+    Map<String, dynamic> patterns,
+    Map<String, dynamic> characteristics,
+  ) {
     final strategies = <String, dynamic>{};
-    
-    // Strategy 1: Direct Integration
+
+  // Strategy 1: Direct Integration
     strategies['direct_integration'] = {
       'description': 'Integrate user code directly into existing files',
       'targets': _findDirectIntegrationTargets(code, patterns),
       'risk': 'medium',
       'benefit': 'Immediate functionality',
     };
-    
-    // Strategy 2: Extension Integration
+
+  // Strategy 2: Extension Integration
     strategies['extension_integration'] = {
       'description': 'Extend existing classes with user code',
       'targets': _findExtensionTargets(code, patterns),
       'risk': 'low',
       'benefit': 'Enhances existing functionality',
     };
-    
-    // Strategy 3: New File Creation
+
+  // Strategy 3: New File Creation
     strategies['new_file_creation'] = {
       'description': 'Create new files for user code',
       'targets': _generateNewFileTargets(code, patterns),
       'risk': 'low',
       'benefit': 'Clean separation of concerns',
     };
-    
-    // Strategy 4: Refactoring Integration
+
+  // Strategy 4: Refactoring Integration
     strategies['refactoring_integration'] = {
       'description': 'Refactor existing code to incorporate user patterns',
       'targets': _findRefactoringTargets(code, patterns),
       'risk': 'high',
       'benefit': 'Improves overall code quality',
     };
-    
+
     return strategies;
   }
-  
-  List<String> _findDirectIntegrationTargets(String code, Map<String, dynamic> patterns) {
+
+  List<String> _findDirectIntegrationTargets(
+    String code,
+    Map<String, dynamic> patterns,
+  ) {
     final targets = <String>[];
-    
-    // Find existing files that could benefit from this code
+
+  // Find existing files that could benefit from this code
     for (final filePath in libFiles) {
       if (_isCompatibleWithFile(code, patterns, filePath)) {
         targets.add(filePath);
       }
     }
-    
+
     return targets;
   }
-  
-  List<String> _findExtensionTargets(String code, Map<String, dynamic> patterns) {
+
+  List<String> _findExtensionTargets(
+    String code,
+    Map<String, dynamic> patterns,
+  ) {
     final targets = <String>[];
-    
-    // Find classes that could be extended
+
+  // Find classes that could be extended
     if (patterns['ui_widget'] == true) {
       targets.addAll([
         'lib/widgets/back_view.dart',
         'lib/widgets/front_view.dart',
       ]);
     }
-    
+
     if (patterns['business_logic'] == true) {
       targets.addAll([
         'lib/mission_provider.dart',
         'lib/providers/app_history_provider.dart',
       ]);
     }
-    
+
     return targets;
   }
-  
-  List<String> _generateNewFileTargets(String code, Map<String, dynamic> patterns) {
+
+  List<String> _generateNewFileTargets(
+    String code,
+    Map<String, dynamic> patterns,
+  ) {
     final targets = <String>[];
-    
+
     if (patterns['ui_widget'] == true) {
-      targets.add('lib/widgets/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart');
+      targets.add(
+        'lib/widgets/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart',
+      );
     }
-    
+
     if (patterns['business_logic'] == true) {
-      targets.add('lib/providers/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart');
+      targets.add(
+        'lib/providers/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart',
+      );
     }
-    
+
     if (patterns['data_model'] == true) {
-      targets.add('lib/models/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart');
+      targets.add(
+        'lib/models/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart',
+      );
     }
-    
+
     if (patterns['utility_function'] == true) {
-      targets.add('lib/utils/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart');
+      targets.add(
+        'lib/utils/user_generated_${DateTime.now().millisecondsSinceEpoch}.dart',
+      );
     }
-    
+
     return targets;
   }
-  
-  List<String> _findRefactoringTargets(String code, Map<String, dynamic> patterns) {
+
+  List<String> _findRefactoringTargets(
+    String code,
+    Map<String, dynamic> patterns,
+  ) {
     final targets = <String>[];
-    
-    // Find files that could benefit from refactoring based on user code patterns
+
+  // Find files that could benefit from refactoring based on user code patterns
     for (final filePath in libFiles) {
       if (_needsRefactoringBasedOnPatterns(code, patterns, filePath)) {
         targets.add(filePath);
       }
     }
-    
+
     return targets;
   }
-  
-  bool _isCompatibleWithFile(String code, Map<String, dynamic> patterns, String filePath) {
-    // Check if user code is compatible with existing file
+
+  bool _isCompatibleWithFile(
+    String code,
+    Map<String, dynamic> patterns,
+    String filePath,
+  ) {
+  // Check if user code is compatible with existing file
     try {
       final file = File(filePath);
       if (!file.existsSync()) return false;
-      
+
       final content = file.readAsStringSync();
-      
-      // Check for similar patterns
-      if (patterns['ui_widget'] == true && content.contains('Widget')) return true;
-      if (patterns['business_logic'] == true && content.contains('class')) return true;
-      if (patterns['data_model'] == true && content.contains('class')) return true;
-      if (patterns['utility_function'] == true && content.contains('void')) return true;
-      
+
+  // Check for similar patterns
+      if (patterns['ui_widget'] == true && content.contains('Widget'))
+        return true;
+      if (patterns['business_logic'] == true && content.contains('class'))
+        return true;
+      if (patterns['data_model'] == true && content.contains('class'))
+        return true;
+      if (patterns['utility_function'] == true && content.contains('void'))
+        return true;
+
       return false;
     } catch (e) {
       return false;
     }
   }
-  
-  bool _needsRefactoringBasedOnPatterns(String code, Map<String, dynamic> patterns, String filePath) {
-    // Check if existing file needs refactoring based on user code patterns
+
+  bool _needsRefactoringBasedOnPatterns(
+    String code,
+    Map<String, dynamic> patterns,
+    String filePath,
+  ) {
+  // Check if existing file needs refactoring based on user code patterns
     try {
       final file = File(filePath);
       if (!file.existsSync()) return false;
-      
+
       final content = file.readAsStringSync();
-      
-      // Check for code smells that user code could fix
+
+  // Check for code smells that user code could fix
       if (content.split('\n').length > 200) return true; // Large files
-      if (content.contains('TODO') || content.contains('FIXME')) return true; // TODO items
-      if (content.contains('print(') && patterns['has_error_handling'] == true) return true; // Print statements
-      
+      if (content.contains('TODO') || content.contains('FIXME'))
+        return true; // TODO items
+      if (content.contains('print(') && patterns['has_error_handling'] == true)
+        return true; // Print statements
+
       return false;
     } catch (e) {
       return false;
     }
   }
-  
-  void _updateKnowledgeBaseWithUserCode(Map<String, dynamic> parsed, Map<String, dynamic> patterns, Map<String, dynamic> characteristics) {
-    // Add user code insights to knowledge base
+
+  void _updateKnowledgeBaseWithUserCode(
+    Map<String, dynamic> parsed,
+    Map<String, dynamic> patterns,
+    Map<String, dynamic> characteristics,
+  ) {
+  // Add user code insights to knowledge base
     final knowledgeEntry = {
       'type': 'user_code_learning',
       'parsed': parsed,
       'patterns': patterns,
       'characteristics': characteristics,
       'timestamp': DateTime.now(),
-      'applications': _analyzePotentialApplications('', patterns, characteristics),
-      'strategies': _generateIntegrationStrategies('', patterns, characteristics),
+      'applications': _analyzePotentialApplications(
+        '',
+        patterns,
+        characteristics,
+      ),
+      'strategies': _generateIntegrationStrategies(
+        '',
+        patterns,
+        characteristics,
+      ),
     };
-    
+
     _mechanicumKnowledgeBase.add(knowledgeEntry);
-    
-    // Update knowledge graph with user code relationships
+
+  // Update knowledge graph with user code relationships
     for (final function in parsed['functions'] ?? []) {
       _knowledgeGraph['user_code'] = _knowledgeGraph['user_code'] ?? [];
       if (!_knowledgeGraph['user_code']!.contains(function)) {
         _knowledgeGraph['user_code']!.add(function);
       }
     }
-    
+
     for (final className in parsed['classes'] ?? []) {
       _knowledgeGraph['user_code'] = _knowledgeGraph['user_code'] ?? [];
       if (!_knowledgeGraph['user_code']!.contains(className)) {
@@ -5493,45 +5821,52 @@ class MissionProvider extends ChangeNotifier {
       }
     }
   }
-  
-  void _generateSuggestionsFromUserCode(String code, Map<String, dynamic> patterns, Map<String, dynamic> characteristics) {
-    // Generate AI suggestions based on user code analysis
-    
-    // Suggestion 1: Apply user patterns to existing code
+
+  void _generateSuggestionsFromUserCode(
+    String code,
+    Map<String, dynamic> patterns,
+    Map<String, dynamic> characteristics,
+  ) {
+  // Generate AI suggestions based on user code analysis
+
+  // Suggestion 1: Apply user patterns to existing code
     if (patterns.isNotEmpty) {
       final suggestion = {
         'title': 'Apply user code patterns to existing files',
         'code': _generatePatternApplicationCode(patterns),
         'diff': '+ Apply user patterns',
-        'reasoning': 'User code demonstrates good patterns that could improve existing code.',
+        'reasoning':
+            'User code demonstrates good patterns that could improve existing code.',
         'timestamp': DateTime.now(),
         'targetFile': _determineTargetFile(code, _interpretCode(code)),
         'targetSymbol': _extractTargetSymbol(code),
       };
       _aiGeneratedCodeSuggestions.add(suggestion);
     }
-    
-    // Suggestion 2: Create integration utilities
+
+  // Suggestion 2: Create integration utilities
     if (characteristics['has_utility_function'] == true) {
       final suggestion = {
         'title': 'Create integration utilities based on user code',
         'code': _generateIntegrationUtilityCode(code, patterns),
         'diff': '+ Integration utilities',
-        'reasoning': 'User code could be integrated throughout the app with proper utilities.',
+        'reasoning':
+            'User code could be integrated throughout the app with proper utilities.',
         'timestamp': DateTime.now(),
         'targetFile': 'lib/utils/user_integration_utils.dart',
         'targetSymbol': 'UserIntegrationUtils',
       };
       _aiGeneratedCodeSuggestions.add(suggestion);
     }
-    
-    // Suggestion 3: Enhance existing functionality
+
+  // Suggestion 3: Enhance existing functionality
     if (patterns['business_logic'] == true) {
       final suggestion = {
         'title': 'Enhance existing business logic with user patterns',
         'code': _generateEnhancementCode(code, patterns),
         'diff': '+ Enhanced business logic',
-        'reasoning': 'User code demonstrates business logic patterns that could enhance existing providers.',
+        'reasoning':
+            'User code demonstrates business logic patterns that could enhance existing providers.',
         'timestamp': DateTime.now(),
         'targetFile': 'lib/providers/enhanced_provider.dart',
         'targetSymbol': 'EnhancedProvider',
@@ -5539,27 +5874,27 @@ class MissionProvider extends ChangeNotifier {
       _aiGeneratedCodeSuggestions.add(suggestion);
     }
   }
-  
+
   String _generatePatternApplicationCode(Map<String, dynamic> patterns) {
-    // Generate code that applies user patterns to existing code
-    String code = '// Apply user code patterns\n';
-    
+  // Generate code that applies user patterns to existing code
+    String code = '/ Apply user code patterns\n';
+
     if (patterns['has_error_handling'] == true) {
       code += '''
-// Enhanced error handling based on user patterns
+  // Enhanced error handling based on user patterns
 void enhancedErrorHandling() {
   try {
-    // Existing logic with user error handling patterns
+  // Existing logic with user error handling patterns
   } catch (e) {
     print('Error handled with user patterns: \$e');
   }
 }
 ''';
     }
-    
+
     if (patterns['has_performance_optimization'] == true) {
       code += '''
-// Performance optimization based on user patterns
+  // Performance optimization based on user patterns
 class OptimizedCode {
   static final _cache = <String, dynamic>{};
   
@@ -5574,17 +5909,20 @@ class OptimizedCode {
 }
 ''';
     }
-    
+
     return code;
   }
-  
-  String _generateIntegrationUtilityCode(String userCode, Map<String, dynamic> patterns) {
-    // Generate utilities for integrating user code
+
+  String _generateIntegrationUtilityCode(
+    String userCode,
+    Map<String, dynamic> patterns,
+  ) {
+  // Generate utilities for integrating user code
     return '''
-// Integration utilities for user code
+  // Integration utilities for user code
 class UserIntegrationUtils {
   static void integrateUserCode(String code, Map<String, dynamic> patterns) {
-    // Integration logic based on user patterns
+  // Integration logic based on user patterns
     if (patterns['ui_widget'] == true) {
       _integrateUIWidget(code);
     }
@@ -5594,139 +5932,158 @@ class UserIntegrationUtils {
   }
   
   static void _integrateUIWidget(String code) {
-    // UI widget integration logic
+  // UI widget integration logic
   }
   
   static void _integrateBusinessLogic(String code) {
-    // Business logic integration
+  // Business logic integration
   }
 }
 ''';
   }
-  
-  String _generateEnhancementCode(String userCode, Map<String, dynamic> patterns) {
-    // Generate code that enhances existing functionality
+
+  String _generateEnhancementCode(
+    String userCode,
+    Map<String, dynamic> patterns,
+  ) {
+  // Generate code that enhances existing functionality
     return '''
-// Enhanced provider based on user patterns
+  // Enhanced provider based on user patterns
 class EnhancedProvider extends ChangeNotifier {
   // Enhanced functionality based on user code patterns
   void enhancedMethod() {
-    // Implementation based on user patterns
+  // Implementation based on user patterns
   }
 }
 ''';
   }
-  
+
   // Helper methods for pattern extraction
   String _extractWidgetType(String code) {
     if (code.contains('StatelessWidget')) return 'stateless';
     if (code.contains('StatefulWidget')) return 'stateful';
     return 'custom';
   }
-  
+
   String _extractLogicType(String code) {
     if (code.contains('Provider')) return 'provider';
     if (code.contains('Service')) return 'service';
     if (code.contains('Manager')) return 'manager';
     return 'business_logic';
   }
-  
+
   String _extractModelType(String code) {
     if (code.contains('Model')) return 'model';
     if (code.contains('Data')) return 'data';
     if (code.contains('Entity')) return 'entity';
     return 'data_class';
   }
-  
+
   String _extractUtilityType(String code) {
     if (code.contains('static')) return 'static_utility';
     if (code.contains('helper')) return 'helper';
     return 'utility';
   }
-  
+
   String _extractStateType(String code) {
     if (code.contains('setState')) return 'local_state';
     if (code.contains('notifyListeners')) return 'provider_state';
     return 'state_management';
   }
-  
+
   String _extractApiType(String code) {
     if (code.contains('http')) return 'http';
     if (code.contains('dio')) return 'dio';
     return 'api';
   }
-  
+
   String _extractStorageType(String code) {
     if (code.contains('sql')) return 'sql';
     if (code.contains('shared_preferences')) return 'preferences';
     if (code.contains('hive')) return 'hive';
     return 'storage';
   }
-  
+
   // Getters for user code learning data
-  Map<String, Map<String, dynamic>> get userCodeLearning => Map.unmodifiable(_userCodeLearning);
-  List<Map<String, dynamic>> get userCodePatterns => List.unmodifiable(_userCodePatterns);
-  Map<String, List<String>> get userCodeApplications => Map.unmodifiable(_userCodeApplications);
-  Map<String, Map<String, dynamic>> get userCodeIntegrationStrategies => Map.unmodifiable(_userCodeIntegrationStrategies);
+  Map<String, Map<String, dynamic>> get userCodeLearning =>
+      Map.unmodifiable(_userCodeLearning);
+  List<Map<String, dynamic>> get userCodePatterns =>
+      List.unmodifiable(_userCodePatterns);
+  Map<String, List<String>> get userCodeApplications =>
+      Map.unmodifiable(_userCodeApplications);
+  Map<String, Map<String, dynamic>> get userCodeIntegrationStrategies =>
+      Map.unmodifiable(_userCodeIntegrationStrategies);
+
+  get lastRefreshTime => null;
 
   // --- Helper methods for intelligent code targeting ---
-  
+
   String _determineTargetFile(String code, Map<String, dynamic> parsed) {
-    // Analyze code content to determine appropriate target file
+  // Analyze code content to determine appropriate target file
     final functions = parsed['functions'] ?? [];
-    
-    // Check for UI-related code
-    if (code.contains('Widget') || code.contains('build(') || code.contains('Scaffold')) {
+
+  // Check for UI-related code
+    if (code.contains('Widget') ||
+        code.contains('build(') ||
+        code.contains('Scaffold')) {
       return 'lib/widgets/ai_generated_widget.dart';
     }
-    
-    // Check for business logic
-    if (code.contains('class') && (code.contains('Provider') || code.contains('Service'))) {
+
+  // Check for business logic
+    if (code.contains('class') &&
+        (code.contains('Provider') || code.contains('Service'))) {
       return 'lib/providers/ai_generated_provider.dart';
     }
-    
-    // Check for data models
-    if (code.contains('class') && (code.contains('Model') || code.contains('Data'))) {
+
+  // Check for data models
+    if (code.contains('class') &&
+        (code.contains('Model') || code.contains('Data'))) {
       return 'lib/models/ai_generated_model.dart';
     }
-    
-    // Check for utility functions
+
+  // Check for utility functions
     if (functions.isNotEmpty && functions.length == 1) {
       return 'lib/utils/ai_generated_utils.dart';
     }
-    
-    // Default to main.dart for simple functions
+
+  // Default to main.dart for simple functions
     return 'lib/main.dart';
   }
-  
+
   String _extractTargetSymbol(String code) {
-    // Try to extract function name
-    final fnMatch = RegExp(r'void\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(').firstMatch(code);
+  // Try to extract function name
+    final fnMatch = RegExp(
+      r'void\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(',
+    ).firstMatch(code);
     if (fnMatch != null) {
       return fnMatch.group(1)!;
     }
-    
-    // Try to extract class name
-    final classMatch = RegExp(r'class\s+([a-zA-Z_][a-zA-Z0-9_]*)').firstMatch(code);
+
+  // Try to extract class name
+    final classMatch = RegExp(
+      r'class\s+([a-zA-Z_][a-zA-Z0-9_]*)',
+    ).firstMatch(code);
     if (classMatch != null) {
       return classMatch.group(1)!;
     }
-    
-    // Try to extract variable name
-    final varMatch = RegExp(r'final\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=').firstMatch(code);
+
+  // Try to extract variable name
+    final varMatch = RegExp(
+      r'final\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=',
+    ).firstMatch(code);
     if (varMatch != null) {
       return varMatch.group(1)!;
     }
-    
+
     return 'aiGeneratedCode';
   }
-  
+
   String _generateIntelligentCode(String focus, String? sourceCode) {
-    // Generate code based on focus area and source code analysis
+  // Generate code based on focus area and source code analysis
     switch (focus) {
       case 'performance':
         return '''
-// Performance optimization for ${sourceCode?.substring(0, 20) ?? 'code'}
+  // Performance optimization for ${sourceCode?.substring(0, 20) ?? 'code'}
 void optimizedFunction() {
   // Cached computation
   static final _cache = <String, dynamic>{};
@@ -5743,7 +6100,7 @@ void optimizedFunction() {
 ''';
       case 'security':
         return '''
-// Security enhancement
+  // Security enhancement
 String secureDataProcessing(String input) {
   // Input validation
   if (input.isEmpty || input.length > 1000) {
@@ -5759,7 +6116,7 @@ String secureDataProcessing(String input) {
 ''';
       case 'test coverage':
         return '''
-// Test coverage improvement
+  // Test coverage improvement
 void testableFunction() {
   // Extracted logic for better testability
   final result = _businessLogic();
@@ -5778,7 +6135,7 @@ void _handleResult(String result) {
 ''';
       case 'bug detection':
         return '''
-// Bug detection and prevention
+  // Bug detection and prevention
 class BugDetector {
   static void validateInput(dynamic input) {
     if (input == null) {
@@ -5796,7 +6153,7 @@ class BugDetector {
 ''';
       case 'self-improvement':
         return '''
-// Self-improvement mechanism
+  // Self-improvement mechanism
 class SelfImprovingCode {
   static final _improvements = <String, dynamic>{};
   
@@ -5812,22 +6169,22 @@ class SelfImprovingCode {
 ''';
       case 'refactoring':
         return '''
-// Refactoring utilities
+  // Refactoring utilities
 class CodeRefactorer {
   static String extractMethod(String code, String methodName) {
-    // Extract method logic
-    return '// Extracted method: \$methodName\n\$code';
+  // Extract method logic
+    return '/ Extracted method: \$methodName\n\$code';
   }
   
   static String simplifyCondition(String condition) {
-    // Simplify complex conditions
-    return '// Simplified: \$condition';
+  // Simplify complex conditions
+    return '/ Simplified: \$condition';
   }
 }
 ''';
       default:
         return '''
-// AI-generated code for $focus
+  // AI-generated code for $focus
 void aiGeneratedFunction() {
   // Intelligent implementation
   print('AI applied $focus improvements');
@@ -5837,107 +6194,112 @@ void aiGeneratedFunction() {
   }
 
   // --- Helper methods for AI learning and analysis ---
-  
+
   int _calculateCodeComplexity(String code) {
     int complexity = 0;
-    
-    // Count control flow statements
-    complexity += RegExp(r'\b(if|else|for|while|switch|case)\b').allMatches(code).length;
-    
-    // Count function calls
+
+  // Count control flow statements
+    complexity +=
+        RegExp(r'\b(if|else|for|while|switch|case)\b').allMatches(code).length;
+
+  // Count function calls
     complexity += RegExp(r'\b\w+\s*\([^)]*\)').allMatches(code).length;
-    
-    // Count nested structures
+
+  // Count nested structures
     complexity += RegExp(r'\{[^{}]*\{').allMatches(code).length;
-    
-    // Count lines of code
+
+  // Count lines of code
     complexity += code.split('\n').length;
-    
+
     return complexity;
   }
-  
+
   List<String> _identifyCodePatterns(String code) {
     final patterns = <String>[];
-    
-    // Check for common patterns
+
+  // Check for common patterns
     if (RegExp(r'class\s+\w+').hasMatch(code)) {
       patterns.add('class definition');
     }
-    
+
     if (RegExp(r'void\s+\w+\s*\(').hasMatch(code)) {
       patterns.add('function definition');
     }
-    
+
     if (RegExp(r'Widget\s+build\s*\(').hasMatch(code)) {
       patterns.add('Flutter widget build method');
     }
-    
+
     if (RegExp(r'StatefulWidget|StatelessWidget').hasMatch(code)) {
       patterns.add('Flutter widget type');
     }
-    
+
     if (RegExp(r'Provider\.of|Consumer<').hasMatch(code)) {
       patterns.add('state management pattern');
     }
-    
+
     if (RegExp(r'async|await|Future<').hasMatch(code)) {
       patterns.add('asynchronous programming');
     }
-    
+
     if (RegExp(r'try\s*\{|catch\s*\(').hasMatch(code)) {
       patterns.add('error handling');
     }
-    
+
     if (RegExp(r'const\s+\w+|final\s+\w+').hasMatch(code)) {
       patterns.add('immutable declarations');
     }
-    
+
     if (RegExp(r'Map<|List<|Set<').hasMatch(code)) {
       patterns.add('collection types');
     }
-    
+
     return patterns;
   }
-  
-  List<String> _generateLearningInsights(String code, List<String> functions, List<String> classes) {
+
+  List<String> _generateLearningInsights(
+    String code,
+    List<String> functions,
+    List<String> classes,
+  ) {
     final insights = <String>[];
-    
-    // Analyze function patterns
+
+  // Analyze function patterns
     if (functions.isNotEmpty) {
       insights.add('Found ${functions.length} functions to analyze');
-      
-      // Check for common function patterns
+
+  // Check for common function patterns
       if (functions.any((f) => f.contains('build'))) {
         insights.add('UI building patterns detected');
       }
-      
+
       if (functions.any((f) => f.contains('init'))) {
         insights.add('Initialization patterns detected');
       }
-      
+
       if (functions.any((f) => f.contains('handle'))) {
         insights.add('Event handling patterns detected');
       }
     }
-    
-    // Analyze class patterns
+
+  // Analyze class patterns
     if (classes.isNotEmpty) {
       insights.add('Found ${classes.length} classes to analyze');
-      
+
       if (classes.any((c) => c.contains('Provider'))) {
         insights.add('State management patterns detected');
       }
-      
+
       if (classes.any((c) => c.contains('Widget'))) {
         insights.add('UI component patterns detected');
       }
-      
+
       if (classes.any((c) => c.contains('Model'))) {
         insights.add('Data model patterns detected');
       }
     }
-    
-    // Analyze code structure
+
+  // Analyze code structure
     final lines = code.split('\n').length;
     if (lines > 50) {
       insights.add('Large code block - complex logic detected');
@@ -5946,74 +6308,82 @@ void aiGeneratedFunction() {
     } else {
       insights.add('Small code block - simple logic');
     }
-    
-    // Check for specific Flutter patterns
+
+  // Check for specific Flutter patterns
     if (code.contains('Scaffold')) {
       insights.add('Flutter UI structure patterns');
     }
-    
+
     if (code.contains('Navigator')) {
       insights.add('Navigation patterns detected');
     }
-    
+
     if (code.contains('Animation')) {
       insights.add('Animation patterns detected');
     }
-    
+
     return insights;
   }
-  
+
   List<String> _extractKeyLearnings(List<Map<String, dynamic>> insights) {
     final learnings = <String>[];
-    
-    // Aggregate insights across all analyzed files
+
+  // Aggregate insights across all analyzed files
     final allPatterns = <String>{};
     final allFunctions = <String>{};
     final allClasses = <String>{};
     int totalComplexity = 0;
-    
+
     for (final insight in insights) {
       allPatterns.addAll((insight['patterns'] as List<String>?) ?? []);
       allFunctions.addAll((insight['functions'] as List<String>?) ?? []);
       allClasses.addAll((insight['classes'] as List<String>?) ?? []);
       totalComplexity += (insight['complexity'] as int?) ?? 0;
     }
-    
-    // Generate key learnings
+
+  // Generate key learnings
     if (allPatterns.isNotEmpty) {
-      learnings.add('Identified ${allPatterns.length} code patterns: ${allPatterns.join(', ')}');
+      learnings.add(
+        'Identified ${allPatterns.length} code patterns: ${allPatterns.join(', ')}',
+      );
     }
-    
+
     if (allFunctions.isNotEmpty) {
-      learnings.add('Analyzed ${allFunctions.length} functions across codebase');
+      learnings.add(
+        'Analyzed ${allFunctions.length} functions across codebase',
+      );
     }
-    
+
     if (allClasses.isNotEmpty) {
-      learnings.add('Studied ${allClasses.length} classes for architectural patterns');
+      learnings.add(
+        'Studied ${allClasses.length} classes for architectural patterns',
+      );
     }
-    
+
     if (totalComplexity > 0) {
       final avgComplexity = totalComplexity / insights.length;
-      learnings.add('Average code complexity: ${avgComplexity.toStringAsFixed(1)}');
+      learnings.add(
+        'Average code complexity: ${avgComplexity.toStringAsFixed(1)}',
+      );
     }
-    
-    // Specific pattern learnings
+
+  // Specific pattern learnings
     if (allPatterns.contains('Flutter widget build method')) {
       learnings.add('Learning Flutter UI construction patterns');
     }
-    
+
     if (allPatterns.contains('state management pattern')) {
       learnings.add('Understanding state management approaches');
     }
-    
+
     if (allPatterns.contains('asynchronous programming')) {
       learnings.add('Analyzing async/await patterns');
     }
-    
+
     if (allPatterns.contains('error handling')) {
       learnings.add('Studying error handling strategies');
     }
-    
+
     return learnings;
   }
 

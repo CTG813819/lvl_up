@@ -3,7 +3,7 @@ echo 🔍 Testing AWS EC2 Connection
 echo.
 
 REM Configuration
-set EC2_IP=44.204.184.21
+set EC2_IP=34.202.215.209
 set KEY_FILE=New.pem
 
 echo 📋 Testing connection to: %EC2_IP%
@@ -37,7 +37,7 @@ echo ✅ SSH connection successful!
 echo.
 
 echo 🌐 Testing backend health...
-curl -s -o nul -w "HTTP Status: %%{http_code}\n" http://%EC2_IP%:4000/api/health
+curl -s -o nul -w "HTTP Status: %%{http_code}\n" http://34.202.215.209:4000/api/health
 if errorlevel 1 (
     echo ❌ Backend health check failed
     echo.

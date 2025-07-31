@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-07-18T13:40:07.888077",
+  "overall_status": "FAILED",
+  "checks": {
+    "system_health": {
+      "status": "FAIL",
+      "details": "Cannot connect to backend: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+    },
+    "database_connectivity": {
+      "status": "PASS",
+      "details": "Database connected successfully. PostgreSQL version: PostgreSQL 17.5 on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit. Found tables: ['guardian_suggestions', 'proposals']"
+    },
+    "database_schema": {
+      "status": "FAIL",
+      "details": "Missing required columns: ['proposals.title', 'agents.id', 'agents.name', 'agents.type', 'agents.status', 'agents.created_at']"
+    },
+    "database_performance": {
+      "status": "FAIL",
+      "details": "Performance check failed: relation \"pg_stat_statements\" does not exist\nLINE 3:                 FROM pg_stat_statements \n                             ^\n"
+    },
+    "backend_services": {
+      "status": "PASS",
+      "details": "Backend service is running with PIDs: ['7897']"
+    },
+    "ai_services": {
+      "status": "FAIL",
+      "details": "Failed endpoints: ['/ai/agents (status: 404)', '/ai/learning (status: 404)', '/ai/growth (status: 404)', '/ai/proposals (status: 404)', '/ai/analytics (status: 404)']. Working: []"
+    },
+    "guardian_services": {
+      "status": "FAIL",
+      "details": "Failed Guardian endpoints: ['/guardian/status (status: 404)', '/guardian/suggestions (status: 404)', '/guardian/analytics (status: 404)']. Working: []"
+    },
+    "imperium_services": {
+      "status": "WARNING",
+      "details": "Imperium service is not running"
+    },
+    "api_endpoints": {
+      "status": "FAIL",
+      "details": "Failed critical endpoints: ['/ (status: 404)', '/health (status: 404)', '/api/v1/status (status: 404)']. Working: ['/docs']"
+    },
+    "websocket_connections": {
+      "status": "FAIL",
+      "details": "WebSocket connection failed: Handshake status 403 Forbidden -+-+- {'date': 'Fri, 18 Jul 2025 13:40:14 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+    },
+    "scheduled_tasks": {
+      "status": "PASS",
+      "details": "Found 1 AI-related scheduled tasks"
+    },
+    "ai_learning_systems": {
+      "status": "FAIL",
+      "details": "AI learning check failed: relation \"ai_learning_summaries\" does not exist\nLINE 2:                 SELECT COUNT(*) FROM ai_learning_summaries \n                                             ^\n"
+    },
+    "autonomous_agents": {
+      "status": "FAIL",
+      "details": "Autonomous agents check failed: relation \"agents\" does not exist\nLINE 2:                 SELECT type, COUNT(*) FROM agents \n                                                   ^\n"
+    },
+    "system_resources": {
+      "status": "PASS",
+      "details": "System resources are within acceptable limits"
+    },
+    "token_usage": {
+      "status": "FAIL",
+      "details": "Token usage check failed: column \"tokens_used\" does not exist\nLINE 2:                 SELECT SUM(tokens_used) FROM token_usage \n                                   ^\n"
+    },
+    "error_logs": {
+      "status": "WARNING",
+      "details": "Found 14 recent errors in logs"
+    },
+    "security_configuration": {
+      "status": "WARNING",
+      "details": "Security issues found: [\"Missing environment variables: ['DB_PASSWORD', 'OPENAI_API_KEY', 'GITHUB_TOKEN']\", \"Permission issues: ['/etc/shadow has incorrect permissions']\"]"
+    }
+  },
+  "errors": [
+    "Backend connection failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+    "Missing database columns: ['proposals.title', 'agents.id', 'agents.name', 'agents.type', 'agents.status', 'agents.created_at']",
+    "Performance check failed: relation \"pg_stat_statements\" does not exist\nLINE 3:                 FROM pg_stat_statements \n                             ^\n",
+    "AI service endpoints failed: ['/ai/agents (status: 404)', '/ai/learning (status: 404)', '/ai/growth (status: 404)', '/ai/proposals (status: 404)', '/ai/analytics (status: 404)']",
+    "Guardian endpoints failed: ['/guardian/status (status: 404)', '/guardian/suggestions (status: 404)', '/guardian/analytics (status: 404)']",
+    "Critical endpoints failed: ['/ (status: 404)', '/health (status: 404)', '/api/v1/status (status: 404)']",
+    "WebSocket connection failed: Handshake status 403 Forbidden -+-+- {'date': 'Fri, 18 Jul 2025 13:40:14 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''",
+    "AI learning check failed: relation \"ai_learning_summaries\" does not exist\nLINE 2:                 SELECT COUNT(*) FROM ai_learning_summaries \n                                             ^\n",
+    "Autonomous agents check failed: relation \"agents\" does not exist\nLINE 2:                 SELECT type, COUNT(*) FROM agents \n                                                   ^\n",
+    "Token usage check failed: column \"tokens_used\" does not exist\nLINE 2:                 SELECT SUM(tokens_used) FROM token_usage \n                                   ^\n"
+  ],
+  "warnings": [
+    "Imperium service is not running",
+    "Recent errors found: 14",
+    "Missing environment variables: ['DB_PASSWORD', 'OPENAI_API_KEY', 'GITHUB_TOKEN']",
+    "Permission issues: ['/etc/shadow has incorrect permissions']"
+  ],
+  "recommendations": [
+    "Critical: Fix 10 failed checks: ['system_health', 'database_schema', 'database_performance', 'ai_services', 'guardian_services', 'api_endpoints', 'websocket_connections', 'ai_learning_systems', 'autonomous_agents', 'token_usage']",
+    "Review 3 warning checks: ['imperium_services', 'error_logs', 'security_configuration']"
+  ]
+}

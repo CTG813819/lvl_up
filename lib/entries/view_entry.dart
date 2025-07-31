@@ -71,15 +71,16 @@ class _ViewEntryState extends State<ViewEntry>
   void _onEditClicked() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => EntryPinScreen(
-          title: 'Edit Entry',
-          onPinEntered: (pin, context) {
-            Navigator.of(context).pushReplacementNamed(
-              EditEntry.routeName,
-              arguments: widget.entry,
-            );
-          },
-        ),
+        builder:
+            (context) => EntryPinScreen(
+              title: 'Edit Entry',
+              onPinEntered: (pin, context) {
+                Navigator.of(context).pushReplacementNamed(
+                  EditEntry.routeName,
+                  arguments: widget.entry,
+                );
+              },
+            ),
       ),
     );
   }
@@ -87,47 +88,56 @@ class _ViewEntryState extends State<ViewEntry>
   void _onDeleteClicked(int entryId) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Entry'),
-        content: const Text('Are you sure you want to delete this?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Delete Entry'),
+            content: const Text('Are you sure you want to delete this?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => EntryPinScreen(
+                            title: 'Confirm Delete',
+                            onPinEntered: (pin, context) async {
+                              try {
+                                final success = await EntryManager()
+                                    .deleteEntry(entryId);
+                                Navigator.of(context).pop(); // Close PIN screen
+                                if (success) {
+                                  Navigator.of(
+                                    context,
+                                  ).pop(); // Return to ListEntries
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to delete entry'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                Navigator.of(context).pop(); // Close PIN screen
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error deleting entry: $e'),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                    ),
+                  );
+                },
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => EntryPinScreen(
-                    title: 'Confirm Delete',
-                    onPinEntered: (pin, context) async {
-                      try {
-                        final success = await EntryManager().deleteEntry(entryId);
-                        Navigator.of(context).pop(); // Close PIN screen
-                        if (success) {
-                          Navigator.of(context).pop(); // Return to ListEntries
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to delete entry')),
-                          );
-                        }
-                      } catch (e) {
-                        Navigator.of(context).pop(); // Close PIN screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error deleting entry: $e')),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 

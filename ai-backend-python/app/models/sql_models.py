@@ -792,4 +792,135 @@ class Weapon(Base):
     name = Column(String(200), nullable=False)
     code = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True) 
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class TestScenario(Base):
+    """Enhanced test scenario model for dynamic test generation"""
+    __tablename__ = "test_scenarios"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type = Column(String(50), nullable=False, index=True)  # dynamic_test/olympic/collaborative
+    complexity = Column(String(10), nullable=False, index=True)  # x1/x2/x3/x4/x5/x6
+    participants = Column(JSON, nullable=False)  # List of AI types
+    requirements = Column(JSON, nullable=False)  # List of requirements
+    description = Column(Text, nullable=False)
+    success_criteria = Column(JSON, nullable=False)  # List of success criteria
+    time_limit = Column(Integer, nullable=False)  # Time limit in minutes
+    docker_config = Column(JSON, nullable=True)  # Docker configuration
+    internet_knowledge_used = Column(JSON, nullable=True)  # Internet knowledge sources
+    training_ground_integration = Column(JSON, nullable=True)  # Training ground data
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<TestScenario(id={self.id}, type='{self.type}', complexity='{self.complexity}')>"
+
+
+class AICommunication(Base):
+    """AI communication model for collaborative scenarios"""
+    __tablename__ = "ai_communications"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    participants = Column(JSON, nullable=False)  # List of AI types
+    scenario_id = Column(UUID(as_uuid=True), ForeignKey("test_scenarios.id"), nullable=False)
+    communication_rounds = Column(JSON, nullable=False)  # List of communication rounds
+    collaboration_rules = Column(JSON, nullable=False)  # List of collaboration rules
+    expected_outcome = Column(JSON, nullable=False)  # Expected outcome details
+    actual_outcome = Column(JSON, nullable=True)  # Actual outcome details
+    communication_log = Column(JSON, nullable=True)  # Detailed communication log
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    scenario = relationship("TestScenario", backref="communications")
+    
+    def __repr__(self):
+        return f"<AICommunication(id={self.id}, participants={self.participants})>"
+
+
+class CollaborativeTest(Base):
+    """Collaborative test model for multi-AI scenarios"""
+    __tablename__ = "collaborative_tests"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    test_type = Column(String(50), nullable=False, index=True)  # pair/trio/group
+    participants = Column(JSON, nullable=False)  # List of AI types
+    scenario = Column(Text, nullable=False)
+    context = Column(JSON, nullable=True)  # Additional context
+    ai_contributions = Column(JSON, nullable=True)  # Individual AI contributions
+    collaborative_score = Column(Float, default=0.0)
+    individual_scores = Column(JSON, nullable=True)  # Individual scores
+    xp_awarded = Column(JSON, nullable=True)  # XP awarded per participant
+    docker_validation = Column(JSON, nullable=True)  # Docker test results
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<CollaborativeTest(id={self.id}, test_type='{self.test_type}', participants={self.participants})>"
+
+
+class InternetKnowledge(Base):
+    """Internet knowledge model for storing fetched knowledge"""
+    __tablename__ = "internet_knowledge"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source = Column(String(200), nullable=False, index=True)  # Source URL
+    source_type = Column(String(50), nullable=False, index=True)  # github/stackoverflow/news/etc
+    topic = Column(String(200), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    extracted_knowledge = Column(JSON, nullable=True)  # Extracted knowledge
+    relevance_score = Column(Float, default=0.0)
+    last_fetched = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    def __repr__(self):
+        return f"<InternetKnowledge(id={self.id}, source='{self.source}', topic='{self.topic}')>"
+
+
+class TrainingGroundResult(Base):
+    """Training ground result model for difficulty adjustment"""
+    __tablename__ = "training_ground_results"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ai_type = Column(String(50), nullable=False, index=True)
+    scenario_type = Column(String(50), nullable=False, index=True)
+    difficulty = Column(String(20), nullable=False, index=True)
+    performance_score = Column(Float, default=0.0)
+    strengths = Column(JSON, nullable=True)  # List of strengths
+    weaknesses = Column(JSON, nullable=True)  # List of weaknesses
+    completion_time = Column(Integer, nullable=True)  # Time in seconds
+    success_rate = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    
+    def __repr__(self):
+        return f"<TrainingGroundResult(id={self.id}, ai_type='{self.ai_type}', performance_score={self.performance_score})>"
+
+
+class AIResponse(Base):
+    """AI self-generated response model for comprehensive AI outputs"""
+    __tablename__ = "ai_responses"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ai_type = Column(String(50), nullable=False, index=True)
+    scenario_id = Column(UUID(as_uuid=True), ForeignKey("test_scenarios.id"), nullable=True)
+    response_types = Column(JSON, nullable=False)  # List of response types (coding, architecture, etc.)
+    generated_content = Column(JSON, nullable=False)  # All generated content
+    languages_used = Column(JSON, nullable=True)  # List of programming languages used
+    architecture_components = Column(JSON, nullable=True)  # List of architecture components
+    code_snippets = Column(JSON, nullable=True)  # List of code snippets
+    documentation = Column(Text, nullable=True)  # Generated documentation
+    testing_approach = Column(Text, nullable=True)  # Testing strategy
+    performance_considerations = Column(Text, nullable=True)  # Performance optimizations
+    security_measures = Column(Text, nullable=True)  # Security measures
+    deployment_strategy = Column(Text, nullable=True)  # Deployment strategy
+    quality_score = Column(Float, default=0.0)  # Quality assessment score
+    complexity_level = Column(String(10), nullable=True)  # x1, x2, x3, etc.
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    scenario = relationship("TestScenario", backref="ai_responses")
+    
+    def __repr__(self):
+        return f"<AIResponse(id={self.id}, ai_type='{self.ai_type}', response_types={self.response_types})>" 

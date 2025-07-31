@@ -33,7 +33,7 @@ async def get_code_overview():
             ]
         }
     except Exception as e:
-        logger.error("Error getting code overview", error=str(e))
+        logger.error(f"Error getting code overview: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -120,7 +120,7 @@ async def get_code_analysis(session: AsyncSession = Depends(get_db)):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting code analysis", error=str(e))
+        logger.error(f"Error getting code analysis: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/generate")
@@ -170,7 +170,7 @@ if __name__ == "__main__":
             }
         }
     except Exception as e:
-        logger.error("Error generating code", error=str(e))
+        logger.error(f"Error generating code: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/optimization")
@@ -240,5 +240,5 @@ async def get_code_optimization(session: AsyncSession = Depends(get_db)):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting code optimization", error=str(e))
+        logger.error(f"Error getting code optimization: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

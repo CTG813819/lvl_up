@@ -4,34 +4,49 @@ import 'package:the_codex/main.dart';
 import '../models/ai_proposal.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../providers/ai_learning_provider.dart';
-import '../services/notification_service.dart';
 import 'package:flutter/foundation.dart';
 import '../services/network_config.dart';
+import '../services/endpoint_fallback_service.dart';
 
 class ProposalProvider extends ChangeNotifier {
   final List<AIProposal> _proposals = [];
-  late IO.Socket _socket;
-  final FlutterLocalNotificationsPlugin _notifications =
-      FlutterLocalNotificationsPlugin();
+  
+  WebSocketChannel? _websocketChannel;
+  bool _isWebSocketConnected = false;
 
-  // AI Learning integration
-  AILearningProvider? _aiLearningProvider;
+  // Flag to prevent multiple initializations
+  bool _isInitialized = false;
 
   // Use network configuration service
-  static String get _backendUrl => NetworkConfig.backendUrl;
-  
-  // Public getter for backend URL
-  static String get backendUrl => _backendUrl;
+  String get _backendUrl => NetworkConfig.backendUrl;
 
-  // Mock mode for testing when backend is not available
-  static const bool _useMockMode =
-      false; // Set to false when backend is running
+  // Public getter for backend URL
+  static String get backendUrl => NetworkConfig.backendUrl;
+
+  // Connection state tracking
+  bool _isBackendAvailable = false;
+  int _consecutiveFailures = 0;
+
+  // Public getter for backend availability
+  bool get isBackendAvailable => _isBackendAvailable;
+
+  // Connection notification tracking
+  static const int _fourHoursMs = 4 * 60 * 60 * 1000;
+  int _lastConnectionNotification = 0;
+  List<Map<String, dynamic>> _connectionErrorBuffer = [];
+
+  // Timer for periodic polling
+  Timer? _pollingTimer;
+
+  bool get isOperating {
+    return true;
+  }
 
   UnmodifiableListView<AIProposal> get proposals {
     final seen = <String>{};
@@ -46,759 +61,289 @@ class ProposalProvider extends ChangeNotifier {
     return UnmodifiableListView(unique);
   }
 
-  List<AIProposal> get pendingProposals =>
-      proposals.where((p) => p.status == ProposalStatus.pending).toList();
+  // Add this getter to filter only user-ready proposals
+  List<AIProposal> get userReadyProposals =>
+      _proposals.where((p) => p.status == ProposalStatus.testPassed).toList();
+
+  // Method to fetch user-ready proposals (test-passed and test_status=passed)
+  Future<void> fetchUserReadyProposals() async {
+    final imperiumUrl = Uri.parse('$_backendUrl/api/proposals/all');
+
+    try {
+      final imperiumResponse = await http.get(
+        imperiumUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'LVL_UP_Flutter_App',
+        },
+      );
+
+      if (imperiumResponse.statusCode == 200) {
+        final imperiumData = jsonDecode(imperiumResponse.body);
+        print(
+          '[PROPOSAL_PROVIDER] 📥 Imperium response type: ${imperiumData.runtimeType}',
+        );
+        print('[PROPOSAL_PROVIDER] 📥 Imperium response: $imperiumData');
+
+        // Backend returns a list directly, not an object with 'proposals' field
+        final proposals = imperiumData is List ? imperiumData : [];
+        print(
+          '[PROPOSAL_PROVIDER] 📋 Found ${proposals.length} imperium proposals',
+        );
+
+        final List<AIProposal> pendingProposals = [];
+        pendingProposals.addAll(
+          proposals
+              .map<AIProposal?>((json) {
+                try {
+                  return AIProposal.fromImperium(json);
+                } catch (e) {
+                  print(
+                    '[PROPOSAL_PROVIDER] ❌ Error parsing imperium proposal: $e',
+                  );
+                  print('[PROPOSAL_PROVIDER] ❌ Problematic JSON: $json');
+                  return null;
+                }
+              })
+              .where((p) => p != null)
+              .cast<AIProposal>(),
+        );
+
+        // Only show pending and test-passed proposals to users
+        final userReadyProposals = pendingProposals.where((p) => 
+          p.status == ProposalStatus.pending || 
+          p.status == ProposalStatus.testPassed
+        ).toList();
+
+        _proposals.clear();
+        _proposals.addAll(userReadyProposals);
+
+        print('[DEBUG] User-ready proposals fetched: ${_proposals.length}');
+        for (final p in _proposals) {
+          print('[DEBUG] User-ready proposal: ${p.id} ${p.status}');
+        }
+
+        notifyListeners();
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ Error fetching user-ready proposals: $e');
+      _handleBackendFailure(e.toString());
+    }
+  }
+
+  void _disposeSocket() {
+    // Remove all Socket.IO code and replace with native WebSocket logic
+    if (_websocketChannel != null) {
+      _websocketChannel!.sink.close();
+      _websocketChannel = null;
+    }
+    _isWebSocketConnected = false;
+  }
+
+  void _disposeNotifications() {
+    // Stop any notification timers or listeners
+  }
 
   ProposalProvider() {
-    fetchProposals();
-    _initSocket();
-    _initNotifications();
+    _startPeriodicRefresh();
   }
 
-  Future<void> fetchProposals() async {
-    print('[PROPOSAL_PROVIDER] 🔍 Fetching proposals from backend...');
-
-    if (_useMockMode) {
-      print(
-        '[PROPOSAL_PROVIDER] 🎭 Using mock mode - creating sample proposals',
-      );
-      _createMockProposals();
-      return;
-    }
-
-    final url = Uri.parse('$_backendUrl/api/proposals');
-    print('[PROPOSAL_PROVIDER] 📡 Making request to: $url');
-
-    try {
-      print('[PROPOSAL_PROVIDER] ⏳ Sending HTTP GET request...');
-      final response = await http
-          .get(url)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              print('[PROPOSAL_PROVIDER] ⏰ Request timed out after 10 seconds');
-              throw TimeoutException(
-                'Request timed out',
-                const Duration(seconds: 10),
-              );
-            },
-          );
-      print('[PROPOSAL_PROVIDER] 📥 Backend response received');
-      print('[PROPOSAL_PROVIDER] 📊 Response status: ${response.statusCode}');
-      print('[PROPOSAL_PROVIDER] 📄 Response headers: ${response.headers}');
-
-    if (response.statusCode == 200) {
-        print('[PROPOSAL_PROVIDER] ✅ Success response from backend');
-        final responseBody = response.body;
-        print(
-          '[PROPOSAL_PROVIDER] 📝 Response body length: ${responseBody.length}',
-        );
-        print(
-          '[PROPOSAL_PROVIDER] 📝 Response body preview: ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}...',
-        );
-
-        final List data = jsonDecode(responseBody);
-        print(
-          '[PROPOSAL_PROVIDER] 📊 Parsed ${data.length} proposals from JSON',
-        );
-
-        if (data.isNotEmpty) {
-          print('[PROPOSAL_PROVIDER] 📋 First proposal data: ${data.first}');
-        }
-
-      _proposals.clear();
-        _proposals.addAll(
-          data.map((json) {
-            print(
-              '[PROPOSAL_PROVIDER] 🔄 Converting proposal: ${json['_id']} - ${json['aiType']} - ${json['status']}',
-            );
-            return AIProposal.fromBackend(json);
-          }),
-        );
-
-        final pendingCount =
-            _proposals.where((p) => p.status == ProposalStatus.pending).length;
-        final approvedCount =
-            _proposals.where((p) => p.status == ProposalStatus.approved).length;
-        final appliedCount =
-            _proposals.where((p) => p.status == ProposalStatus.applied).length;
-
-        print('[PROPOSAL_PROVIDER] 📊 Final proposal counts:');
-        print('[PROPOSAL_PROVIDER]   - Total: ${_proposals.length}');
-        print('[PROPOSAL_PROVIDER]   - Pending: $pendingCount');
-        print('[PROPOSAL_PROVIDER]   - Approved: $approvedCount');
-        print('[PROPOSAL_PROVIDER]   - Applied: $appliedCount');
-
-        // Show notification if there are new pending proposals
-        if (pendingCount > 0) {
-          print(
-            '[PROPOSAL_PROVIDER] 🔔 Showing notification for $pendingCount pending proposals',
-          );
-          _showNotification(
-            '📋 Proposals Available',
-            'You have $pendingCount pending AI proposals to review',
-            channelId: 'ai_proposals',
-          );
-        } else {
-          print(
-            '[PROPOSAL_PROVIDER] ℹ️ No pending proposals to show notification for',
-          );
-        }
-
-      notifyListeners();
-        print('[PROPOSAL_PROVIDER] 📢 Notified listeners of proposal update');
-      } else {
-        print(
-          '[PROPOSAL_PROVIDER] ❌ Failed to fetch proposals: ${response.statusCode}',
-        );
-        print('[PROPOSAL_PROVIDER] 📄 Full response body: ${response.body}');
-        _showNotification(
-          '⚠️ Backend Error',
-          'Backend returned status ${response.statusCode}',
-          channelId: 'ai_processes',
-        );
+  void _startPeriodicRefresh() {
+    // Refresh proposals every 30 seconds to keep UI in sync
+    Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (isOperating) {
+        fetchUserReadyProposals();
       }
-    } on SocketException catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Network connectivity error: $e');
-      print(
-        '[PROPOSAL_PROVIDER] 🌐 This usually means the backend server is not running or not accessible',
-      );
-      _showNotification(
-        '🌐 Network Unreachable',
-        'Cannot connect to AI backend. Please check your internet connection.',
-        channelId: 'ai_processes',
-      );
-    } on TimeoutException catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Request timeout: $e');
-      print(
-        '[PROPOSAL_PROVIDER] ⏰ The backend server took too long to respond',
-      );
-      _showNotification(
-        '⏱️ Connection Timeout',
-        'Backend request timed out. The server may be busy.',
-        channelId: 'ai_processes',
-      );
-    } catch (error) {
-      print(
-        '[PROPOSAL_PROVIDER] ❌ Unexpected error fetching proposals: $error',
-      );
-      print('[PROPOSAL_PROVIDER] 🔍 Error type: ${error.runtimeType}');
-      print('[PROPOSAL_PROVIDER] 📚 Error details: ${error.toString()}');
-      _showNotification(
-        '❌ Connection Error',
-        'Failed to connect to AI backend: ${error.toString().substring(0, 50)}...',
-        channelId: 'ai_processes',
-      );
-    }
+    });
   }
 
-  Future<void> approveProposal(String id) async {
-    print('[PROPOSAL_PROVIDER] Approving proposal: $id');
-
-    if (_useMockMode) {
-      print('[PROPOSAL_PROVIDER] 🎭 Mock mode - approving proposal locally');
-      final proposal = _proposals.firstWhere((p) => p.id == id);
-      proposal.status = ProposalStatus.approved;
-      _proposals.removeWhere((p) => p.id == id);
-      notifyListeners();
-
-      _showNotification(
-        '✅ Mock Proposal Approved',
-        'Proposal for ${proposal.filePath.split('/').last} has been approved (Mock Mode)',
-        channelId: 'ai_proposals',
-      );
-      return;
-    }
-
-    try {
-      final url = Uri.parse('$_backendUrl/api/proposals/$id/approve');
-      print('[PROPOSAL_PROVIDER] 📡 Approving proposal at: $url');
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userFeedback': 'approved',
-          'userFeedbackReason': 'User approved the proposal',
-        }),
-      ).timeout(const Duration(seconds: 15));
-
-      print('[PROPOSAL_PROVIDER] 📥 Approval response: ${response.statusCode}');
-      print('[PROPOSAL_PROVIDER] 📄 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        print('[PROPOSAL_PROVIDER] ✅ Proposal approved successfully');
-        
-        // Remove the proposal from the list
-        _proposals.removeWhere((p) => p.id == id);
-        notifyListeners();
-
-        // Get the proposal data for learning
-        final proposal = _proposals.firstWhere((p) => p.id == id, orElse: () => 
-          AIProposal(
-            id: id,
-            aiType: 'Unknown',
-            filePath: 'unknown',
-            oldCode: '',
-            newCode: '',
-            timestamp: DateTime.now(),
-            status: ProposalStatus.approved,
-          )
-        );
-
-        // Learn from the approval
-        try {
-          final learningProvider = Provider.of<AILearningProvider>(navigatorKey.currentContext!, listen: false);
-          await learningProvider.learnFromProposal(proposal, 'approved', 'User approved the proposal');
-          print('[PROPOSAL_PROVIDER] ✅ Learned from proposal approval');
-        } catch (e) {
-          print('[PROPOSAL_PROVIDER] ⚠️ Could not learn from approval: $e');
-        }
-
-        _showNotification(
-          '✅ Proposal Approved',
-          'Proposal has been approved and applied',
-          channelId: 'ai_proposals',
-        );
-      } else if (response.statusCode == 403) {
-        final errorMsg = jsonDecode(response.body)['error'] ?? 'Action blocked: AI is learning.';
-        print('[PROPOSAL_PROVIDER] ⏸️ Approval blocked: $errorMsg');
-        _showNotification(
-          '⏸️ Action Blocked',
-          errorMsg,
-          channelId: 'ai_proposals',
-        );
-      } else {
-        print('[PROPOSAL_PROVIDER] ❌ Failed to approve proposal: ${response.statusCode}');
-        print('[PROPOSAL_PROVIDER] 📄 Error response: ${response.body}');
-        _showNotification(
-          '❌ Approval Failed',
-          'Backend returned status ${response.statusCode}',
-          channelId: 'ai_proposals',
-        );
-      }
-    } catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Error approving proposal: $e');
-      _showNotification(
-        '❌ Approval Error',
-        'Failed to approve proposal: ${e.toString().substring(0, 50)}...',
-        channelId: 'ai_proposals',
-      );
-    }
-  }
-
-  Future<void> rejectProposal(String id) async {
-    print('[PROPOSAL_PROVIDER] Rejecting proposal: $id');
-
-    if (_useMockMode) {
-      print('[PROPOSAL_PROVIDER] 🎭 Mock mode - rejecting proposal locally');
-      final proposal = _proposals.firstWhere((p) => p.id == id);
-      proposal.status = ProposalStatus.rejected;
-      _proposals.removeWhere((p) => p.id == id);
-      notifyListeners();
-
-      _showNotification(
-        '❌ Mock Proposal Rejected',
-        'Proposal for ${proposal.filePath.split('/').last} has been rejected (Mock Mode)',
-        channelId: 'ai_proposals',
-      );
-      return;
-    }
-
-    try {
-      final url = Uri.parse('$_backendUrl/api/proposals/$id/reject');
-      print('[PROPOSAL_PROVIDER] 📡 Rejecting proposal at: $url');
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userFeedback': 'rejected',
-          'userFeedbackReason': 'User rejected the proposal',
-        }),
-      ).timeout(const Duration(seconds: 15));
-
-      print('[PROPOSAL_PROVIDER] 📥 Rejection response: ${response.statusCode}');
-      print('[PROPOSAL_PROVIDER] 📄 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        print('[PROPOSAL_PROVIDER] ✅ Proposal rejected successfully');
-        
-        // Remove the proposal from the list
-        _proposals.removeWhere((p) => p.id == id);
-        notifyListeners();
-
-        // Get the proposal data for learning
-        final proposal = _proposals.firstWhere((p) => p.id == id, orElse: () => 
-          AIProposal(
-            id: id,
-            aiType: 'Unknown',
-            filePath: 'unknown',
-            oldCode: '',
-            newCode: '',
-            timestamp: DateTime.now(),
-            status: ProposalStatus.rejected,
-          )
-        );
-
-        // Learn from the rejection
-        try {
-          final learningProvider = Provider.of<AILearningProvider>(navigatorKey.currentContext!, listen: false);
-          await learningProvider.learnFromProposal(proposal, 'rejected', 'User rejected the proposal');
-          print('[PROPOSAL_PROVIDER] ✅ Learned from proposal rejection');
-        } catch (e) {
-          print('[PROPOSAL_PROVIDER] ⚠️ Could not learn from rejection: $e');
-        }
-
-        _showNotification(
-          '❌ Proposal Rejected',
-          'Proposal has been rejected and removed',
-          channelId: 'ai_proposals',
-        );
-      } else if (response.statusCode == 403) {
-        final errorMsg = jsonDecode(response.body)['error'] ?? 'Action blocked: AI is learning.';
-        print('[PROPOSAL_PROVIDER] ⏸️ Rejection blocked: $errorMsg');
-        _showNotification(
-          '⏸️ Action Blocked',
-          errorMsg,
-          channelId: 'ai_proposals',
-        );
-      } else {
-        print('[PROPOSAL_PROVIDER] ❌ Failed to reject proposal: ${response.statusCode}');
-        print('[PROPOSAL_PROVIDER] 📄 Error response: ${response.body}');
-        _showNotification(
-          '❌ Rejection Failed',
-          'Backend returned status ${response.statusCode}',
-          channelId: 'ai_proposals',
-        );
-      }
-    } catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Error rejecting proposal: $e');
-      _showNotification(
-        '❌ Rejection Error',
-        'Failed to reject proposal: ${e.toString().substring(0, 50)}...',
-        channelId: 'ai_proposals',
-      );
-    }
-  }
-
-  Future<void> approveAllProposals() async {
-    print('[PROPOSAL_PROVIDER] Approving all pending proposals');
-
-    final pendingProposals =
-        _proposals.where((p) => p.status == ProposalStatus.pending).toList();
-
-    if (pendingProposals.isEmpty) {
-      print('[PROPOSAL_PROVIDER] No pending proposals to approve');
-      _showNotification(
-        'ℹ️ No Pending Proposals',
-        'There are no pending proposals to approve.',
-        channelId: 'ai_proposals',
-      );
+  Future<void> initialize() async {
+    if (_isInitialized) {
+      print('[PROPOSAL_PROVIDER] Already initialized, skipping...');
       return;
     }
 
     print(
-      '[PROPOSAL_PROVIDER] Found ${pendingProposals.length} pending proposals to approve',
+      '[PROPOSAL_PROVIDER] 🚀 Initializing autonomous proposal provider...',
     );
+    _isInitialized = true;
 
-    if (_useMockMode) {
-      print(
-        '[PROPOSAL_PROVIDER] 🎭 Mock mode - approving all proposals locally',
-      );
-      _proposals.removeWhere((p) => p.status == ProposalStatus.pending);
-      notifyListeners();
-
-      _showNotification(
-        '✅ All Mock Proposals Approved',
-        '${pendingProposals.length} proposals have been approved (Mock Mode)',
-        channelId: 'ai_proposals',
-      );
-      return;
-    }
-
-    int successCount = 0;
-    int failureCount = 0;
-
-    for (final proposal in pendingProposals) {
-      try {
-        print('[PROPOSAL_PROVIDER] Approving proposal: ${proposal.id}');
-
-        final url = Uri.parse(
-          '$_backendUrl/api/proposals/${proposal.id}/approve',
-        );
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'feedbackReason': 'Approved via bulk approval'}),
-        );
-
-        if (response.statusCode == 200) {
-          successCount++;
-          print(
-            '[PROPOSAL_PROVIDER] ✅ Successfully approved proposal: ${proposal.id}',
-          );
-        } else {
-          failureCount++;
-          print(
-            '[PROPOSAL_PROVIDER] ❌ Failed to approve proposal: ${proposal.id} - Status: ${response.statusCode}',
-          );
-        }
-      } catch (error) {
-        failureCount++;
-        print(
-          '[PROPOSAL_PROVIDER] ❌ Error approving proposal: ${proposal.id} - $error',
-        );
-      }
-    }
-
-    // Refresh proposals to get updated status
-    await fetchProposals();
-
-    // Show summary notification
-    if (successCount > 0) {
-      _showNotification(
-        '✅ Bulk Approval Complete',
-        'Successfully approved $successCount proposals${failureCount > 0 ? ', $failureCount failed' : ''}',
-        channelId: 'ai_proposals',
-      );
-    } else {
-      _showNotification(
-        '❌ Bulk Approval Failed',
-        'Failed to approve any proposals. Please try individual approvals.',
-        channelId: 'ai_proposals',
-      );
-    }
+    // Always start autonomous operation - don't depend on user interaction
+    _initWebSocket();
+    await fetchUserReadyProposals();
+    _startAutonomousPolling();
 
     print(
-      '[PROPOSAL_PROVIDER] Bulk approval complete: $successCount successful, $failureCount failed',
+      '[PROPOSAL_PROVIDER] ✅ Autonomous proposal provider initialized and running',
     );
   }
 
-  void _initNotifications() {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-    _notifications.initialize(initializationSettings);
-    print('[PROPOSAL_PROVIDER] Notifications initialized');
+  void _startAutonomousPolling() {
+    if (_pollingTimer != null) return; // Already polling
+    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      // Check operational hours but still run autonomously
+      if (isOperating) {
+        fetchUserReadyProposals(); // Changed from fetchAllProposals to fetchUserReadyProposals
+      } else {
+        print(
+          '[PROPOSAL_PROVIDER] ⏸️ Autonomous polling paused - outside operational hours',
+        );
+      }
+    });
+    print(
+      '[PROPOSAL_PROVIDER] 🔄 Started autonomous polling for user-ready proposals (every 60 seconds)',
+    );
   }
 
+  Future<void> fetchAllProposals() async {
+    await fetchUserReadyProposals();
+  }
+
+
+
+  // Show notification method
   void _showNotification(
     String title,
     String body, {
     String? channelId,
     int? id,
   }) {
-    final notificationId = id ?? DateTime.now().millisecondsSinceEpoch % 100000;
+    final notificationId =
+        id ?? (DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF);
     final channel = channelId ?? 'ai_processes';
 
-    _notifications.show(
-      notificationId,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel,
-          'AI Processes',
-          channelDescription: 'Notifications for AI proposal processing',
-          importance: Importance.high,
-          priority: Priority.high,
-          showWhen: true,
-          enableVibration: true,
-          playSound: true,
-          icon: '@mipmap/ic_launcher',
-          color: const Color(0xFF2196F3),
-          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-          styleInformation: BigTextStyleInformation(body),
-        ),
-      ),
-    );
-    print('[PROPOSAL_PROVIDER] 📱 Notification shown: $title - $body');
+    // FlutterLocalNotificationsPlugin is no longer used for WebSocket notifications
+    // _notifications.show(
+    //   notificationId,
+    //   title,
+    //   body,
+    //   NotificationDetails(
+    //     android: AndroidNotificationDetails(
+    //       channel,
+    //       'AI Processes',
+    //       channelDescription: 'Notifications for AI proposal processing',
+    //       importance: Importance.high,
+    //       priority: Priority.high,
+    //       showWhen: true,
+    //       enableVibration: true,
+    //       playSound: true,
+    //       icon: '@mipmap/ic_launcher',
+    //       color: const Color(0xFF2196F3),
+    //     ),
+    //   ),
+    // );
+    
+    print('[PROPOSAL_PROVIDER] 📢 Notification: $title - $body');
   }
 
-  void _initSocket() {
-    print('[PROPOSAL_PROVIDER] Initializing Socket.IO connection...');
-    _socket = IO.io('$_backendUrl', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': true,
-    });
-
-    _socket.onConnect((_) {
-      print('[PROPOSAL_PROVIDER] ✅ Socket.IO connected to backend');
-      _showNotification(
-        '🔗 Connected to AI Backend',
-        'Real-time AI updates are now active',
-        channelId: 'ai_processes',
-        id: 1, // Use fixed ID for connection status
+  // Initialize WebSocket connection
+  void _initWebSocket() {
+    print('[PROPOSAL_PROVIDER] Initializing WebSocket connection...');
+    try {
+      _websocketChannel = WebSocketChannel.connect(
+        Uri.parse('ws://34.202.215.209:8000/api/imperium/status'),
       );
-    });
-
-    _socket.onDisconnect((_) {
-      print('[PROPOSAL_PROVIDER] ⚠️ Socket.IO disconnected from backend');
-    });
-
-    _socket.onConnectError((error) {
-      print('[PROPOSAL_PROVIDER] ❌ Socket.IO connection error: $error');
-      _showNotification(
-        '❌ Backend Connection Failed',
-        'Cannot connect to AI backend: $error',
-        channelId: 'ai_processes',
+      _isWebSocketConnected = true;
+      _websocketChannel!.stream.listen(
+        (data) {
+          print('[WEBSOCKET] Received: $data');
+          // Handle incoming messages as needed
+          // Example: parse and act on proposal updates
+          try {
+            final message = jsonDecode(data.toString());
+            // Handle different message types here
+          } catch (e) {
+            print('[WEBSOCKET] Error parsing message: $e');
+          }
+        },
+        onError: (error) {
+          print('[WEBSOCKET] Error: $error');
+          _isWebSocketConnected = false;
+        },
+        onDone: () {
+          print('[WEBSOCKET] Connection closed');
+          _isWebSocketConnected = false;
+        },
       );
-    });
-
-    _socket.on('proposal:created', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:created event');
-      fetchProposals();
-      final aiType = data['aiType'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      _showNotification(
-        '🤖 New AI Proposal',
-        '$aiType has created a new proposal for ${filePath.split('/').last}',
-        channelId: 'ai_proposals',
-      );
-    });
-
-    _socket.on('proposal:approved', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:approved event');
-      fetchProposals();
-      final filePath = data['filePath'] ?? 'unknown file';
-      _showNotification(
-        '✅ Proposal Approved',
-        'Proposal for ${filePath.split('/').last} has been approved and will be tested',
-        channelId: 'ai_proposals',
-      );
-    });
-
-    _socket.on('proposal:rejected', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:rejected event');
-      fetchProposals();
-      final filePath = data['filePath'] ?? 'unknown file';
-      _showNotification(
-        '❌ Proposal Rejected',
-        'Proposal for ${filePath.split('/').last} has been rejected',
-        channelId: 'ai_proposals',
-      );
-    });
-
-    _socket.on('proposal:applied', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:applied event');
-      print('[PROPOSAL_PROVIDER] Applied proposal data: $data');
-      fetchProposals();
-      final filePath = data['filePath'] ?? 'unknown file';
-      final aiType = data['aiType'] ?? 'AI';
-      final prUrl = data['prUrl'] ?? '';
-      _showNotification(
-        '🚀 Proposal Applied to GitHub',
-        '$aiType proposal for ${filePath.split('/').last} has been successfully applied and pushed to GitHub',
-        channelId: 'ai_proposals',
-      );
-    });
-
-    _socket.on('proposal:test-started', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:test-started event');
-      final filePath = data['filePath'] ?? 'unknown file';
-      _showNotification(
-        '🧪 Running Tests',
-        'Testing proposal for ${filePath.split('/').last}...',
-        channelId: 'ai_tests',
-      );
-    });
-
-    _socket.on('proposal:test-finished', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:test-finished event');
-      print('[PROPOSAL_PROVIDER] Test finished data: $data');
-      fetchProposals();
-      final status = data['testStatus'] ?? '';
-      final filePath = data['filePath'] ?? 'unknown file';
-      final fileName = filePath.split('/').last;
-
-      if (status == 'passed') {
-        _showNotification(
-          '✅ Tests Passed',
-          'Tests for $fileName passed successfully. Proposal will be applied to GitHub.',
-          channelId: 'ai_tests',
-        );
-      } else {
-        _showNotification(
-          '⚠️ Tests Completed',
-          'Tests for $fileName completed with status: $status',
-          channelId: 'ai_tests',
-        );
-      }
-    });
-
-    _socket.on('proposal:test-failed', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received proposal:test-failed event');
-      print('[PROPOSAL_PROVIDER] Test failed data: $data');
-      fetchProposals();
-      final filePath = data['filePath'] ?? 'unknown file';
-      final fileName = filePath.split('/').last;
-      _showNotification(
-        '❌ Tests Failed',
-        'Tests for $fileName failed. Proposal will not be applied to GitHub.',
-        channelId: 'ai_tests',
-      );
-    });
-
-    _socket.on('apk:built', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received apk:built event');
-      print('[PROPOSAL_PROVIDER] APK built data: $data');
-      final apkUrl = data['apkUrl'] ?? '';
-      _showNotification(
-        '📱 New APK Available',
-        'A new APK build is ready! Your app has been updated with the latest AI improvements.',
-        channelId: 'apk_builds',
-      );
-    });
-
-    _socket.on('ai:pull', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:pull event');
-      final ai = data['ai'] ?? 'AI';
-      final message = data['message'] ?? 'AI is working...';
-      _showNotification('🔄 $ai Working', message, channelId: 'ai_processes');
-    });
-
-    _socket.on('ai:experiment-start', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:experiment-start event');
-      final ai = data['ai'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      final message = data['message'] ?? 'AI is working...';
-      final fileName = filePath.split('/').last;
-      _showNotification(
-        '🤖 $ai Working',
-        '$message on $fileName',
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('ai:experiment-complete', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:experiment-complete event');
-      final ai = data['ai'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      final message = data['message'] ?? 'AI completed work';
-      final fileName = filePath.split('/').last;
-      _showNotification(
-        '✅ $ai Complete',
-        '$message for $fileName',
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('backend:startup', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received backend:startup event');
-      final message = data['message'] ?? 'Backend is starting up...';
-      _showNotification(
-        '🚀 AI Backend Starting',
-        message,
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('backend:code-pulled', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received backend:code-pulled event');
-      final message = data['message'] ?? 'Code pulled successfully';
-      _showNotification('📥 Code Updated', message, channelId: 'ai_processes');
-    });
-
-    _socket.on('backend:scan-complete', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received backend:scan-complete event');
-      final fileCount = data['fileCount'] ?? 0;
-      final message = data['message'] ?? 'Scan complete';
-      _showNotification(
-        '🔍 Code Scan Complete',
-        '$message - $fileCount files found',
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('ai:periodic-start', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:periodic-start event');
-      final ai = data['ai'] ?? 'AI';
-      final message = data['message'] ?? 'AI starting periodic work...';
-      _showNotification(
-        '🔄 $ai Periodic Job',
-        message,
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('ai:periodic-complete', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:periodic-complete event');
-      final ai = data['ai'] ?? 'AI';
-      final message = data['message'] ?? 'AI completed periodic work';
-      _showNotification(
-        '✅ $ai Job Complete',
-        message,
-        channelId: 'ai_processes',
-      );
-    });
-
-    _socket.on('ai:periodic-error', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:periodic-error event');
-      final ai = data['ai'] ?? 'AI';
-      final message = data['message'] ?? 'AI encountered an error';
-      _showNotification('❌ $ai Error', message, channelId: 'ai_processes');
-    });
-
-    _socket.on('ai:learning-updated', (data) {
-      print('[PROPOSAL_PROVIDER] 📨 Received ai:learning-updated event');
-      print('[PROPOSAL_PROVIDER] Learning data: $data');
-      final aiType = data['aiType'] ?? 'AI';
-      final learningKey = data['learningKey'] ?? 'unknown';
-      final learningValue = data['learningValue'] ?? 'unknown lesson';
-      final filePath = data['filePath'] ?? 'unknown file';
-      final status = data['status'] ?? 'unknown';
-
-      String title, body;
-      if (status == 'rejected' || status == 'test-failed') {
-        title = '🧠 $aiType Learned from Failure';
-        body = 'Learned: ${learningValue.substring(0, 50)}...';
-      } else {
-        title = '✅ $aiType Learned from Success';
-        body = 'Successfully applied changes to ${filePath.split('/').last}';
-      }
-
-      _showNotification(title, body, channelId: 'ai_learning');
-    });
-
-    print('[PROPOSAL_PROVIDER] Socket.IO event handlers registered');
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ WebSocket initialization failed: $e');
+      _isWebSocketConnected = false;
+    }
   }
 
-  void connect() {
-    print('[PROPOSAL_PROVIDER] Connecting to Socket.IO backend...');
-    _socket.connect();
-    _showNotification(
-      '🔗 Connecting to AI Backend',
-      'Establishing connection to AI system...',
-      channelId: 'ai_processes',
-      id: 0, // Use fixed ID for connection status
-    );
+  // Get connection status for UI
+  Map<String, dynamic> getConnectionStatus() {
+    return {
+      'backendAvailable': _isBackendAvailable,
+      'consecutiveFailures': _consecutiveFailures,
+      'backendUrl': _backendUrl,
+      'websocketConnected': _isWebSocketConnected,
+      'isOperating': isOperating,
+    };
+  }
 
-    // Add retry logic for connection failures
-    _socket.onConnectError((error) {
-      print('[PROPOSAL_PROVIDER] ❌ Socket.IO connection error: $error');
+  // Handle backend failure
+  void _handleBackendFailure(String error) {
+    _consecutiveFailures++;
+    _isBackendAvailable = false;
+    
+    // Add to error buffer for notifications
+    _connectionErrorBuffer.add({
+      'error': error,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    
+    // Keep only last 10 errors
+    if (_connectionErrorBuffer.length > 10) {
+      _connectionErrorBuffer.removeAt(0);
+    }
+    
+    _handleConnectionNotification();
+    notifyListeners();
+  }
+
+  // Handle connection notification with rate limiting
+  void _handleConnectionNotification() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastConnectionNotification < _fourHoursMs) return;
+    
+    _lastConnectionNotification = now;
+    
+    if (_connectionErrorBuffer.isNotEmpty) {
       _showNotification(
-        '🔌 Connection Failed',
-        'Failed to connect to AI backend. Retrying in 30 seconds...',
+        '⚠️ Connection Issues',
+        'Backend connection problems detected.\n${_connectionErrorBuffer.length} connection errors/timeouts occurred in the last 4 hours.',
         channelId: 'ai_processes',
       );
+    } else {
+      _showNotification(
+        '✅ Connection Restored',
+        'Successfully connected to backend',
+        channelId: 'ai_processes',
+      );
+    }
+  }
 
-      // Retry connection after 30 seconds
-      Future.delayed(const Duration(seconds: 30), () {
-        if (!_socket.connected) {
-          print('[PROPOSAL_PROVIDER] 🔄 Retrying Socket.IO connection...');
-          _socket.connect();
-        }
-      });
+  // Clear connection error buffer
+  void _clearConnectionErrors() {
+    _connectionErrorBuffer.clear();
+  }
+
+  // Add connection error
+  void _addConnectionError(String error) {
+    _connectionErrorBuffer.add({
+      'error': error,
+      'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  @override
-  void dispose() {
-    _socket.dispose();
-    super.dispose();
-  }
+
+
+
+
+  // Remove all Socket.IO code and replace with native WebSocket logic
+  // Remove: IO.Socket? _socket; and all references to _socket
+
 
   // Check if backend is reachable
   Future<bool> checkBackendConnectivity() async {
@@ -818,21 +363,78 @@ class ProposalProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         print('[PROPOSAL_PROVIDER] ✅ Backend is healthy and responding');
+        _handleBackendSuccess();
         return true;
       } else {
         print(
           '[PROPOSAL_PROVIDER] ⚠️ Backend responded with status: ${response.statusCode}',
         );
+        _handleBackendFailure('HTTP ${response.statusCode}');
         return false;
       }
     } catch (error) {
       print('[PROPOSAL_PROVIDER] ❌ Backend connectivity check failed: $error');
+      _handleBackendFailure(error.toString());
       return false;
     }
   }
 
+  // Handle successful backend connection
+  void _handleBackendSuccess() {
+    _consecutiveFailures = 0;
+    _isBackendAvailable = true;
+  }
+
+
+
+  // Manual retry connection (public method)
+  Future<void> retryConnection() async {
+    print('[PROPOSAL_PROVIDER] 🔄 Manual retry requested');
+
+    // Reset failure count for manual retry
+    _consecutiveFailures = 0;
+
+    // In retryConnection, remove all references to ChaosWarpProvider and chaos/warp state. Always attempt backend connection and fetch proposals.
+    // Remove any logic or notifications about operational hours or chaos/warp.
+    try {
+      // Test backend connectivity
+      final isHealthy = await checkBackendConnectivity();
+      if (isHealthy) {
+        print('[PROPOSAL_PROVIDER] ✅ Backend is healthy');
+        _isBackendAvailable = true;
+
+        // Fetch fresh proposals from backend
+        await fetchUserReadyProposals();
+
+        _showNotification(
+          '✅ Connection Restored',
+          'Successfully connected to backend',
+          channelId: 'ai_processes',
+        );
+      } else {
+        print('[PROPOSAL_PROVIDER] ❌ Backend still unavailable');
+        _showNotification(
+          '❌ Connection Failed',
+          'Backend is still unavailable',
+          channelId: 'ai_processes',
+        );
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ Error during retry connection: $e');
+      _showNotification(
+        '❌ Connection Error',
+        'Failed to establish connection to backend: ${e.toString().substring(0, 50)}...',
+        channelId: 'ai_processes',
+      );
+    }
+
+    notifyListeners();
+  }
+
   Future<void> testBackendConnection() async {
     print('[PROPOSAL_PROVIDER] 🔍 Testing backend connection...');
+    print('[PROPOSAL_PROVIDER] 📊 Backend available: $_isBackendAvailable');
+    print('[PROPOSAL_PROVIDER] 📊 Consecutive failures: $_consecutiveFailures');
 
     // Test health endpoint first
     try {
@@ -852,273 +454,584 @@ class ProposalProvider extends ChangeNotifier {
       if (healthResponse.statusCode == 200) {
         _showNotification(
           '✅ Backend Connected',
-          'Backend is running and accessible',
-          channelId: 'ai_processes',
-        );
-      }
-    } catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Health endpoint failed: $e');
-      _showNotification(
-        '❌ Backend Unreachable',
-        'Cannot reach backend health endpoint: $e',
-        channelId: 'ai_processes',
-      );
-      return;
-    }
-
-    // Test proposals endpoint
-    try {
-      final proposalsUrl = Uri.parse('$_backendUrl/api/proposals');
-      print('[PROPOSAL_PROVIDER] 📡 Testing proposals endpoint: $proposalsUrl');
-
-      final proposalsResponse = await http
-          .get(proposalsUrl)
-          .timeout(const Duration(seconds: 10));
-      print(
-        '[PROPOSAL_PROVIDER] 📊 Proposals endpoint response: ${proposalsResponse.statusCode}',
-      );
-
-      if (proposalsResponse.statusCode == 200) {
-        final data = jsonDecode(proposalsResponse.body);
-        print(
-          '[PROPOSAL_PROVIDER] 📋 Found ${data.length} proposals in backend',
-        );
-
-        final pendingCount = data.where((p) => p['status'] == 'pending').length;
-        final approvedCount =
-            data.where((p) => p['status'] == 'approved').length;
-
-        _showNotification(
-          '📊 Backend Data',
-          'Found ${data.length} total proposals ($pendingCount pending, $approvedCount approved)',
+          'Backend is healthy and responding',
           channelId: 'ai_processes',
         );
       } else {
-        print(
-          '[PROPOSAL_PROVIDER] ❌ Proposals endpoint failed: ${proposalsResponse.statusCode}',
-        );
-        print(
-          '[PROPOSAL_PROVIDER] 📄 Error response: ${proposalsResponse.body}',
-        );
         _showNotification(
-          '❌ Proposals Error',
-          'Backend returned ${proposalsResponse.statusCode}',
+          '⚠️ Backend Warning',
+          'Backend responded with status: ${healthResponse.statusCode}',
           channelId: 'ai_processes',
         );
       }
     } catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Proposals endpoint failed: $e');
+      print('[PROPOSAL_PROVIDER] ❌ Health check failed: $e');
       _showNotification(
-        '❌ Proposals Unreachable',
-        'Cannot reach proposals endpoint: $e',
+        '❌ Backend Error',
+        'Failed to connect to backend: ${e.toString().substring(0, 50)}...',
         channelId: 'ai_processes',
       );
     }
   }
 
-  // Get backend status for UI
-  bool get isBackendConnected => _socket.connected;
+  // Notify successful backend connection (once every 4 hours)
+  Future<void> _notifyBackendConnected() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastConnectionNotification < _fourHoursMs) return;
 
-  Future<void> createTestProposal() async {
-    print('[PROPOSAL_PROVIDER] 🧪 Creating test proposal...');
+    _lastConnectionNotification = now;
+    String errorSummary = '';
 
-    if (_useMockMode) {
-      print('[PROPOSAL_PROVIDER] 🎭 Mock mode - creating local test proposal');
-      final testProposal = AIProposal(
-        id: 'test-${DateTime.now().millisecondsSinceEpoch}',
-        aiType: 'Test AI',
-        filePath: 'lib/test_file.dart',
-        oldCode: '// Old code\nvoid oldFunction() {\n  print("old");\n}',
-        newCode: '// New code\nvoid newFunction() {\n  print("new");\n}',
-        timestamp: DateTime.now(),
-        status: ProposalStatus.pending,
-      );
-
-      _proposals.add(testProposal);
-      notifyListeners();
-
-      _showNotification(
-        '✅ Test Proposal Created',
-        'Created test proposal in mock mode',
-        channelId: 'ai_proposals',
-      );
-      return;
+    if (_connectionErrorBuffer.isNotEmpty) {
+      errorSummary =
+          '\n${_connectionErrorBuffer.length} connection errors/timeouts occurred in the last 4 hours.';
     }
 
-    // Create test proposal on backend
+    // Send notification to backend
     try {
-      final url = Uri.parse('$_backendUrl/api/proposals');
-      final testData = {
-        'aiType': 'Test AI',
-        'filePath': 'lib/test_file.dart',
-        'codeBefore': '// Old code\nvoid oldFunction() {\n  print("old");\n}',
-        'codeAfter': '// New code\nvoid newFunction() {\n  print("new");\n}',
-        'status': 'pending',
+      final response = await http.post(
+        Uri.parse('$_backendUrl/api/imperium/status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': 'Connected to AI Backend',
+          'body': 'The app is connected to the backend.$errorSummary',
+          'type': 'system',
+          'userId': 'proposal-provider',
+        }),
+      );
+      if (response.statusCode == 200) {
+        print('[PROPOSAL_PROVIDER] ✅ Connection notification sent');
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] Failed to send connection notification: $e');
+    }
+
+    // Clear error buffer after sending summary
+    _connectionErrorBuffer.clear();
+  }
+
+  // Buffer connection errors (don't send immediately)
+  void _bufferConnectionError(String errorType) {
+    _connectionErrorBuffer.add({
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'errorType': errorType,
+    });
+    print('[PROPOSAL_PROVIDER] Connection error buffered: $errorType');
+  }
+
+  // Send oath paper to AI for learning
+  Future<bool> sendOathPaperToAI(Map<String, dynamic> oathPaper) async {
+    if (!isOperating) {
+      print(
+        '[PROPOSAL_PROVIDER] Blocked: AI operations not allowed (time, warp, or chaos state).',
+      );
+      return false;
+    }
+
+    print('[PROPOSAL_PROVIDER] 📜 Sending oath paper to AI for learning...');
+    print('[PROPOSAL_PROVIDER] Subject: ${oathPaper['subject']}');
+    print('[PROPOSAL_PROVIDER] Tags: ${oathPaper['tags']}');
+    print(
+      '[PROPOSAL_PROVIDER] Target AI: ${oathPaper['targetAI'] ?? 'All AIs'}',
+    );
+    print('[PROPOSAL_PROVIDER] AI Weights: ${oathPaper['aiWeights']}');
+
+    try {
+      // Enhanced oath paper data with keyword extraction and learning instructions
+      final enhancedOathPaper = {
+        ...oathPaper,
+        'learningMode': 'enhanced',
+        'extractKeywords': true,
+        'internetSearch': true,
+        'gitIntegration': true,
+        'learningInstructions': {
+          'scanDescription': true,
+          'scanCode': true,
+          'extractKeywords': true,
+          'searchInternet': true,
+          'learnFromResults': true,
+          'updateCapabilities': true,
+          'pushToGit': true,
+        },
+        'timestamp': DateTime.now().toIso8601String(),
       };
+
+      final url = Uri.parse('$_backendUrl/api/oath-papers');
+      print('[PROPOSAL_PROVIDER] 📡 Sending enhanced oath paper to: $url');
 
       final response = await http
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(testData),
+            body: jsonEncode(enhancedOathPaper),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(
+            const Duration(seconds: 60),
+          ); // Increased timeout for enhanced processing
+
+      print(
+        '[PROPOSAL_PROVIDER] 📥 Enhanced oath paper response: ${response.statusCode}',
+      );
 
       if (response.statusCode == 200) {
-        print('[PROPOSAL_PROVIDER] ✅ Test proposal created successfully');
-        await fetchProposals(); // Refresh the list
+        final result = jsonDecode(response.body);
+        print(
+          '[PROPOSAL_PROVIDER] ✅ Enhanced oath paper processed successfully',
+        );
+        print('[PROPOSAL_PROVIDER] Result: $result');
+
+        // Show detailed notification with learning progress
+        final learningProgress = result['learningProgress'] ?? {};
+        final keywordsFound = learningProgress['keywordsFound'] ?? [];
+        final internetSearches = learningProgress['internetSearches'] ?? [];
+        final gitUpdates = learningProgress['gitUpdates'] ?? [];
+
+        String notificationMessage =
+            'AI learning from: ${oathPaper['subject']}';
+        if (keywordsFound.isNotEmpty) {
+          notificationMessage +=
+              '\nKeywords: ${keywordsFound.take(3).join(', ')}';
+        }
+        if (internetSearches.isNotEmpty) {
+          notificationMessage +=
+              '\nSearched: ${internetSearches.length} sources';
+        }
+        if (gitUpdates.isNotEmpty) {
+          notificationMessage += '\nGit: ${gitUpdates.length} updates';
+        }
+
         _showNotification(
-          '✅ Test Proposal Created',
-          'Test proposal created on backend',
+          '🧠 AI Learning Enhanced',
+          notificationMessage,
+          channelId: 'ai_proposals',
+        );
+
+        return true;
+      } else {
+        print(
+          '[PROPOSAL_PROVIDER] ❌ Failed to process enhanced oath paper: ${response.statusCode}',
+        );
+        print('[PROPOSAL_PROVIDER] Error response: ${response.body}');
+
+        // Fallback to basic processing
+        return await _fallbackOathPaperProcessing(oathPaper);
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ Error processing enhanced oath paper: $e');
+
+      // Fallback to basic processing
+      return await _fallbackOathPaperProcessing(oathPaper);
+    }
+  }
+
+  // Fallback processing for oath papers when enhanced processing fails
+  Future<bool> _fallbackOathPaperProcessing(
+    Map<String, dynamic> oathPaper,
+  ) async {
+    try {
+      print(
+        '[PROPOSAL_PROVIDER] 🔄 Attempting fallback oath paper processing...',
+      );
+
+      final url = Uri.parse('$_backendUrl/api/oath-papers');
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(oathPaper),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        print(
+          '[PROPOSAL_PROVIDER] ✅ Fallback oath paper processing successful',
+        );
+        _showNotification(
+          '📜 Oath Paper Processed (Basic)',
+          'AI will learn from: ${oathPaper['subject']}',
+          channelId: 'ai_proposals',
+        );
+        return true;
+      } else {
+        print(
+          '[PROPOSAL_PROVIDER] ❌ Fallback processing also failed: ${response.statusCode}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ Error in fallback processing: $e');
+      return false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeSocket();
+    _disposeNotifications();
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  // Fetch oath papers
+  Future<void> fetchOathPapers() async {
+    try {
+      final url = Uri.parse('$_backendUrl/api/oath-papers');
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('[PROPOSAL_PROVIDER] ✅ Oath papers fetched: ${data.length}');
+      } else {
+        print('[PROPOSAL_PROVIDER] ❌ Failed to fetch oath papers: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[PROPOSAL_PROVIDER] ❌ Error fetching oath papers: $e');
+    }
+  }
+
+  // Create oath paper
+  Future<void> createOathPaper(Map<String, dynamic> paperData) async {
+    try {
+      final url = Uri.parse('$_backendUrl/api/oath-papers');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(paperData),
+      );
+      
+      if (response.statusCode == 200) {
+        print('[PROPOSAL_PROVIDER] ✅ Oath paper created successfully');
+        _showNotification(
+          '✅ Oath Paper Created',
+          'New oath paper has been created successfully',
           channelId: 'ai_proposals',
         );
       } else {
-        print(
-          '[PROPOSAL_PROVIDER] ❌ Failed to create test proposal: ${response.statusCode}',
-        );
+        print('[PROPOSAL_PROVIDER] ❌ Failed to create oath paper: ${response.statusCode}');
         _showNotification(
-          '❌ Test Proposal Failed',
-          'Backend returned ${response.statusCode}',
+          '❌ Creation Failed',
+          'Failed to create oath paper: ${response.statusCode}',
           channelId: 'ai_proposals',
         );
       }
     } catch (e) {
-      print('[PROPOSAL_PROVIDER] ❌ Error creating test proposal: $e');
+      print('[PROPOSAL_PROVIDER] ❌ Error creating oath paper: $e');
       _showNotification(
-        '❌ Test Proposal Error',
-        'Failed to create test proposal: $e',
+        '❌ Creation Error',
+        'Error creating oath paper: ${e.toString().substring(0, 50)}...',
         channelId: 'ai_proposals',
       );
     }
   }
 
-  void _createMockProposals() {
-    _proposals.clear();
-
-    // Mock Imperium proposal
-    _proposals.add(
-      AIProposal(
-        id: 'mock-1',
-        aiType: 'Imperium',
-        filePath: 'lib/main.dart',
-        oldCode: '''void main() {
-  runApp(MyApp());
-}''',
-        newCode: '''void main() {
-  runApp(MyApp());
-  // Added error handling and logging
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-  };
-}''',
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        status: ProposalStatus.pending,
-      ),
-    );
-
-    // Mock Sandbox proposal
-    _proposals.add(
-      AIProposal(
-        id: 'mock-2',
-        aiType: 'Sandbox',
-        filePath: 'lib/mission.dart',
-        oldCode: '''class Mission {
-  String title;
-  Mission(this.title);
-}''',
-        newCode: '''class Mission {
-  String title;
-  String? description;
-  DateTime? dueDate;
-  
-  Mission(this.title, {this.description, this.dueDate});
-  
-  Map<String, dynamic> toJson() => {
-    'title': title,
-    'description': description,
-    'dueDate': dueDate?.toIso8601String(),
-  };
-}''',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-        status: ProposalStatus.pending,
-      ),
-    );
-
-    // Mock Guardian proposal
-    _proposals.add(
-      AIProposal(
-        id: 'mock-3',
-        aiType: 'Guardian',
-        filePath: 'lib/providers/proposal_provider.dart',
-        oldCode: '''Future<void> fetchProposals() async {
-  // Basic implementation
-}''',
-        newCode: '''Future<void> fetchProposals() async {
-  try {
-    // Enhanced implementation with error handling
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      // Process response
-    } else {
-      throw Exception('Failed to fetch proposals');
+  // Approve a proposal
+  Future<void> approveProposal(String id) async {
+    if (!isOperating) {
+      print(
+        '[PROPOSAL_PROVIDER] Blocked: AI operations not allowed (time, warp, or chaos state).',
+      );
+      notifyListeners();
+      return;
     }
-  } catch (error) {
-    print('Error: \$error');
-    rethrow;
-  }
-}''',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-        status: ProposalStatus.pending,
-      ),
-    );
+    print('[PROPOSAL_PROVIDER] Approving proposal: $id');
 
-    // Mock approved proposal
-    _proposals.add(
-      AIProposal(
-        id: 'mock-4',
-        aiType: 'Imperium',
-        filePath: 'lib/theme.dart',
-        oldCode: '''ThemeData get lightTheme => ThemeData(
-  primarySwatch: Colors.blue,
-);''',
-        newCode: '''ThemeData get lightTheme => ThemeData(
-  primarySwatch: Colors.blue,
-  brightness: Brightness.light,
-  useMaterial3: true,
-);''',
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-        status: ProposalStatus.approved,
-      ),
-    );
+    final proposalIndex = _proposals.indexWhere((p) => p.id == id);
+    if (proposalIndex == -1) return;
+    final proposal = _proposals[proposalIndex];
 
-    print('[PROPOSAL_PROVIDER] 🎭 Created ${_proposals.length} mock proposals');
-    print('[PROPOSAL_PROVIDER] 📊 Mock proposal counts:');
-    print('[PROPOSAL_PROVIDER]   - Total: ${_proposals.length}');
-    print(
-      '[PROPOSAL_PROVIDER]   - Pending: ${_proposals.where((p) => p.status == ProposalStatus.pending).length}',
-    );
-    print(
-      '[PROPOSAL_PROVIDER]   - Approved: ${_proposals.where((p) => p.status == ProposalStatus.approved).length}',
-    );
-
+    // Optimistically remove proposal
+    _proposals.removeAt(proposalIndex);
     notifyListeners();
 
-    // Show notification for mock proposals
-    final pendingCount =
-        _proposals.where((p) => p.status == ProposalStatus.pending).length;
-    if (pendingCount > 0) {
+    try {
+      // First, show the proposal as testing
+      proposal.status = ProposalStatus.testing;
+      _proposals.insert(proposalIndex, proposal);
+      notifyListeners();
+
       _showNotification(
-        '🎭 Mock Proposals Available',
-        'You have $pendingCount mock AI proposals to review (Mock Mode)',
+        '🔄 Proposal Testing Started',
+        'Proposal for ${proposal.filePath.split('/').last} is being tested...',
+        channelId: 'ai_proposals',
+      );
+
+      // Wait a moment to show the testing status
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Use imperium endpoint for agent approval
+      final url = Uri.parse('$_backendUrl/api/proposals');
+      print('[PROPOSAL_PROVIDER] 📡 Approving agent at: $url');
+
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'userFeedback': 'approved',
+              'userFeedbackReason': 'User approved the agent',
+            }),
+          )
+          .timeout(const Duration(seconds: 30)); // Increased timeout
+
+      print('[PROPOSAL_PROVIDER] 📥 Approval response: ${response.statusCode}');
+      print('[PROPOSAL_PROVIDER] 📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('[PROPOSAL_PROVIDER] ✅ Proposal approved successfully');
+
+        // Parse response to check test status
+        final responseData = jsonDecode(response.body);
+        final testStatus = responseData['test_status'];
+        final testOutput = responseData['test_output'];
+        final overallResult = responseData['overall_result'];
+
+        if (overallResult == 'passed') {
+          // Tests passed - remove proposal and show success
+          print(
+            '[PROPOSAL_PROVIDER] ✅ Tests passed - proposal applied successfully',
+          );
+
+          _showNotification(
+            '✅ Proposal Applied Successfully',
+            'Proposal has been approved and all tests passed',
+            channelId: 'ai_proposals',
+          );
+        } else {
+          // Tests failed - remove proposal and show failure
+          print('[PROPOSAL_PROVIDER] ❌ Tests failed - proposal removed');
+          _showNotification(
+            '❌ Proposal Failed Testing',
+            'Proposal was approved but failed testing and has been removed',
+            channelId: 'ai_proposals',
+          );
+        }
+
+        // Always fetch latest proposals after approval for real-time updates
+        await fetchUserReadyProposals();
+
+        // Force UI update
+        notifyListeners();
+      } else {
+        // Restore proposal if backend call fails
+        _proposals.insert(proposalIndex, proposal);
+        notifyListeners();
+        print(
+          '[PROPOSAL_PROVIDER] ❌ Failed to approve proposal: ${response.statusCode}',
+        );
+
+        // Provide more specific error messages
+        String errorMessage = 'Backend returned status ${response.statusCode}';
+        if (response.statusCode == 500) {
+          errorMessage = 'Backend server error - please try again';
+        } else if (response.statusCode == 404) {
+          errorMessage = 'Proposal not found on server';
+        } else if (response.statusCode == 400) {
+          errorMessage = 'Invalid request - proposal may already be processed';
+        }
+
+        _showNotification(
+          '❌ Approval Failed',
+          errorMessage,
+          channelId: 'ai_proposals',
+        );
+      }
+    } catch (e) {
+      // Restore proposal if backend call fails
+      _proposals.insert(proposalIndex, proposal);
+      notifyListeners();
+      print('[PROPOSAL_PROVIDER] ❌ Error approving proposal: $e');
+
+      // Provide more specific error messages
+      String errorMessage =
+          'Failed to approve proposal: ${e.toString().substring(0, 50)}...';
+      if (e.toString().contains('timeout')) {
+        errorMessage = 'Request timed out - please try again';
+      } else if (e.toString().contains('connection')) {
+        errorMessage = 'Connection error - please check your network';
+      }
+
+      _showNotification(
+        '❌ Approval Error',
+        errorMessage,
         channelId: 'ai_proposals',
       );
     }
   }
 
-  /// Initialize the provider with AI learning integration
-  Future<void> initialize({AILearningProvider? aiLearningProvider}) async {
-    _aiLearningProvider = aiLearningProvider;
-    // Optionally, add any other initialization logic here
-    return Future.value();
+  // Reject a proposal
+  Future<void> rejectProposal(String id) async {
+    print('[PROPOSAL_PROVIDER] Rejecting proposal: $id');
+
+    final proposalIndex = _proposals.indexWhere((p) => p.id == id);
+    if (proposalIndex == -1) return;
+    final proposal = _proposals[proposalIndex];
+
+    // Optimistically remove proposal
+    _proposals.removeAt(proposalIndex);
+    notifyListeners();
+
+    try {
+      // Use imperium endpoint for agent rejection
+      final url = Uri.parse('$_backendUrl/api/proposals');
+      print('[PROPOSAL_PROVIDER] 📡 Rejecting agent at: $url');
+
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'userFeedback': 'rejected',
+              'userFeedbackReason': 'User rejected the agent',
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      print(
+        '[PROPOSAL_PROVIDER] 📥 Rejection response: ${response.statusCode}',
+      );
+      print('[PROPOSAL_PROVIDER] 📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('[PROPOSAL_PROVIDER] ✅ Proposal rejected successfully');
+        // Always fetch latest proposals after rejection
+        await fetchUserReadyProposals();
+        _showNotification(
+          '❌ Proposal Rejected',
+          'Proposal has been rejected and removed',
+          channelId: 'ai_proposals',
+        );
+      } else {
+        // Restore proposal if backend call fails
+        _proposals.insert(proposalIndex, proposal);
+        notifyListeners();
+        print(
+          '[PROPOSAL_PROVIDER] ❌ Failed to reject proposal: ${response.statusCode}',
+        );
+        _showNotification(
+          '❌ Rejection Failed',
+          'Backend returned status ${response.statusCode}',
+          channelId: 'ai_proposals',
+        );
+      }
+    } catch (e) {
+      // Restore proposal if backend call fails
+      _proposals.insert(proposalIndex, proposal);
+      notifyListeners();
+      print('[PROPOSAL_PROVIDER] ❌ Error rejecting proposal: $e');
+      _showNotification(
+        '❌ Rejection Error',
+        'Failed to reject proposal: ${e.toString().substring(0, 50)}...',
+        channelId: 'ai_proposals',
+      );
+    }
+  }
+
+  // Approve all proposals
+  Future<void> approveAllProposals() async {
+    print('[PROPOSAL_PROVIDER] Approving all pending proposals');
+
+    final userReadyProposals =
+        _proposals.where((p) => p.status == ProposalStatus.pending).toList();
+
+    if (userReadyProposals.isEmpty) {
+      print('[PROPOSAL_PROVIDER] No pending proposals to approve');
+      _showNotification(
+        'ℹ️ No Pending Proposals',
+        'There are no pending proposals to approve.',
+        channelId: 'ai_proposals',
+      );
+      return;
+    }
+
+    print(
+      '[PROPOSAL_PROVIDER] Found ${userReadyProposals.length} user-ready proposals to approve',
+    );
+
+    // Show testing status for all proposals first
+    for (final proposal in userReadyProposals) {
+      proposal.status = ProposalStatus.testing;
+    }
+    notifyListeners();
+
+    _showNotification(
+      '🔄 Bulk Testing Started',
+      '${userReadyProposals.length} proposals are being tested...',
+      channelId: 'ai_proposals',
+    );
+
+    // Wait a moment to show testing status
+    await Future.delayed(const Duration(seconds: 2));
+
+    int successCount = 0;
+    int failureCount = 0;
+
+    for (final proposal in userReadyProposals) {
+      try {
+        print('[PROPOSAL_PROVIDER] Approving proposal: ${proposal.id}');
+
+        // Use imperium endpoint for agent approval
+        final url = Uri.parse(
+          '$_backendUrl/api/proposals',
+        );
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userFeedbackReason': 'Approved via bulk approval',
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          // Parse response to check test status
+          final responseData = jsonDecode(response.body);
+          final testStatus = responseData['test_status'];
+          final testOutput = responseData['test_output'];
+
+          if (testStatus == 'tested' && testOutput == 'All tests passed.') {
+            successCount++;
+            print(
+              '[PROPOSAL_PROVIDER] ✅ Successfully approved proposal: ${proposal.id}',
+            );
+          } else {
+            failureCount++;
+            print(
+              '[PROPOSAL_PROVIDER] ❌ Proposal failed testing: ${proposal.id}',
+            );
+          }
+        } else {
+          failureCount++;
+          print(
+            '[PROPOSAL_PROVIDER] ❌ Failed to approve proposal: ${proposal.id} - Status: ${response.statusCode}',
+          );
+        }
+      } catch (error) {
+        failureCount++;
+        print(
+          '[PROPOSAL_PROVIDER] ❌ Error approving proposal: ${proposal.id} - $error',
+        );
+      }
+    }
+
+    // Refresh proposals to get updated status
+    await fetchUserReadyProposals();
+
+    // Show summary notification
+    if (successCount > 0) {
+      _showNotification(
+        '✅ Bulk Approval Complete',
+        'Successfully approved $successCount proposals${failureCount > 0 ? ', $failureCount failed' : ''}',
+        channelId: 'ai_proposals',
+      );
+    } else {
+      _showNotification(
+        '❌ Bulk Approval Failed',
+        'Failed to approve any proposals. Please try individual approvals.',
+        channelId: 'ai_proposals',
+      );
+    }
+
+    print(
+      '[PROPOSAL_PROVIDER] Bulk approval complete: $successCount successful, $failureCount failed',
+    );
   }
 }

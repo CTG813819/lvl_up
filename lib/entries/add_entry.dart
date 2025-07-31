@@ -25,15 +25,15 @@ class _AddEntryState extends State<AddEntry> {
         if (success) {
           Navigator.of(context).pop();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to add entry')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Failed to add entry')));
         }
       } catch (e) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding entry: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error adding entry: $e')));
       }
     }
   }
@@ -73,28 +73,32 @@ class _AddEntryState extends State<AddEntry> {
                 bottom: 0,
                 right: 0,
                 child: FloatingActionButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          if (_formKey.currentState!.validate()) {
-                            _formKey.currentState!.save();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => EntryPinScreen(
-                                  title: 'Confirm Entry',
-                                  onPinEntered: (pin, context) {
-                                    Navigator.of(context).pop();
-                                    _saveEntry();
-                                  },
+                  heroTag: 'add_entry_save',
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => EntryPinScreen(
+                                        title: 'Confirm Entry',
+                                        onPinEntered: (pin, context) {
+                                          Navigator.of(context).pop();
+                                          _saveEntry();
+                                        },
+                                      ),
                                 ),
-                              ),
-                            );
-                          }
-                        },
+                              );
+                            }
+                          },
                   backgroundColor: Colors.black,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Icon(Icons.check, color: Colors.white),
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Icon(Icons.check, color: Colors.white),
                 ),
               ),
             ],

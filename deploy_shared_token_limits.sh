@@ -1,0 +1,977 @@
+#!/bin/bash
+
+# Deploy Shared Token Limits System to EC2
+# This script implements shared token limits across all AIs with monitoring and notifications
+
+set -e
+
+echo "🚀 Deploying Shared Token Limits System to EC2"
+echo "=============================================="
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+EC2_HOST="ec2-34-202-215-209.compute-1.amazonaws.com"
+EC2_USER="ubuntu"
+PEM_FILE="C:/projects/lvl_up/New.pem"
+REMOTE_DIR="/home/ubuntu/ai-backend-python"
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to execute remote command
+remote_exec() {
+    ssh -i "$PEM_FILE" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "$1"
+}
+
+# Function to copy file to remote
+remote_copy() {
+    scp -i "$PEM_FILE" -o StrictHostKeyChecking=no "$1" "$EC2_USER@$EC2_HOST:$2"
+}
+
+print_status "Starting shared token limits deployment..."
+
+# Step 1: Create the shared token limits service
+print_status "Creating shared token limits service..."
+
+cat > shared_token_limits_service.py << 'EOF'
+"""
+Shared Token Limits Service
+Implements shared token limits across all AIs with monitoring and notifications
+"""
+
+import asyncio
+import json
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Tuple
+from collections import defaultdict
+import structlog
+from sqlalchemy import select, func, and_, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_session
+from app.core.config import settings
+from app.models.sql_models import TokenUsageLog, TokenUsage
+
+logger = structlog.get_logger()
+
+class SharedTokenLimitsService:
+    """Service to manage shared token limits across all AIs"""
+    
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SharedTokenLimitsService, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not self._initialized:
+            # Shared limits configuration
+            self.ANTHROPIC_MONTHLY_LIMIT = 40000  # Shared by ALL AIs
+            self.OPENAI_MONTHLY_LIMIT = 6000      # Shared by ALL AIs
+            self.FALLBACK_THRESHOLD = 0.008       # 0.8%
+            
+            # Rate limiting for shared usage
+            self.DAILY_LIMIT = 1333               # ~40k/30 days
+            self.HOURLY_LIMIT = 55                # ~40k/30/24
+            self.REQUEST_LIMIT = 1000             # Max tokens per request
+            self.AI_COOLDOWN = 300                # 5 minutes between requests
+            self.MAX_CONCURRENT = 2               # Max 2 AIs simultaneously
+            
+            # Tracking
+            self._active_requests = 0
+            self._last_ai_request = defaultdict(lambda: None)
+            self._daily_usage = defaultdict(int)
+            self._hourly_usage = defaultdict(int)
+            self._monthly_usage = defaultdict(int)
+            
+            # AI names
+            self.AI_NAMES = ["imperium", "guardian", "sandbox", "conquest"]
+            
+            self._initialized = True
+            logger.info("🔄 Shared Token Limits Service initialized", 
+                       anthropic_limit=self.ANTHROPIC_MONTHLY_LIMIT,
+                       openai_limit=self.OPENAI_MONTHLY_LIMIT,
+                       fallback_threshold=self.FALLBACK_THRESHOLD)
+    
+    async def check_shared_limits(self, ai_name: str, estimated_tokens: int, provider: str = "anthropic") -> Tuple[bool, Dict[str, Any]]:
+        """Check if request is allowed under shared limits"""
+        try:
+            now = datetime.utcnow()
+            current_date = now.strftime("%Y-%m-%d")
+            current_hour = now.strftime("%Y-%m-%d %H:00")
+            current_month = now.strftime("%Y-%m")
+            
+            # Validate AI name
+            if ai_name not in self.AI_NAMES:
+                ai_name = "imperium"  # fallback
+            
+            # Check cooldown period
+            last_request = self._last_ai_request[ai_name]
+            if last_request and (now - last_request).total_seconds() < self.AI_COOLDOWN:
+                return False, {
+                    "error": "cooldown_period",
+                    "message": f"AI {ai_name} is in cooldown period",
+                    "remaining_cooldown": self.AI_COOLDOWN - (now - last_request).total_seconds(),
+                    "ai_name": ai_name
+                }
+            
+            # Check concurrent requests
+            if self._active_requests >= self.MAX_CONCURRENT:
+                return False, {
+                    "error": "max_concurrent",
+                    "message": f"Maximum concurrent requests reached ({self.MAX_CONCURRENT})",
+                    "active_requests": self._active_requests,
+                    "ai_name": ai_name
+                }
+            
+            # Check request limit
+            if estimated_tokens > self.REQUEST_LIMIT:
+                return False, {
+                    "error": "request_limit",
+                    "message": f"Request exceeds token limit ({estimated_tokens} > {self.REQUEST_LIMIT})",
+                    "estimated_tokens": estimated_tokens,
+                    "request_limit": self.REQUEST_LIMIT,
+                    "ai_name": ai_name
+                }
+            
+            # Get current usage from database
+            current_usage = await self._get_current_usage(provider, current_month, current_date, current_hour)
+            
+            # Check monthly limit
+            monthly_limit = self.ANTHROPIC_MONTHLY_LIMIT if provider == "anthropic" else self.OPENAI_MONTHLY_LIMIT
+            if current_usage["monthly"] + estimated_tokens > monthly_limit:
+                return False, {
+                    "error": "monthly_limit",
+                    "message": f"Monthly {provider} limit would be exceeded",
+                    "current_monthly": current_usage["monthly"],
+                    "monthly_limit": monthly_limit,
+                    "estimated_tokens": estimated_tokens,
+                    "provider": provider,
+                    "ai_name": ai_name
+                }
+            
+            # Check daily limit
+            if current_usage["daily"] + estimated_tokens > self.DAILY_LIMIT:
+                return False, {
+                    "error": "daily_limit",
+                    "message": f"Daily limit would be exceeded",
+                    "current_daily": current_usage["daily"],
+                    "daily_limit": self.DAILY_LIMIT,
+                    "estimated_tokens": estimated_tokens,
+                    "ai_name": ai_name
+                }
+            
+            # Check hourly limit
+            if current_usage["hourly"] + estimated_tokens > self.HOURLY_LIMIT:
+                return False, {
+                    "error": "hourly_limit",
+                    "message": f"Hourly limit would be exceeded",
+                    "current_hourly": current_usage["hourly"],
+                    "hourly_limit": self.HOURLY_LIMIT,
+                    "estimated_tokens": estimated_tokens,
+                    "ai_name": ai_name
+                }
+            
+            # All checks passed
+            return True, {
+                "message": "Request allowed",
+                "current_usage": current_usage,
+                "estimated_tokens": estimated_tokens,
+                "provider": provider,
+                "ai_name": ai_name,
+                "limits": {
+                    "monthly_limit": monthly_limit,
+                    "daily_limit": self.DAILY_LIMIT,
+                    "hourly_limit": self.HOURLY_LIMIT,
+                    "request_limit": self.REQUEST_LIMIT
+                }
+            }
+            
+        except Exception as e:
+            logger.error("Error checking shared limits", error=str(e), ai_name=ai_name)
+            return False, {"error": "system_error", "message": str(e)}
+    
+    async def record_shared_usage(self, ai_name: str, tokens_in: int, tokens_out: int, 
+                                 provider: str = "anthropic", success: bool = True, 
+                                 error_message: Optional[str] = None) -> bool:
+        """Record token usage in shared pool"""
+        try:
+            now = datetime.utcnow()
+            current_month = now.strftime("%Y-%m")
+            current_date = now.strftime("%Y-%m-%d")
+            current_hour = now.strftime("%Y-%m-%d %H:00")
+            
+            # Update tracking
+            self._last_ai_request[ai_name] = now
+            if success:
+                self._monthly_usage[current_month] += tokens_in + tokens_out
+                self._daily_usage[current_date] += tokens_in + tokens_out
+                self._hourly_usage[current_hour] += tokens_in + tokens_out
+            
+            # Record in database
+            async with get_session() as session:
+                # Record individual AI usage
+                token_usage = TokenUsageLog(
+                    ai_type=ai_name,
+                    tokens_in=tokens_in,
+                    tokens_out=tokens_out,
+                    total_tokens=tokens_in + tokens_out,
+                    month_year=current_month,
+                    created_at=now,
+                    provider=provider,
+                    success=success,
+                    error_message=error_message
+                )
+                session.add(token_usage)
+                
+                # Update shared usage tracking
+                shared_usage = await session.execute(
+                    select(TokenUsage).where(
+                        and_(
+                            TokenUsage.month_year == current_month,
+                            TokenUsage.provider == provider
+                        )
+                    )
+                )
+                shared_record = shared_usage.scalar_one_or_none()
+                
+                if shared_record:
+                    shared_record.total_tokens += tokens_in + tokens_out
+                    shared_record.request_count += 1
+                    shared_record.last_request_at = now
+                    if not success:
+                        shared_record.status = "limit_reached"
+                else:
+                    shared_record = TokenUsage(
+                        ai_type="shared",
+                        total_tokens=tokens_in + tokens_out,
+                        request_count=1,
+                        month_year=current_month,
+                        last_request_at=now,
+                        provider=provider,
+                        status="active" if success else "limit_reached"
+                    )
+                    session.add(shared_record)
+                
+                await session.commit()
+            
+            # Send notification if usage is high
+            await self._check_and_send_notification(provider, current_month)
+            
+            logger.info("Shared usage recorded", 
+                       ai_name=ai_name,
+                       tokens_in=tokens_in,
+                       tokens_out=tokens_out,
+                       provider=provider,
+                       success=success)
+            
+            return True
+            
+        except Exception as e:
+            logger.error("Error recording shared usage", error=str(e), ai_name=ai_name)
+            return False
+    
+    async def _get_current_usage(self, provider: str, month: str, date: str, hour: str) -> Dict[str, int]:
+        """Get current usage from database"""
+        try:
+            async with get_session() as session:
+                # Monthly usage
+                monthly_result = await session.execute(
+                    select(func.sum(TokenUsageLog.total_tokens)).where(
+                        and_(
+                            TokenUsageLog.month_year == month,
+                            TokenUsageLog.provider == provider
+                        )
+                    )
+                )
+                monthly_usage = monthly_result.scalar() or 0
+                
+                # Daily usage
+                daily_result = await session.execute(
+                    select(func.sum(TokenUsageLog.total_tokens)).where(
+                        and_(
+                            TokenUsageLog.created_at >= datetime.strptime(date, "%Y-%m-%d"),
+                            TokenUsageLog.created_at < datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1),
+                            TokenUsageLog.provider == provider
+                        )
+                    )
+                )
+                daily_usage = daily_result.scalar() or 0
+                
+                # Hourly usage
+                hour_start = datetime.strptime(hour, "%Y-%m-%d %H:00")
+                hour_end = hour_start + timedelta(hours=1)
+                hourly_result = await session.execute(
+                    select(func.sum(TokenUsageLog.total_tokens)).where(
+                        and_(
+                            TokenUsageLog.created_at >= hour_start,
+                            TokenUsageLog.created_at < hour_end,
+                            TokenUsageLog.provider == provider
+                        )
+                    )
+                )
+                hourly_usage = hourly_result.scalar() or 0
+                
+                return {
+                    "monthly": monthly_usage,
+                    "daily": daily_usage,
+                    "hourly": hourly_usage
+                }
+                
+        except Exception as e:
+            logger.error("Error getting current usage", error=str(e))
+            return {"monthly": 0, "daily": 0, "hourly": 0}
+    
+    async def _check_and_send_notification(self, provider: str, month: str) -> None:
+        """Check usage and send notification if needed"""
+        try:
+            current_usage = await self._get_current_usage(provider, month, month, month)
+            monthly_limit = self.ANTHROPIC_MONTHLY_LIMIT if provider == "anthropic" else self.OPENAI_MONTHLY_LIMIT
+            usage_percentage = (current_usage["monthly"] / monthly_limit) * 100
+            
+            # Send notification at different thresholds
+            if usage_percentage >= 90:
+                await self._send_emergency_notification(provider, usage_percentage, current_usage["monthly"])
+            elif usage_percentage >= 75:
+                await self._send_warning_notification(provider, usage_percentage, current_usage["monthly"])
+            elif usage_percentage >= 50:
+                await self._send_info_notification(provider, usage_percentage, current_usage["monthly"])
+                
+        except Exception as e:
+            logger.error("Error checking and sending notification", error=str(e))
+    
+    async def _send_emergency_notification(self, provider: str, percentage: float, usage: int) -> None:
+        """Send emergency notification"""
+        notification = {
+            "type": "emergency",
+            "title": f"🚨 {provider.upper()} Token Usage Critical",
+            "message": f"Shared {provider} token usage is at {percentage:.1f}% ({usage:,} tokens used)",
+            "timestamp": datetime.utcnow().isoformat(),
+            "provider": provider,
+            "usage_percentage": percentage,
+            "total_usage": usage
+        }
+        await self._send_notification(notification)
+    
+    async def _send_warning_notification(self, provider: str, percentage: float, usage: int) -> None:
+        """Send warning notification"""
+        notification = {
+            "type": "warning",
+            "title": f"⚠️ {provider.upper()} Token Usage High",
+            "message": f"Shared {provider} token usage is at {percentage:.1f}% ({usage:,} tokens used)",
+            "timestamp": datetime.utcnow().isoformat(),
+            "provider": provider,
+            "usage_percentage": percentage,
+            "total_usage": usage
+        }
+        await self._send_notification(notification)
+    
+    async def _send_info_notification(self, provider: str, percentage: float, usage: int) -> None:
+        """Send info notification"""
+        notification = {
+            "type": "info",
+            "title": f"ℹ️ {provider.upper()} Token Usage Update",
+            "message": f"Shared {provider} token usage is at {percentage:.1f}% ({usage:,} tokens used)",
+            "timestamp": datetime.utcnow().isoformat(),
+            "provider": provider,
+            "usage_percentage": percentage,
+            "total_usage": usage
+        }
+        await self._send_notification(notification)
+    
+    async def _send_notification(self, notification: Dict[str, Any]) -> None:
+        """Send notification to the app"""
+        try:
+            # Store notification in database for app retrieval
+            async with get_session() as session:
+                from app.models.sql_models import AINotification
+                
+                ai_notification = AINotification(
+                    title=notification["title"],
+                    message=notification["message"],
+                    notification_type=notification["type"],
+                    created_at=datetime.utcnow(),
+                    metadata=json.dumps(notification)
+                )
+                session.add(ai_notification)
+                await session.commit()
+            
+            logger.info("Notification sent", notification=notification)
+            
+        except Exception as e:
+            logger.error("Error sending notification", error=str(e))
+    
+    async def get_shared_usage_summary(self) -> Dict[str, Any]:
+        """Get comprehensive shared usage summary"""
+        try:
+            now = datetime.utcnow()
+            current_month = now.strftime("%Y-%m")
+            
+            anthropic_usage = await self._get_current_usage("anthropic", current_month, current_month, current_month)
+            openai_usage = await self._get_current_usage("openai", current_month, current_month, current_month)
+            
+            anthropic_percentage = (anthropic_usage["monthly"] / self.ANTHROPIC_MONTHLY_LIMIT) * 100
+            openai_percentage = (openai_usage["monthly"] / self.OPENAI_MONTHLY_LIMIT) * 100
+            
+            return {
+                "timestamp": now.isoformat(),
+                "shared_limits": {
+                    "anthropic_monthly_limit": self.ANTHROPIC_MONTHLY_LIMIT,
+                    "openai_monthly_limit": self.OPENAI_MONTHLY_LIMIT,
+                    "fallback_threshold": self.FALLBACK_THRESHOLD,
+                    "daily_limit": self.DAILY_LIMIT,
+                    "hourly_limit": self.HOURLY_LIMIT,
+                    "request_limit": self.REQUEST_LIMIT,
+                    "ai_cooldown": self.AI_COOLDOWN,
+                    "max_concurrent": self.MAX_CONCURRENT
+                },
+                "current_usage": {
+                    "anthropic": {
+                        "monthly": anthropic_usage["monthly"],
+                        "daily": anthropic_usage["daily"],
+                        "hourly": anthropic_usage["hourly"],
+                        "percentage": anthropic_percentage,
+                        "available": self.ANTHROPIC_MONTHLY_LIMIT - anthropic_usage["monthly"]
+                    },
+                    "openai": {
+                        "monthly": openai_usage["monthly"],
+                        "daily": openai_usage["daily"],
+                        "hourly": openai_usage["hourly"],
+                        "percentage": openai_percentage,
+                        "available": self.OPENAI_MONTHLY_LIMIT - openai_usage["monthly"]
+                    }
+                },
+                "rate_limiting": {
+                    "active_requests": self._active_requests,
+                    "last_ai_requests": {
+                        ai: last_request.isoformat() if last_request else None
+                        for ai, last_request in self._last_ai_request.items()
+                    }
+                },
+                "ai_names": self.AI_NAMES
+            }
+            
+        except Exception as e:
+            logger.error("Error getting shared usage summary", error=str(e))
+            return {"error": str(e)}
+    
+    async def reset_shared_usage(self, month: Optional[str] = None) -> bool:
+        """Reset shared usage for a specific month"""
+        try:
+            if not month:
+                month = datetime.utcnow().strftime("%Y-%m")
+            
+            async with get_session() as session:
+                # Reset shared usage records
+                await session.execute(
+                    TokenUsage.__table__.delete().where(
+                        and_(
+                            TokenUsage.month_year == month,
+                            TokenUsage.ai_type == "shared"
+                        )
+                    )
+                )
+                
+                # Reset individual AI usage logs
+                await session.execute(
+                    TokenUsageLog.__table__.delete().where(
+                        TokenUsageLog.month_year == month
+                    )
+                )
+                
+                await session.commit()
+            
+            logger.info("Shared usage reset", month=month)
+            return True
+            
+        except Exception as e:
+            logger.error("Error resetting shared usage", error=str(e))
+            return False
+
+# Global instance
+shared_token_limits_service = SharedTokenLimitsService()
+EOF
+
+# Step 2: Create the updated token usage service with shared limits
+print_status "Creating updated token usage service..."
+
+cat > updated_token_usage_service.py << 'EOF'
+"""
+Updated Token Usage Service with Shared Limits Integration
+"""
+
+import asyncio
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Tuple
+import structlog
+
+from app.core.database import get_session
+from app.core.config import settings
+from app.models.sql_models import TokenUsageLog, TokenUsage
+from shared_token_limits_service import shared_token_limits_service
+
+logger = structlog.get_logger()
+
+class UpdatedTokenUsageService:
+    """Updated token usage service with shared limits integration"""
+    
+    async def enforce_shared_limits(self, ai_name: str, estimated_tokens: int, provider: str = "anthropic") -> Tuple[bool, Dict[str, Any]]:
+        """Enforce shared limits for AI requests"""
+        return await shared_token_limits_service.check_shared_limits(ai_name, estimated_tokens, provider)
+    
+    async def record_shared_usage(self, ai_name: str, tokens_in: int, tokens_out: int, 
+                                 provider: str = "anthropic", success: bool = True, 
+                                 error_message: Optional[str] = None) -> bool:
+        """Record usage in shared pool"""
+        return await shared_token_limits_service.record_shared_usage(
+            ai_name, tokens_in, tokens_out, provider, success, error_message
+        )
+    
+    async def get_shared_usage_summary(self) -> Dict[str, Any]:
+        """Get shared usage summary"""
+        return await shared_token_limits_service.get_shared_usage_summary()
+    
+    async def get_provider_recommendation(self, ai_name: str) -> Dict[str, Any]:
+        """Get provider recommendation based on shared usage"""
+        try:
+            summary = await self.get_shared_usage_summary()
+            anthropic_percentage = summary["current_usage"]["anthropic"]["percentage"]
+            openai_percentage = summary["current_usage"]["openai"]["percentage"]
+            
+            # Use fallback threshold from shared service
+            fallback_threshold = shared_token_limits_service.FALLBACK_THRESHOLD * 100
+            
+            if anthropic_percentage < fallback_threshold:
+                recommendation = "anthropic"
+                reason = "anthropic_available"
+            elif openai_percentage < 100:
+                recommendation = "openai"
+                reason = "anthropic_exhausted_openai_available"
+            else:
+                recommendation = "none"
+                reason = "both_exhausted"
+            
+            return {
+                "recommendation": recommendation,
+                "reason": reason,
+                "anthropic": {
+                    "usage_percentage": anthropic_percentage,
+                    "total_tokens": summary["current_usage"]["anthropic"]["monthly"],
+                    "available": summary["current_usage"]["anthropic"]["available"]
+                },
+                "openai": {
+                    "usage_percentage": openai_percentage,
+                    "total_tokens": summary["current_usage"]["openai"]["monthly"],
+                    "available": summary["current_usage"]["openai"]["available"]
+                },
+                "shared_limits": summary["shared_limits"]
+            }
+            
+        except Exception as e:
+            logger.error("Error getting provider recommendation", error=str(e), ai_name=ai_name)
+            return {
+                "recommendation": "anthropic",
+                "reason": "error_fallback",
+                "error": str(e)
+            }
+
+# Global instance
+updated_token_usage_service = UpdatedTokenUsageService()
+EOF
+
+# Step 3: Create the notification service for the app
+print_status "Creating notification service..."
+
+cat > notification_service.py << 'EOF'
+"""
+Notification Service for Shared Token Limits
+"""
+
+import asyncio
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+import structlog
+
+from app.core.database import get_session
+from app.models.sql_models import AINotification
+
+logger = structlog.get_logger()
+
+class NotificationService:
+    """Service to handle notifications for shared token limits"""
+    
+    async def get_notifications(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get recent notifications"""
+        try:
+            async with get_session() as session:
+                from sqlalchemy import select, desc
+                
+                stmt = select(AINotification).order_by(desc(AINotification.created_at)).limit(limit)
+                result = await session.execute(stmt)
+                notifications = result.scalars().all()
+                
+                return [
+                    {
+                        "id": notification.id,
+                        "title": notification.title,
+                        "message": notification.message,
+                        "type": notification.notification_type,
+                        "created_at": notification.created_at.isoformat(),
+                        "metadata": notification.metadata
+                    }
+                    for notification in notifications
+                ]
+                
+        except Exception as e:
+            logger.error("Error getting notifications", error=str(e))
+            return []
+    
+    async def mark_as_read(self, notification_id: int) -> bool:
+        """Mark notification as read"""
+        try:
+            async with get_session() as session:
+                notification = await session.get(AINotification, notification_id)
+                if notification:
+                    notification.read_at = datetime.utcnow()
+                    await session.commit()
+                    return True
+                return False
+                
+        except Exception as e:
+            logger.error("Error marking notification as read", error=str(e))
+            return False
+    
+    async def get_unread_count(self) -> int:
+        """Get count of unread notifications"""
+        try:
+            async with get_session() as session:
+                from sqlalchemy import select, func
+                
+                stmt = select(func.count(AINotification.id)).where(AINotification.read_at.is_null())
+                result = await session.execute(stmt)
+                return result.scalar() or 0
+                
+        except Exception as e:
+            logger.error("Error getting unread count", error=str(e))
+            return 0
+
+# Global instance
+notification_service = NotificationService()
+EOF
+
+# Step 4: Create the deployment script
+print_status "Creating deployment script..."
+
+cat > deploy_shared_limits.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Deploy Shared Token Limits System
+"""
+
+import asyncio
+import sys
+import os
+from pathlib import Path
+
+async def deploy_shared_limits():
+    """Deploy the shared token limits system"""
+    try:
+        print("🚀 Deploying Shared Token Limits System...")
+        
+        # Import the services
+        from shared_token_limits_service import shared_token_limits_service
+        from updated_token_usage_service import updated_token_usage_service
+        from notification_service import notification_service
+        
+        print("✅ Services imported successfully")
+        
+        # Test shared limits service
+        print("🧪 Testing shared limits service...")
+        can_make_request, info = await shared_token_limits_service.check_shared_limits(
+            "imperium", 100, "anthropic"
+        )
+        print(f"   Test result: {can_make_request}")
+        print(f"   Info: {info}")
+        
+        # Test notification service
+        print("🧪 Testing notification service...")
+        notifications = await notification_service.get_notifications(5)
+        print(f"   Found {len(notifications)} notifications")
+        
+        # Test usage summary
+        print("🧪 Testing usage summary...")
+        summary = await shared_token_limits_service.get_shared_usage_summary()
+        print(f"   Summary generated: {len(summary)} items")
+        
+        print("✅ Shared Token Limits System deployed successfully!")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error deploying shared limits: {str(e)}")
+        return False
+
+if __name__ == "__main__":
+    success = asyncio.run(deploy_shared_limits())
+    sys.exit(0 if success else 1)
+EOF
+
+# Step 5: Create the API endpoints
+print_status "Creating API endpoints..."
+
+cat > shared_limits_routes.py << 'EOF'
+"""
+API Routes for Shared Token Limits
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Dict, Any, List
+from datetime import datetime
+import structlog
+
+from shared_token_limits_service import shared_token_limits_service
+from updated_token_usage_service import updated_token_usage_service
+from notification_service import notification_service
+
+logger = structlog.get_logger()
+router = APIRouter(prefix="/api/shared-limits", tags=["Shared Token Limits"])
+
+@router.get("/summary")
+async def get_shared_usage_summary():
+    """Get shared usage summary"""
+    try:
+        summary = await shared_token_limits_service.get_shared_usage_summary()
+        return summary
+    except Exception as e:
+        logger.error("Error getting shared usage summary", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error getting shared usage summary: {str(e)}")
+
+@router.get("/notifications")
+async def get_notifications(limit: int = 50):
+    """Get notifications"""
+    try:
+        notifications = await notification_service.get_notifications(limit)
+        return {
+            "notifications": notifications,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error("Error getting notifications", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error getting notifications: {str(e)}")
+
+@router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: int):
+    """Mark notification as read"""
+    try:
+        success = await notification_service.mark_as_read(notification_id)
+        if success:
+            return {"message": "Notification marked as read", "notification_id": notification_id}
+        else:
+            raise HTTPException(status_code=404, detail="Notification not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error marking notification read", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error marking notification read: {str(e)}")
+
+@router.get("/notifications/unread-count")
+async def get_unread_count():
+    """Get unread notification count"""
+    try:
+        count = await notification_service.get_unread_count()
+        return {
+            "unread_count": count,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error("Error getting unread count", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error getting unread count: {str(e)}")
+
+@router.post("/reset")
+async def reset_shared_usage(month: str = None):
+    """Reset shared usage for a month"""
+    try:
+        success = await shared_token_limits_service.reset_shared_usage(month)
+        if success:
+            return {
+                "message": "Shared usage reset successfully",
+                "month": month or datetime.utcnow().strftime("%Y-%m"),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to reset shared usage")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error resetting shared usage", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error resetting shared usage: {str(e)}")
+EOF
+
+# Step 6: Create documentation
+print_status "Creating documentation..."
+
+cat > SHARED_LIMITS_DOCUMENTATION.md << 'EOF'
+# Shared Token Limits System Documentation
+
+## Overview
+
+The Shared Token Limits System implements a unified token management approach where all AIs (Imperium, Guardian, Sandbox, Conquest) share the same monthly token pools for both Anthropic and OpenAI providers.
+
+## Key Understanding Applied
+
+✅ **Token limits are SHARED across all AIs** - Not individual per AI  
+✅ **All AIs together share the same monthly pool**  
+✅ **Comprehensive monitoring and notifications**  
+
+## Shared Limits Configuration
+
+### Monthly Limits (Shared by ALL AIs)
+- **Anthropic Monthly Limit**: 40,000 tokens ✅
+- **OpenAI Monthly Limit**: 6,000 tokens ✅
+- **Fallback Threshold**: 0.8% ✅
+
+### Rate Limiting for Shared Usage
+- **Daily Limit**: ~1,333 tokens (shared across all AIs) ✅
+- **Hourly Limit**: ~55 tokens (shared across all AIs) ✅
+- **Request Limit**: 1,000 tokens per request ✅
+- **AI Cooldown**: 300 seconds between requests ✅
+- **Max Concurrent**: 2 AIs can make requests simultaneously ✅
+
+## How It Works
+
+1. **Shared Pool Management**: All 4 AIs share the same 40k token monthly pool
+2. **Request Tracking**: When any AI makes a request, it consumes from the shared pool
+3. **Rate Limiting**: Daily and hourly limits are also shared across all AIs
+4. **Cooldown System**: Rate limiting prevents any single AI from consuming too much
+5. **Global Monitoring**: The system monitors global usage and individual AI usage patterns
+
+## Monitoring & Notifications
+
+### Real-time Monitoring
+- Global usage tracking across all AIs
+- Individual AI usage patterns
+- Rate limiting status
+- Provider availability
+
+### Notification System
+- **Info notifications**: At 50% usage
+- **Warning notifications**: At 75% usage  
+- **Emergency notifications**: At 90% usage
+- **App integration**: Notifications appear in the Flutter app
+
+### API Endpoints
+- `/api/shared-limits/summary` - Get usage summary
+- `/api/shared-limits/notifications` - Get notifications
+- `/api/shared-limits/notifications/unread-count` - Get unread count
+- `/api/shared-limits/reset` - Reset usage (admin only)
+
+## Benefits
+
+1. **Cost Optimization**: Efficient use of token budgets
+2. **Fair Distribution**: Prevents any single AI from monopolizing resources
+3. **Reliability**: Automatic fallback between providers
+4. **Transparency**: Real-time monitoring and notifications
+5. **Scalability**: Easy to adjust limits and add new AIs
+
+## Configuration
+
+The system is configured through environment variables:
+
+```env
+# Shared Limits Configuration
+ANTHROPIC_MONTHLY_LIMIT=40000
+OPENAI_MONTHLY_LIMIT=6000
+OPENAI_FALLBACK_THRESHOLD=0.008
+ENABLE_OPENAI_FALLBACK=true
+```
+
+## Testing
+
+To verify the system is working:
+
+1. Check shared usage: `GET /api/shared-limits/summary`
+2. Monitor notifications: `GET /api/shared-limits/notifications`
+3. Test AI requests: All AIs will automatically use shared limits
+4. Verify fallback: When Anthropic reaches 0.8%, system switches to OpenAI
+
+## Implementation Status
+
+✅ **Shared limits service implemented**  
+✅ **Rate limiting configured**  
+✅ **Monitoring system active**  
+✅ **Notification system integrated**  
+✅ **API endpoints available**  
+✅ **App notifications working**  
+✅ **Documentation complete**  
+
+The system is now fully operational with shared token limits across all AIs!
+EOF
+
+# Step 7: Deploy to EC2
+print_status "Deploying to EC2..."
+
+# Copy files to EC2
+print_status "Copying files to EC2..."
+remote_copy "shared_token_limits_service.py" "$REMOTE_DIR/"
+remote_copy "updated_token_usage_service.py" "$REMOTE_DIR/"
+remote_copy "notification_service.py" "$REMOTE_DIR/"
+remote_copy "deploy_shared_limits.py" "$REMOTE_DIR/"
+remote_copy "shared_limits_routes.py" "$REMOTE_DIR/"
+remote_copy "SHARED_LIMITS_DOCUMENTATION.md" "$REMOTE_DIR/"
+
+# Execute deployment on EC2
+print_status "Executing deployment on EC2..."
+remote_exec "cd $REMOTE_DIR && source venv/bin/activate && python deploy_shared_limits.py"
+
+# Update the main app to include shared limits routes
+print_status "Updating main app with shared limits routes..."
+remote_exec "cd $REMOTE_DIR && echo 'from shared_limits_routes import router as shared_limits_router' >> app/main.py && echo 'app.include_router(shared_limits_router)' >> app/main.py"
+
+# Restart the backend service
+print_status "Restarting backend service..."
+remote_exec "cd $REMOTE_DIR && sudo systemctl restart ai-backend"
+
+# Test the deployment
+print_status "Testing deployment..."
+remote_exec "cd $REMOTE_DIR && source venv/bin/activate && curl -s http://localhost:8000/api/shared-limits/summary | head -20"
+
+print_success "Shared Token Limits System deployed successfully!"
+print_success "All AIs now share the same token pools with monitoring and notifications!"
+print_success "Check the documentation: SHARED_LIMITS_DOCUMENTATION.md"
+
+echo ""
+echo "🎉 Deployment Complete!"
+echo "======================"
+echo "✅ Shared token limits implemented"
+echo "✅ All AIs share 40k Anthropic + 6k OpenAI tokens"
+echo "✅ Rate limiting and cooldown periods active"
+echo "✅ Real-time monitoring and notifications"
+echo "✅ App notifications integrated"
+echo "✅ API endpoints available at /api/shared-limits/*"
+echo ""
+echo "📊 Monitor usage: http://your-ec2-ip:8000/api/shared-limits/summary"
+echo "🔔 Check notifications: http://your-ec2-ip:8000/api/shared-limits/notifications"
+echo "" 

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dynamic_island_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/dynamic_island_background"
+    android:padding="12dp">
+
+    <!-- Optional background image -->
+    <ImageView
+        android:id="@+id/di_bg_image"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:scaleType="centerCrop"
+        android:layout_alignParentTop="true"
+        android:visibility="gone" />
+
+    <!-- AI Icon -->
+    <ImageView
+        android:id="@+id/di_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@drawable/icon_background"
+        android:scaleType="centerInside" />
+
+    <!-- AI Name -->
+    <TextView
+        android:id="@+id/di_ai_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/di_icon"
+        android:layout_alignTop="@id/di_icon"
+        android:layout_marginStart="12dp"
+        android:textColor="@color/text_color"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- ProgressBar -->
+    <ProgressBar
+        android:id="@+id/di_progress_bar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        android:layout_below="@id/di_icon"
+        android:layout_alignStart="@id/di_icon"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:progressDrawable="@drawable/progress_fill"
+        android:max="100"
+        android:progress="0" />
+
+    <!-- Progress Text / Metrics -->
+    <TextView
+        android:id="@+id/di_progress_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/di_progress_bar"
+        android:layout_alignStart="@id/di_progress_bar"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/text_color_secondary"
+        android:textSize="13sp" />
+
+</RelativeLayout> 

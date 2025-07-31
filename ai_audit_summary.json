@@ -1,0 +1,109 @@
+{
+  "audit_summary": {
+    "timestamp": "2025-07-18T20:00:10.852308",
+    "compliance_score": 0.0,
+    "total_issues": 13,
+    "total_recommendations": 6,
+    "system_status": "audit_completed"
+  },
+  "ai_agents_summary": {
+    "imperium": {
+      "level": 1,
+      "status": "error",
+      "capabilities_count": 0,
+      "compliance": {}
+    },
+    "guardian": {
+      "level": 1,
+      "status": "error",
+      "capabilities_count": 0,
+      "compliance": {}
+    },
+    "sandbox": {
+      "level": 1,
+      "status": "error",
+      "capabilities_count": 0,
+      "compliance": {}
+    },
+    "conquest": {
+      "level": 1,
+      "status": "error",
+      "capabilities_count": 0,
+      "compliance": {}
+    }
+  },
+  "endpoints_summary": {
+    "ai_agents": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 6
+    },
+    "proposals": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 7
+    },
+    "learning": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 5
+    },
+    "analytics": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 3
+    },
+    "custody": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 3
+    },
+    "health": {
+      "health_percentage": 0.0,
+      "working_endpoints": 0,
+      "total_endpoints": 2
+    }
+  },
+  "proposal_system_summary": {
+    "creation_working": false,
+    "validation_working": false,
+    "live_testing_enabled": false,
+    "no_mock_tests": false
+  },
+  "leveling_system_summary": {
+    "custody_protocol_working": false,
+    "xp_tracking_enabled": false,
+    "analytics_integration": false
+  },
+  "data_flow_summary": {
+    "analytics_working": false,
+    "learning_working": false,
+    "performance_working": false,
+    "live_data_only": false
+  },
+  "issues_and_recommendations": {
+    "issues": [
+      "Agent imperium has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Agent guardian has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Agent sandbox has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Agent conquest has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Endpoint category ai_agents has low health: 0.0%",
+      "Endpoint category proposals has low health: 0.0%",
+      "Endpoint category learning has low health: 0.0%",
+      "Endpoint category analytics has low health: 0.0%",
+      "Endpoint category custody has low health: 0.0%",
+      "Endpoint category health has low health: 0.0%",
+      "Proposal system has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Leveling system has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]",
+      "Data flow has errors: Cannot connect to host localhost:8000 ssl:default [The remote computer refused the network connection]"
+    ],
+    "recommendations": [
+      "Investigate and fix ai_agents endpoints",
+      "Investigate and fix proposals endpoints",
+      "Investigate and fix learning endpoints",
+      "Investigate and fix analytics endpoints",
+      "Investigate and fix custody endpoints",
+      "Investigate and fix health endpoints"
+    ]
+  }
+}

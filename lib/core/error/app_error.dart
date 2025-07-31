@@ -5,7 +5,8 @@ class AppError implements Exception {
   final StackTrace? stackTrace;
 
   AppError(
-    this.message, String s, {
+    this.message,
+    String s, {
     this.code,
     this.originalError,
     this.stackTrace,
@@ -25,4 +26,4 @@ class AppError implements Exception {
     }
     return buffer.toString();
   }
-} 
+}

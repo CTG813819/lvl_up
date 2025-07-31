@@ -8,8 +8,6 @@ import structlog
 from datetime import datetime
 
 from app.core.config import settings
-from app.services.anthropic_service import AnthropicService
-from app.services.openai_service import OpenAIService
 import sys
 import os
 
@@ -19,6 +17,9 @@ class UnifiedAIServiceShared:
     """Unified AI service with shared token limits integration"""
     
     def __init__(self):
+        # Import services inside __init__ to avoid circular imports
+        from app.services.anthropic_service import AnthropicService
+        from app.services.openai_service import OpenAIService
         self.anthropic_service = AnthropicService()
         self.openai_service = OpenAIService()
     
@@ -43,7 +44,7 @@ class UnifiedAIServiceShared:
             }
             
         except Exception as e:
-            logger.error("Error getting provider recommendation", error=str(e), ai_name=ai_name)
+            logger.error(f"Error getting provider recommendation: {str(e)} ai_name={ai_name}")
             return {
                 "recommendation": "anthropic",
                 "reason": "error_fallback",
@@ -76,7 +77,7 @@ class UnifiedAIServiceShared:
                         "ai_name": ai_name
                     }
                 except Exception as inhouse_error:
-                    logger.warning(f"In-house AI {ai_name} failed, falling back to Anthropic/OpenAI", error=str(inhouse_error))
+                    logger.warning(f"In-house AI {ai_name} failed, falling back to Anthropic/OpenAI: {str(inhouse_error)}")
             # Fallback to Anthropic/OpenAI as before
             # Try Anthropic first
             try:
@@ -98,13 +99,13 @@ class UnifiedAIServiceShared:
                     raise Exception(result.get("error", "Anthropic request failed"))
                 
             except Exception as anthropic_error:
-                logger.warning(f"Anthropic failed for {ai_name}, trying OpenAI", error=str(anthropic_error))
+                logger.warning(f"Anthropic failed for {ai_name}, trying OpenAI: {str(anthropic_error)}")
                 
                 # Try OpenAI as fallback
                 return await self._make_openai_request(ai_name, prompt, estimated_tokens, max_tokens, temperature)
                 
         except Exception as e:
-            logger.error("Error in unified AI request", error=str(e), ai_name=ai_name)
+            logger.error(f"Error in unified AI request: {str(e)} ai_name={ai_name}")
             return {
                 "success": False,
                 "error": "system_error",
@@ -135,7 +136,7 @@ class UnifiedAIServiceShared:
                 raise Exception(result.get("error", "OpenAI request failed"))
             
         except Exception as e:
-            logger.error("Error in OpenAI request", error=str(e), ai_name=ai_name)
+            logger.error(f"Error in OpenAI request: {str(e)} ai_name={ai_name}")
             return {
                 "success": False,
                 "error": "openai_error",
@@ -143,5 +144,16 @@ class UnifiedAIServiceShared:
                 "ai_name": ai_name
             }
 
-# Global instance
-unified_ai_service_shared = UnifiedAIServiceShared() 
+# Global instance - lazy initialization
+_unified_ai_service_shared = None
+
+def get_unified_ai_service_shared():
+    """Get the global unified AI service instance with lazy initialization"""
+    global _unified_ai_service_shared
+    if _unified_ai_service_shared is None:
+        _unified_ai_service_shared = UnifiedAIServiceShared()
+    return _unified_ai_service_shared
+
+# For backward compatibility - this will be called when the module is imported
+def unified_ai_service_shared():
+    return get_unified_ai_service_shared() 

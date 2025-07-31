@@ -76,14 +76,37 @@ class EnhancedScenarioService:
             "advanced": {"base": 2.0, "acceleration": 2.0},
             "expert": {"base": 3.0, "acceleration": 2.5}
         }
-        self.llm_available = False
-        self.token_count = 0
+        # Always enable LLM for infinite scenario generation
+        self.llm_available = True
+        self.token_count = float('inf')  # Infinite tokens for adversarial testing
         self.expert_examples_db = "expert_examples.db"
         self.suggestions_db = "scenario_suggestions.db"
         self.weapons_db = "weapons.db"
         self.attack_logs_db = "attack_logs.db"
         self._initialize_databases()
         
+        # Initialize LLM services for infinite generation
+        self._initialize_llm_services()
+        
+    def _initialize_llm_services(self):
+        """Initialize LLM services for infinite scenario generation"""
+        try:
+            # Import LLM services
+            from .anthropic_service import anthropic_rate_limited_call
+            from .openai_service import openai_service
+            from .token_usage_service import token_usage_service
+            
+            self.anthropic_service = anthropic_rate_limited_call
+            self.openai_service = openai_service
+            self.token_usage_service = token_usage_service
+            
+            logger.info("LLM services initialized for infinite adversarial testing")
+        except Exception as e:
+            logger.warning(f"LLM services not available: {str(e)}")
+            self.anthropic_service = None
+            self.openai_service = None
+            self.token_usage_service = None
+    
     def _initialize_databases(self):
         """Initialize SQLite databases for expert examples, suggestions, weapons, and attack logs"""
         # Expert examples database
@@ -656,19 +679,17 @@ class EnhancedScenarioService:
         ]
     
     async def generate_llm_scenario(self, difficulty_level: str, vulnerability_type: str, user_progress: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate scenario using LLM when tokens are available"""
-        if not self.llm_available or self.token_count < 100:
+        """Generate scenario using LLM with infinite tokens for adversarial testing"""
+        # Always generate scenarios for adversarial testing
+        if not self.llm_available:
             return None
         
         try:
-            # Simulate LLM scenario generation
-            prompt = self._create_llm_prompt(difficulty_level, vulnerability_type, user_progress)
+            # Create enhanced LLM prompt for adversarial testing
+            prompt = self._create_enhanced_llm_prompt(difficulty_level, vulnerability_type, user_progress)
             
-            # This would call the actual LLM service
-            # For now, we'll simulate the response
-            llm_response = await self._simulate_llm_call(prompt)
-            
-            self.token_count -= 50  # Deduct tokens used
+            # Use actual LLM services for infinite generation
+            llm_response = await self._call_actual_llm(prompt, difficulty_level, vulnerability_type)
             
             return {
                 "name": f"AI-Generated {vulnerability_type.title()} Challenge",
@@ -678,41 +699,96 @@ class EnhancedScenarioService:
                 "source": "AI-Generated",
                 "techniques": llm_response["techniques"],
                 "ai_generated": True,
-                "complexity_score": llm_response["complexity_score"]
+                "complexity_score": llm_response["complexity_score"],
+                "infinite_generation": True,
+                "adversarial_testing": True
             }
         except Exception as e:
             logger.error(f"Error generating LLM scenario: {str(e)}")
             return None
     
-    def _create_llm_prompt(self, difficulty_level: str, vulnerability_type: str, user_progress: Dict[str, Any]) -> str:
-        """Create LLM prompt for scenario generation"""
+    def _create_enhanced_llm_prompt(self, difficulty_level: str, vulnerability_type: str, user_progress: Dict[str, Any]) -> str:
+        """Create enhanced LLM prompt for infinite adversarial testing"""
         return f"""
-        Generate a {difficulty_level} level {vulnerability_type} vulnerability challenge for an AI learning system.
+        Generate an advanced {difficulty_level} level {vulnerability_type} adversarial testing scenario for infinite AI learning.
         
         User Progress:
         - Success Rate: {user_progress.get('success_rate', 0.0)}
         - Completed Challenges: {user_progress.get('completed_challenges', 0)}
         - Current Level: {user_progress.get('current_level', 'novice')}
         
-        Requirements:
-        1. The challenge should be slightly more difficult than the user's current level
-        2. Include realistic vulnerabilities and exploitation techniques
-        3. Provide detailed objectives and success criteria
-        4. Include hints that guide learning without giving away the solution
-        5. Make it engaging and educational
+        Requirements for Infinite Adversarial Testing:
+        1. Create a scenario that continuously evolves and adapts
+        2. Include multiple attack vectors and exploitation techniques
+        3. Design for infinite complexity progression
+        4. Incorporate real-world cybersecurity challenges
+        5. Enable continuous learning and adaptation
+        6. Use advanced penetration testing methodologies
+        7. Include live attack streaming capabilities
+        8. Support progressive difficulty scaling
         
         Generate a JSON response with:
-        - description: Detailed scenario description
-        - vulnerabilities: List of vulnerability types
-        - techniques: Required exploitation techniques
-        - complexity_score: Difficulty rating (1-10)
-        - objectives: Specific learning objectives
+        - description: Detailed adversarial scenario description
+        - vulnerabilities: List of advanced vulnerability types
+        - techniques: Required exploitation techniques for infinite testing
+        - complexity_score: Progressive difficulty rating (1-10)
+        - objectives: Specific adversarial learning objectives
         - hints: Progressive hints for guidance
+        - infinite_generation: true
+        - adversarial_testing: true
+        - live_streaming: true
         """
     
+    async def _call_actual_llm(self, prompt: str, difficulty_level: str, vulnerability_type: str) -> Dict[str, Any]:
+        """Call actual LLM services for infinite adversarial testing"""
+        try:
+            # Try Anthropic first with infinite tokens
+            if self.anthropic_service:
+                try:
+                    response = await self.anthropic_service(prompt, "imperium", max_tokens=2048)
+                    # Parse JSON response
+                    try:
+                        return json.loads(response)
+                    except json.JSONDecodeError:
+                        # If not JSON, create structured response
+                        return self._create_structured_response(response, difficulty_level, vulnerability_type)
+                except Exception as e:
+                    logger.warning(f"Anthropic call failed: {str(e)}")
+            
+            # Fallback to OpenAI
+            if self.openai_service:
+                try:
+                    response = await self.openai_service.call_openai(prompt, "imperium", max_tokens=2048)
+                    try:
+                        return json.loads(response)
+                    except json.JSONDecodeError:
+                        return self._create_structured_response(response, difficulty_level, vulnerability_type)
+                except Exception as e:
+                    logger.warning(f"OpenAI call failed: {str(e)}")
+            
+            # Final fallback to simulated response
+            return await self._simulate_llm_call(prompt)
+            
+        except Exception as e:
+            logger.error(f"Error calling LLM services: {str(e)}")
+            return await self._simulate_llm_call(prompt)
+    
+    def _create_structured_response(self, response: str, difficulty_level: str, vulnerability_type: str) -> Dict[str, Any]:
+        """Create structured response from LLM text"""
+        return {
+            "description": f"Advanced {difficulty_level} level {vulnerability_type} adversarial testing scenario: {response[:500]}...",
+            "vulnerabilities": [vulnerability_type, "advanced_exploitation", "privilege_escalation"],
+            "techniques": ["advanced_penetration_testing", "vulnerability_chaining", "live_attack_streaming"],
+            "complexity_score": 8.5,
+            "objectives": ["Infinite adversarial testing", "Continuous learning", "Advanced exploitation"],
+            "hints": ["Use advanced techniques", "Chain multiple vulnerabilities", "Adapt to defenses"],
+            "infinite_generation": True,
+            "adversarial_testing": True,
+            "live_streaming": True
+        }
+    
     async def _simulate_llm_call(self, prompt: str) -> Dict[str, Any]:
-        """Simulate LLM API call"""
-        # This would be replaced with actual LLM service call
+        """Simulate LLM API call for fallback"""
         await asyncio.sleep(0.1)  # Simulate API delay
         
         return {
@@ -721,7 +797,10 @@ class EnhancedScenarioService:
             "techniques": ["polyglot_payloads", "out_of_band_exfiltration", "vulnerability_chaining", "advanced_bypass"],
             "complexity_score": 8.5,
             "objectives": ["Bypass multiple protection layers", "Chain vulnerabilities for exploitation", "Achieve remote code execution"],
-            "hints": ["Look for edge cases in input validation", "Consider out-of-band techniques", "Chain multiple vulnerabilities together"]
+            "hints": ["Look for edge cases in input validation", "Consider out-of-band techniques", "Chain multiple vulnerabilities together"],
+            "infinite_generation": True,
+            "adversarial_testing": True,
+            "live_streaming": True
         }
     
     def calculate_adaptive_difficulty(self, user_id: str, current_level: str, success_rate: float) -> str:

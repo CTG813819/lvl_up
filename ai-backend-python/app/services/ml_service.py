@@ -81,7 +81,7 @@ class MLService:
                         self.models[model_name] = pickle.load(f)
                     logger.info(f"Loaded model: {model_name}")
                 except Exception as e:
-                    logger.error(f"Failed to load model {model_file}", error=str(e))
+                    logger.error(f"Failed to load model {model_file}: {str(e)}")
     
     async def _save_model(self, model, model_name: str):
         """Save a trained model"""
@@ -91,7 +91,7 @@ class MLService:
                 pickle.dump(model, f)
             logger.info(f"Saved model: {model_name}")
         except Exception as e:
-            logger.error(f"Failed to save model {model_name}", error=str(e))
+            logger.error(f"Failed to save model {model_name}: {str(e)}")
     
     async def extract_features(self, proposal_data) -> Dict[str, Any]:
         """Extract features from a proposal for ML analysis"""
@@ -192,7 +192,7 @@ class MLService:
                 tokens = ai_reasoning.lower().split()
                 tokens = [token for token in tokens if token.isalnum()]
             except Exception as e:
-                logger.error("Error in text tokenization", error=str(e))
+                logger.error(f"Error in text tokenization: {str(e)}")
                 tokens = []
             
             features['reasoning_token_count'] = len(tokens)
@@ -294,7 +294,7 @@ class MLService:
             return float(np.clip(score, 0, 1))
             
         except Exception as e:
-            logger.error("Error predicting quality score", error=str(e))
+            logger.error(f"Error predicting quality score: {str(e)}")
             return 0.5
     
     async def _predict_approval_probability(self, features: Dict[str, Any]) -> float:
@@ -322,7 +322,7 @@ class MLService:
             return float(prob[1])  # Probability of approval
             
         except Exception as e:
-            logger.error("Error predicting approval probability", error=str(e))
+            logger.error(f"Error predicting approval probability: {str(e)}")
             return 0.5
     
     async def _generate_recommendations(self, features: Dict[str, Any], quality_score: float) -> List[str]:
@@ -416,7 +416,7 @@ class MLService:
                 await self._save_model(approval_model, 'approval_predictor')
             
         except Exception as e:
-            logger.error("Error in train_models", error=str(e))
+            logger.error(f"Error in train_models: {str(e)}")
     
     async def get_ml_insights(self) -> Dict[str, Any]:
         """Get insights from ML analysis"""
@@ -463,7 +463,7 @@ class MLService:
                 return insights
             
         except Exception as e:
-            logger.error("Error in get_ml_insights", error=str(e))
+            logger.error(f"Error in get_ml_insights: {str(e)}")
             return {}
 
     async def generate_with_llm(self, prompt: str, model: str = "claude-3-5-sonnet-20241022", max_tokens: int = 1024, temperature: float = 0.7) -> Dict[str, Any]:

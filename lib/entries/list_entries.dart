@@ -55,12 +55,13 @@ class _ListEntriesState extends State<ListEntries>
   void _navigateToAddEntry() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => EntryPinScreen(
-          title: 'Add New Entry',
-          onPinEntered: (pin, context) {
-            Navigator.of(context).pushReplacementNamed(AddEntry.routeName);
-          },
-        ),
+        builder:
+            (context) => EntryPinScreen(
+              title: 'Add New Entry',
+              onPinEntered: (pin, context) {
+                Navigator.of(context).pushReplacementNamed(AddEntry.routeName);
+              },
+            ),
       ),
     );
   }
@@ -68,16 +69,16 @@ class _ListEntriesState extends State<ListEntries>
   void _navigateToViewEntry(Entry entry) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => EntryPinScreen(
-          title: 'View Entry',
-          isViewing: true,
-          onPinEntered: (pin, context) {
-            Navigator.of(context).pushReplacementNamed(
-              ViewEntry.routeName,
-              arguments: entry,
-            );
-          },
-        ),
+        builder:
+            (context) => EntryPinScreen(
+              title: 'View Entry',
+              isViewing: true,
+              onPinEntered: (pin, context) {
+                Navigator.of(
+                  context,
+                ).pushReplacementNamed(ViewEntry.routeName, arguments: entry);
+              },
+            ),
       ),
     );
   }
@@ -116,6 +117,7 @@ class _ListEntriesState extends State<ListEntries>
               ),
             ),
             floatingActionButton: FloatingActionButton(
+              heroTag: 'list_entries_add_empty',
               onPressed: _navigateToAddEntry,
               backgroundColor: Colors.black,
               child: const Icon(Icons.add, color: Colors.white),
@@ -147,22 +149,25 @@ class _ListEntriesState extends State<ListEntries>
                   onPressed: () async {
                     final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Clear All Entries'),
-                        content: const Text(
-                          'Are you sure you want to delete all entries?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancel'),
+                      builder:
+                          (_) => AlertDialog(
+                            title: const Text('Clear All Entries'),
+                            content: const Text(
+                              'Are you sure you want to delete all entries?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed:
+                                    () => Navigator.of(context).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed:
+                                    () => Navigator.of(context).pop(true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
                     );
                     if (confirm == true) {
                       try {
@@ -205,10 +210,10 @@ class _ListEntriesState extends State<ListEntries>
                                   Colors.black.withOpacity(0.5),
                                   BlendMode.dstATop,
                                 ),
-                                onError: (exception, stackTrace) =>
-                                    const AssetImage(
-                                  'images/entry_placeholder_image.jpg',
-                                ),
+                                onError:
+                                    (exception, stackTrace) => const AssetImage(
+                                      'images/entry_placeholder_image.jpg',
+                                    ),
                               ),
                               borderRadius: BorderRadius.circular(18.0),
                               boxShadow: [
@@ -271,6 +276,7 @@ class _ListEntriesState extends State<ListEntries>
             ],
           ),
           floatingActionButton: FloatingActionButton(
+            heroTag: 'list_entries_add_filled',
             onPressed: _navigateToAddEntry,
             backgroundColor: Colors.black,
             child: const Icon(Icons.add, color: Colors.white),

@@ -1,0 +1,17 @@
+
+// Update these endpoints in your Flutter app:
+
+// In your API service files, replace:
+// "http://34.202.215.209:8000/api/imperium/growth" 
+// with:
+"http://34.202.215.209:8000/api/imperium/persistence/learning-analytics"
+
+// For WebSocket connections, the correct endpoints are:
+// ws://34.202.215.209:8000/ws (if implemented)
+// ws://34.202.215.209:4000/ws (if implemented)
+
+// The dashboard is accessible at:
+// http://34.202.215.209:8501
+
+// All other endpoints should use the working pattern:
+// /api/imperium/persistence/learning-analytics

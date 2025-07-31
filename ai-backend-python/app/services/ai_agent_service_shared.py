@@ -9,7 +9,7 @@ from datetime import datetime
 import sys
 import os
 
-from app.services.unified_ai_service_shared import unified_ai_service_shared
+from app.services.unified_ai_service_shared import get_unified_ai_service_shared
 from app.services.ml_service import MLService
 from app.services.github_service import GitHubService
 
@@ -30,11 +30,11 @@ class AIAgentServiceShared:
                 result = await self._process_with_anthropic(ai_name, request_type, prompt, estimated_tokens)
                 return result
             except Exception as anthropic_error:
-                logger.warning(f"Anthropic failed for {ai_name} {request_type}, trying OpenAI", error=str(anthropic_error))
+                logger.warning(f"Anthropic failed for {ai_name} {request_type}, trying OpenAI: {str(anthropic_error)}")
                 return await self._process_with_openai(ai_name, request_type, prompt, estimated_tokens)
                 
         except Exception as e:
-            logger.error("Error in AI agent request", error=str(e), ai_name=ai_name, request_type=request_type)
+            logger.error(f"Error in AI agent request for {ai_name} ({request_type}): {str(e)}")
             return {
                 "success": False,
                 "error": "system_error",
@@ -46,7 +46,7 @@ class AIAgentServiceShared:
     async def _process_with_anthropic(self, ai_name: str, request_type: str, 
                                      prompt: str, estimated_tokens: int) -> Dict[str, Any]:
         """Process with Anthropic"""
-        result = await unified_ai_service_shared.make_request(
+        result = await get_unified_ai_service_shared().make_request(
             ai_name, prompt, estimated_tokens, 4000, 0.7
         )
         
@@ -65,7 +65,7 @@ class AIAgentServiceShared:
     async def _process_with_openai(self, ai_name: str, request_type: str, 
                                   prompt: str, estimated_tokens: int) -> Dict[str, Any]:
         """Process with OpenAI"""
-        result = await unified_ai_service_shared.make_request(
+        result = await get_unified_ai_service_shared().make_request(
             ai_name, prompt, estimated_tokens, 4000, 0.7
         )
         

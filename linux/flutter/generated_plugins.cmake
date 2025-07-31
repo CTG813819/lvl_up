@@ -7,6 +7,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   flutter_timezone
   media_kit_video
+  simple_animation_progress_bar
+  url_launcher_linux
   volume_controller
 )
 

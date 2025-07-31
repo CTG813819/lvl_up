@@ -22,4 +22,4 @@ class AppLogger {
   static void debug(String message) {
     developer.log(message, name: 'AppLogger', level: 700);
   }
-} 
+}

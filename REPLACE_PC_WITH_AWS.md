@@ -61,13 +61,13 @@ Deploy your AI Learning backend to AWS so it works without your PC connection.
 1. **Update Network Config**:
    ```dart
    // lib/services/network_config.dart
-   static const String _awsBackendUrl = 'http://your-ec2-ip:4000';
+   static const String _awsBackendUrl = 'http://34.202.215.209:4000';
    ```
 
 2. **Test Connection**:
    ```bash
    # Test from browser
-   http://your-ec2-ip:4000/api/health
+   http://34.202.215.209:4000/api/health
    ```
 
 ### Step 5: Verify Everything Works
@@ -156,7 +156,7 @@ ssh -i your-key.pem ubuntu@your-ec2-ip "pm2 logs ai-learning-backend"
 ssh -i your-key.pem ubuntu@your-ec2-ip "sudo systemctl status mongod"
 
 # Test API endpoint
-curl http://your-ec2-ip:4000/api/health
+curl http://34.202.215.209:4000/api/health
 ```
 
 ### Security Group Issues:

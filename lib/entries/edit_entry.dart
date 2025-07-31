@@ -88,6 +88,7 @@ class _EditEntryState extends State<EditEntry> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'edit_entry_save',
         backgroundColor: const Color(0xFF3C4858),
         onPressed:
             _isLoading

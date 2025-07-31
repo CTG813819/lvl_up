@@ -70,6 +70,17 @@ dependencies:
   flutter_highlight: ^0.7.0
   http: ^1.4.0
   socket_io_client: ^3.1.2
+  dio: ^5.8.0+1
+  url_launcher: ^6.3.1
+  device_info_plus: ^11.5.0
+  webview_flutter: ^4.13.0
+  fast_noise: ^2.0.0
+  # flutter_eval: ^0.7.8
+  simple_animation_progress_bar: ^1.9.2
+  wave: ^0.2.2
+  flutter_colorpicker: ^1.1.0
+  flutter_rating_bar: ^4.0.1
+  matrix_digital_rain: ^0.0.1
 
 
 dev_dependencies:
@@ -83,7 +94,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -98,72 +109,75 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-   - assets/video/1.mov
-   - assets/video/0421.mp4
-   - assets/gif/goku_idle.gif
-   - assets/gif/goku_blue.gif
-   - assets/gif/intro_anime.gif
-   - assets/gif/goku_intro.gif
-   - assets/gif/_goku.jpg
-   - assets/gif/mad_uchiha.gif
-   - assets/gif/vegeta.gif
-   - assets/gif/guts.gif
-   - assets/gif/mad_dash.gif
-   - assets/gif/warhammer_titus.gif
-   - assets/gif/codex.gif
-   - images/88.jpeg
-   - images/imag1.jpeg
-   - images/berserk_red.jpeg
-   - images/clouds.jpeg
-   - images/gas_station.jpeg
-   - images/horus.jpeg
-   - images/idea_one.jpeg
-   - images/idea_two.jpeg
-   - images/idea_three.jpeg
-   - images/idea_four.jpeg
-   - images/idea_six.jpeg
-   - images/pic_one.jpeg
-   - images/pic_two.jpeg
-   - images/pic_three.jpeg
-   - images/pic.jpeg
-   - images/gmeboy.jpeg
-   - images/new_pic.jpeg
-   - images/random.jpeg
-   - images/picture.jpeg
-   - images/sky.jpeg
-   - images/image.jpeg
-   - images/cam.jpeg
-   - images/butters.jpeg
-   - images/eric.jpeg
-   - images/cartman.jpeg
-   - images/kyle.jpeg
-   - images/kenny.jpeg
-   - images/skull_flow.jpeg
-   - images/bike.jpeg
-   - images/madara.jpeg
-   - images/quote.jpeg
-   - images/kakashi.jpeg
-   - images/neon.jpeg
-   - images/kame.jpeg
-   - images/madara_two.jpeg
-   - images/peace.jpeg
-   - images/unknown.jpeg
-   - images/vinland.jpeg
-   - images/quote_two.jpeg
-   - images/icarus.jpeg
-   - images/guts_peace.jpeg
-   - images/images23.jpeg
-   - images/tkyo.jpeg
-   - images/tokyo_blsm.jpeg
-   - images/guts_sword.jpeg
-   - images/gohan.jpeg
-   - images/scene.jpeg
-   - images/scene_2.jpeg 
-   - images/villans.jpeg
-   - images/focus.jpeg
-   - images/rage.jpeg
-   - images/tranquil.jpeg
-   - assets/gif/adventure_time.gif
+    - assets/gif/
+    - assets/video/
+    - assets/config/dynamic_config.json
+    - assets/video/1.mov
+    - assets/video/0421.mp4
+    - assets/gif/goku_idle.gif
+    - assets/gif/goku_blue.gif
+    - assets/gif/intro_anime.gif
+    - assets/gif/goku_intro.gif
+    - assets/gif/_goku.jpg
+    - assets/gif/mad_uchiha.gif
+    - assets/gif/vegeta.gif
+    - assets/gif/guts.gif
+    - assets/gif/mad_dash.gif
+    - assets/gif/warhammer_titus.gif
+    - assets/gif/codex.gif
+    - images/88.jpeg
+    - images/imag1.jpeg
+    - images/berserk_red.jpeg
+    - images/clouds.jpeg
+    - images/gas_station.jpeg
+    - images/horus.jpeg
+    - images/idea_one.jpeg
+    - images/idea_two.jpeg
+    - images/idea_three.jpeg
+    - images/idea_four.jpeg
+    - images/idea_six.jpeg
+    - images/pic_one.jpeg
+    - images/pic_two.jpeg
+    - images/pic_three.jpeg
+    - images/pic.jpeg
+    - images/gmeboy.jpeg
+    - images/new_pic.jpeg
+    - images/random.jpeg
+    - images/picture.jpeg
+    - images/sky.jpeg
+    - images/image.jpeg
+    - images/cam.jpeg
+    - images/butters.jpeg
+    - images/eric.jpeg
+    - images/cartman.jpeg
+    - images/kyle.jpeg
+    - images/kenny.jpeg
+    - images/skull_flow.jpeg
+    - images/bike.jpeg
+    - images/madara.jpeg
+    - images/quote.jpeg
+    - images/kakashi.jpeg
+    - images/neon.jpeg
+    - images/kame.jpeg
+    - images/madara_two.jpeg
+    - images/peace.jpeg
+    - images/unknown.jpeg
+    - images/vinland.jpeg
+    - images/quote_two.jpeg
+    - images/icarus.jpeg
+    - images/guts_peace.jpeg
+    - images/images23.jpeg
+    - images/tkyo.jpeg
+    - images/tokyo_blsm.jpeg
+    - images/guts_sword.jpeg
+    - images/gohan.jpeg
+    - images/scene.jpeg
+    - images/scene_2.jpeg 
+    - images/villans.jpeg
+    - images/focus.jpeg
+    - images/rage.jpeg
+    - images/tranquil.jpeg
+    - assets/gif/adventure_time.gif
 
    
 
@@ -173,7 +187,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
+  # https://flutter.dev/assets-and-images/#resolution-aware
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

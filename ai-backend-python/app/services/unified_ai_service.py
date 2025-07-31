@@ -70,7 +70,7 @@ class UnifiedAIService:
                     }
                 except Exception as e:
                     # Try OpenAI as fallback if Anthropic fails
-                    logger.warning(f"Anthropic call failed for {ai_name}, trying OpenAI fallback", error=str(e))
+                    logger.warning(f"Anthropic call failed for {ai_name}, trying OpenAI fallback: {str(e)}")
                     try:
                         response = await openai_service.call_openai(prompt, ai_name, model, max_tokens, temperature)
                         return response, {
@@ -99,7 +99,7 @@ class UnifiedAIService:
                 raise Exception(f"No AI provider available for {ai_name}. Anthropic: {provider_info.get('anthropic', {}).get('available', False)}, OpenAI: {provider_info.get('openai', {}).get('available', False)}")
                 
         except Exception as e:
-            logger.error("Error in unified AI call", error=str(e), ai_name=ai_name)
+            logger.error(f"Error in unified AI call for {ai_name}: {str(e)}")
             raise e
     
     async def get_provider_status(self, ai_name: str) -> Dict[str, Any]:
@@ -135,7 +135,7 @@ class UnifiedAIService:
             }
             
         except Exception as e:
-            logger.error("Error getting provider status", error=str(e), ai_name=ai_name)
+            logger.error(f"Error getting provider status for {ai_name}: {str(e)}")
             return {
                 "ai_name": ai_name,
                 "error": str(e),
@@ -158,7 +158,7 @@ class UnifiedAIService:
             }
             
         except Exception as e:
-            logger.error("Error getting all provider status", error=str(e))
+            logger.error(f"Error getting all provider status: {str(e)}")
             return {
                 "error": str(e),
                 "timestamp": asyncio.get_event_loop().time()

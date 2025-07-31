@@ -99,7 +99,7 @@ async def get_codex(db: AsyncSession = Depends(get_db)):
             })
         return {"chapters": codex}
     except Exception as e:
-        logger.error("Error generating codex", error=str(e))
+        logger.error(f"Error generating codex: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate codex")
 
 @router.post("/log", summary="Log a new Codex event", tags=["Codex"])
@@ -123,5 +123,5 @@ async def log_codex_event(event: dict):
             json.dump(log, f, indent=2)
         return {"status": "success", "message": "Event logged"}
     except Exception as e:
-        logger.error("Error logging Codex event", error=str(e))
+        logger.error(f"Error logging Codex event: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to log Codex event") 

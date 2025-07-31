@@ -1,95 +1,53 @@
 @echo off
-REM Proposal Cleanup System - EC2 Deployment Script (Batch)
-REM =======================================================
-REM This script automates the deployment of the cleanup system to your EC2 instance
+echo Starting deployment to EC2 instance...
 
-setlocal enabledelayedexpansion
+REM Set variables
+set EC2_HOST=ubuntu@ec2-34-202-215-209.compute-1.amazonaws.com
+set KEY_FILE=C:\projects\lvl_up\New.pem
+set REMOTE_DIR=/home/ubuntu/ai-backend-python
 
-REM Configuration
-set PEM_PATH=C:\projects\lvl_up\New.pem
-set EC2_HOST=ec2-34-202-215-209.compute-1.amazonaws.com
-set EC2_USER=ubuntu
-set REMOTE_PATH=/home/ubuntu/ai-backend-python
+echo Transferring fixed files to EC2...
 
-echo ==========================================
-echo   PROPOSAL CLEANUP SYSTEM DEPLOYMENT
-echo ==========================================
-echo.
-
-REM Check if PEM file exists
-if not exist "%PEM_PATH%" (
-    echo [ERROR] PEM file not found at: %PEM_PATH%
-    echo Please update the PEM_PATH variable or ensure the file exists
-    pause
+REM Transfer main.py
+echo Transferring app/main.py...
+scp -i "%KEY_FILE%" "app/main.py" "%EC2_HOST%:%REMOTE_DIR%/app/main.py"
+if %ERRORLEVEL% neq 0 (
+    echo Failed to transfer app/main.py
     exit /b 1
 )
-echo [SUCCESS] PEM file found: %PEM_PATH%
+echo Successfully transferred app/main.py
 
-REM Check if required files exist
-set REQUIRED_FILES=cleanup_all_pending_proposals.py deploy_cleanup.sh DEPLOYMENT_GUIDE.md
-for %%f in (%REQUIRED_FILES%) do (
-    if not exist "%%f" (
-        echo [ERROR] Required file not found: %%f
-        echo Please ensure all required files are in the current directory
-        pause
-        exit /b 1
-    )
-)
-echo [SUCCESS] All required files found
-
-REM Test EC2 connection
-echo [INFO] Testing connection to EC2...
-ssh -i "%PEM_PATH%" %EC2_USER%@%EC2_HOST% "echo 'Connection successful'"
-if errorlevel 1 (
-    echo [ERROR] Cannot connect to EC2. Please check your credentials and network connection.
-    pause
+REM Transfer custody_protocol_service.py
+echo Transferring app/services/custody_protocol_service.py...
+scp -i "%KEY_FILE%" "app/services/custody_protocol_service.py" "%EC2_HOST%:%REMOTE_DIR%/app/services/custody_protocol_service.py"
+if %ERRORLEVEL% neq 0 (
+    echo Failed to transfer app/services/custody_protocol_service.py
     exit /b 1
 )
-echo [SUCCESS] EC2 connection test successful
+echo Successfully transferred app/services/custody_protocol_service.py
 
-REM Deploy files
-echo [INFO] Starting deployment to EC2...
-for %%f in (%REQUIRED_FILES%) do (
-    echo [INFO] Deploying %%f...
-    scp -i "%PEM_PATH%" %%f %EC2_USER%@%EC2_HOST%:%REMOTE_PATH%/
-    if errorlevel 1 (
-        echo [ERROR] Failed to deploy %%f
-        pause
-        exit /b 1
-    )
-    echo [SUCCESS] Successfully deployed %%f
+REM Transfer create_tables.py
+echo Transferring create_tables.py...
+scp -i "%KEY_FILE%" "create_tables.py" "%EC2_HOST%:%REMOTE_DIR%/create_tables.py"
+if %ERRORLEVEL% neq 0 (
+    echo Failed to transfer create_tables.py
+    exit /b 1
 )
+echo Successfully transferred create_tables.py
 
-REM Setup permissions on EC2
-echo [INFO] Setting up permissions on EC2...
-ssh -i "%PEM_PATH%" %EC2_USER%@%EC2_HOST% "cd %REMOTE_PATH% && chmod +x deploy_cleanup.sh"
-if errorlevel 1 (
-    echo [WARNING] Permission setup failed, but files were deployed.
-    echo [WARNING] You may need to manually set permissions on EC2.
-) else (
-    echo [SUCCESS] Successfully set permissions on EC2
-)
+echo Running database setup on EC2...
+ssh -i "%KEY_FILE%" "%EC2_HOST%" "cd %REMOTE_DIR% && python3 create_tables.py"
 
+echo Restarting the backend service on EC2...
+ssh -i "%KEY_FILE%" "%EC2_HOST%" "sudo systemctl restart ultimate_start"
+
+echo Waiting for service to start...
+timeout /t 10 /nobreak > nul
+
+echo Checking service status...
+ssh -i "%KEY_FILE%" "%EC2_HOST%" "sudo systemctl status ultimate_start"
+
+echo Deployment completed!
 echo.
-echo ==========================================
-echo   DEPLOYMENT COMPLETED SUCCESSFULLY!
-echo ==========================================
-echo.
-echo [INFO] Next steps:
-echo 1. SSH into your EC2 instance:
-echo    ssh -i "%PEM_PATH%" %EC2_USER%@%EC2_HOST%
-echo.
-echo 2. Navigate to the backend directory:
-echo    cd %REMOTE_PATH%
-echo.
-echo 3. Run the cleanup system:
-echo    ./deploy_cleanup.sh --verify-only     # Check current state
-echo    ./deploy_cleanup.sh --conservative    # Safe cleanup
-echo    ./deploy_cleanup.sh --aggressive      # Remove everything
-echo.
-echo 4. For help and options:
-echo    ./deploy_cleanup.sh --help
-echo.
-echo [INFO] See DEPLOYMENT_GUIDE.md for detailed instructions
-echo.
-pause 
+echo To check the logs, run:
+echo ssh -i "%KEY_FILE%" "%EC2_HOST%" "sudo journalctl -u ultimate_start -f" 

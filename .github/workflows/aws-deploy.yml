@@ -1,0 +1,43 @@
+# .github/workflows/aws-deploy.yml
+#
+# This workflow demonstrates how to securely connect to AWS and run commands
+# on an EC2 instance using GitHub Actions secrets.
+
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main # Trigger this workflow on pushes to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Change this to your EC2 instance's region
+
+      - name: Example of running a command on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }} # Recommended: Store your EC2 host IP/DNS as a secret
+          EC2_USER: ${{ secrets.EC2_USER }} # Recommended: Store your EC2 username (e.g., ubuntu) as a secret
+          PEM_KEY: ${{ secrets.PEM_KEY }}   # Recommended: Store your .pem key as a multi-line secret
+        run: |
+          echo "Connecting to EC2 instance..."
+          echo "${{ secrets.PEM_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+          
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} '
+            echo "Successfully connected to EC2!"
+            echo "Running a test command..."
+            ls -la /home/ubuntu/
+          '
+          
+          echo "EC2 command executed successfully." 

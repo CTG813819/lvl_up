@@ -58,7 +58,7 @@ class SandboxAIService:
         if not self._initialized:
             from .custody_protocol_service import CustodyProtocolService
             self.ml_service = MLService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.learning_service = AILearningService()
             self.custody_service = CustodyProtocolService()
             self._initialized = True
@@ -355,7 +355,11 @@ class SandboxAIService:
     @classmethod
     async def initialize(cls):
         """Initialize the Sandbox AI service"""
+        instance = cls()
         if not cls._initialized:
             cls._initialized = True
+            # Initialize SckipitService properly
+            from .sckipit_service import SckipitService
+            instance.sckipit_service = await SckipitService.initialize()
             logger.info("🔬 Sandbox AI Service initialized with comprehensive SCKIPIT integration")
-        return cls() 
+        return instance 

@@ -408,7 +408,7 @@ class EnhancedProposalValidationService:
             return research_results
             
         except Exception as e:
-            logger.error("Error researching improvement patterns", error=str(e))
+            logger.error(f"Error researching improvement patterns: {str(e)}")
             return {}
     
     async def _analyze_proposal_with_anthropic(self, proposal_data: Dict) -> Dict[str, Any]:

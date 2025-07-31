@@ -4,7 +4,7 @@ API endpoints for the Custody Protocol service
 """
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Body
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +39,7 @@ async def get_custody_protocol_overview():
             "analytics": analytics
         }
     except Exception as e:
-        logger.error("Error getting custody protocol overview", error=str(e))
+        logger.error(f"Error getting custody protocol overview: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -56,7 +56,7 @@ async def get_custody_analytics():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting custody analytics", error=str(e))
+        logger.error(f"Error getting custody analytics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -80,7 +80,7 @@ async def administer_test(
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error administering test to {ai_type}", error=str(e))
+        logger.error(f"Error administering test to {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -117,7 +117,7 @@ async def get_ai_test_status(ai_type: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error getting test status for {ai_type}", error=str(e))
+        logger.error(f"Error getting test status for {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -137,7 +137,7 @@ async def force_test(ai_type: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error forcing test for {ai_type}", error=str(e))
+        logger.error(f"Error forcing test for {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -157,7 +157,7 @@ async def reset_ai_metrics(ai_type: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error resetting metrics for {ai_type}", error=str(e))
+        logger.error(f"Error resetting metrics for {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -201,7 +201,7 @@ async def check_ai_eligibility(ai_type: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error checking eligibility for {ai_type}", error=str(e))
+        logger.error(f"Error checking eligibility for {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -240,7 +240,7 @@ async def get_ai_difficulty(ai_type: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error getting difficulty for {ai_type}", error=str(e))
+        logger.error(f"Error getting difficulty for {ai_type}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -300,7 +300,7 @@ async def get_test_categories():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting test categories", error=str(e))
+        logger.error(f"Error getting test categories: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -323,7 +323,7 @@ async def get_custody_recommendations():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting custody recommendations", error=str(e))
+        logger.error(f"Error getting custody recommendations: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -351,7 +351,7 @@ async def batch_test_all_ais():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error in batch testing", error=str(e))
+        logger.error(f"Error in batch testing: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -371,7 +371,7 @@ async def get_live_analytics():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting live analytics", error=str(e), exc_info=True)
+        logger.error(f"Error getting live analytics: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving live analytics: {str(e)}")
 
 @router.get("/leaderboard")
@@ -390,7 +390,7 @@ async def get_leaderboard():
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting leaderboard", error=str(e))
+        logger.error(f"Error getting leaderboard: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -414,7 +414,7 @@ async def generate_training_ground_scenario(request: TrainingGroundScenarioReque
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error generating training ground scenario", error=str(e))
+        logger.error(f"Error generating training ground scenario: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/training-ground/deploy")
@@ -429,7 +429,7 @@ async def deploy_sandbox_attack(request: DeploySandboxAttackRequest = Body(...),
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error deploying sandbox attack", error=str(e))
+        logger.error(f"Error deploying sandbox attack: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/test/generate")
@@ -444,7 +444,7 @@ async def generate_test(ai_types: list, test_type: str, difficulty: str):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error generating test", error=str(e))
+        logger.error(f"Error generating test: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/test/execute")
@@ -459,7 +459,7 @@ async def execute_test(test: dict):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error executing test", error=str(e))
+        logger.error(f"Error executing test: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/recent-tests")
@@ -499,7 +499,7 @@ async def get_recent_tests(limit: int = 20):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting recent tests", error=str(e))
+        logger.error(f"Error getting recent tests: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -541,7 +541,7 @@ async def get_recent_adversarial_tests(limit: int = 20):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting recent adversarial tests", error=str(e))
+        logger.error(f"Error getting recent adversarial tests: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -560,7 +560,7 @@ async def get_explainability_analytics(ai_type: Optional[str] = None):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting explainability analytics", error=str(e))
+        logger.error(f"Error getting explainability analytics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -618,15 +618,18 @@ async def get_training_ground_scenarios(sandbox_level: int):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error getting training ground scenarios", error=str(e))
+        logger.error(f"Error getting training ground scenarios: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/adversarial-test")
-async def run_adversarial_test(ai_types: List[str] = Body(...)):
+async def run_adversarial_test(request: Dict[str, Any] = Body(...)):
     """Run an adversarial test between selected AIs and return the result."""
     try:
         import random
+        
+        # Extract ai_types from request
+        ai_types = request.get('ai_types', [])
         
         # If no AIs selected or fewer than 2, randomly select 2
         if len(ai_types) != 2:
@@ -655,7 +658,77 @@ async def run_adversarial_test(ai_types: List[str] = Body(...)):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error("Error running adversarial test", error=str(e))
+        logger.error(f"Error running adversarial test: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/activate-enhanced-adversarial")
+async def activate_enhanced_adversarial_service(request: Dict[str, Any] = Body(...)):
+    """Activate the enhanced adversarial testing service on port 8001"""
+    try:
+        import subprocess
+        import os
+        import time
+        
+        action = request.get('action', 'start')
+        
+        if action == 'start':
+            # Check if service is already running
+            try:
+                import requests
+                response = requests.get('http://localhost:8001/health', timeout=5)
+                if response.status_code == 200:
+                    return {
+                        "status": "success",
+                        "message": "Enhanced adversarial testing service is already running",
+                        "service_status": "running"
+                    }
+            except:
+                pass
+            
+            # Start the enhanced adversarial testing service
+            try:
+                # Get the current directory
+                current_dir = os.getcwd()
+                service_script = os.path.join(current_dir, 'standalone_enhanced_adversarial_testing.py')
+                
+                if not os.path.exists(service_script):
+                    raise Exception("Enhanced adversarial testing service script not found")
+                
+                # Start the service in background
+                process = subprocess.Popen([
+                    'python', service_script
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                # Wait a moment for the service to start
+                time.sleep(3)
+                
+                # Verify the service is running
+                try:
+                    import requests
+                    response = requests.get('http://localhost:8001/health', timeout=10)
+                    if response.status_code == 200:
+                        return {
+                            "status": "success",
+                            "message": "Enhanced adversarial testing service activated successfully",
+                            "service_status": "running",
+                            "pid": process.pid
+                        }
+                    else:
+                        raise Exception("Service verification failed")
+                except Exception as verify_error:
+                    # Kill the process if verification failed
+                    process.terminate()
+                    raise Exception(f"Service verification failed: {verify_error}")
+                    
+            except Exception as e:
+                logger.error(f"Error activating enhanced adversarial service: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
+        else:
+            raise HTTPException(status_code=400, detail="Invalid action")
+            
+    except Exception as e:
+        logger.error(f"Error activating enhanced adversarial service: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

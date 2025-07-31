@@ -1,0 +1,121 @@
+{
+  "timestamp": "2025-06-30T11:42:21.181Z",
+  "tests": [
+    {
+      "test": "workflow_configuration",
+      "status": "PASSED",
+      "message": "GitHub workflow contains all required components",
+      "details": {
+        "components": [
+          "proposal-test",
+          "backend-test",
+          "flutter-test",
+          "security-scan",
+          "deploy-production"
+        ]
+      }
+    },
+    {
+      "test": "proposal_validation_script",
+      "status": "PASSED",
+      "message": "Proposal validation script executes successfully",
+      "details": {
+        "exitCode": 0,
+        "output": "[2025-06-30T11:42:21.264Z] [INFO] 🚀 Starting Proposal Validation\n[2025-06-30T11:42:21.265Z] [INFO] ================================\n[2025-06-30T11:42:21.265Z] [INFO] \n📋 Running: Proposal Structure\n["
+      }
+    },
+    {
+      "test": "proposal_integration_script",
+      "status": "PASSED",
+      "message": "Proposal integration script executes successfully",
+      "details": {
+        "exitCode": 0,
+        "output": "[2025-06-30T11:42:21.370Z] [INFO] 🚀 Starting Proposal Integration Testing\n[2025-06-30T11:42:21.371Z] [INFO] ========================================\n[2025-06-30T11:42:21.371Z] [INFO] \n📋 Running: Pro"
+      }
+    },
+    {
+      "test": "app_functionality_script",
+      "status": "PASSED",
+      "message": "App functionality validation script executes successfully",
+      "details": {
+        "exitCode": 0,
+        "output": "[2025-06-30T11:42:21.487Z] [INFO] 🚀 Starting App Functionality Validation\n[2025-06-30T11:42:21.487Z] [INFO] ========================================\n[2025-06-30T11:42:21.487Z] [INFO] \n📋 Running: App"
+      }
+    },
+    {
+      "test": "deployment_validation_script",
+      "status": "FAILED",
+      "message": "Deployment validation script failed to execute",
+      "details": {
+        "exitCode": 1,
+        "stderr": ""
+      }
+    },
+    {
+      "test": "flutter_build_configuration",
+      "status": "PASSED",
+      "message": "Flutter build configuration is valid",
+      "details": {
+        "dependencies": [
+          "flutter:",
+          "provider:",
+          "http:",
+          "shared_preferences:"
+        ]
+      }
+    },
+    {
+      "test": "backend_build_configuration",
+      "status": "PASSED",
+      "message": "Backend build configuration is valid",
+      "details": {
+        "scripts": [
+          "test",
+          "build",
+          "start"
+        ]
+      }
+    },
+    {
+      "test": "github_api_connectivity",
+      "status": "SKIPPED",
+      "message": "GitHub token or repo not configured",
+      "details": {
+        "hasToken": false,
+        "hasRepo": false
+      }
+    },
+    {
+      "test": "workflow_trigger_configuration",
+      "status": "PASSED",
+      "message": "Workflow trigger configuration is valid",
+      "details": {
+        "triggers": [
+          "workflow_dispatch:",
+          "push:",
+          "pull_request:"
+        ]
+      }
+    },
+    {
+      "test": "artifact_configuration",
+      "status": "PASSED",
+      "message": "Artifact configuration is valid",
+      "details": {
+        "artifacts": [
+          "app-release.apk",
+          "app-release.aab",
+          "backend-build",
+          "web-build"
+        ]
+      }
+    }
+  ],
+  "overall": "FAILED",
+  "summary": {
+    "total": 10,
+    "passed": 8,
+    "failed": 1,
+    "skipped": 1
+  }
+}

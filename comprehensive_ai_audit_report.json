@@ -1,0 +1,969 @@
+{
+  "timestamp": "2025-07-18T20:07:59.485794",
+  "audit_version": "1.0.0",
+  "system_status": "audit_completed",
+  "ai_agents": {
+    "imperium": {
+      "info": {
+        "name": "Imperium",
+        "type": "Master AI",
+        "focus": "System orchestration and optimization",
+        "capabilities": [
+          "Cross-AI coordination",
+          "Strategic planning",
+          "Performance optimization",
+          "System oversight",
+          "Meta-learning"
+        ],
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "status": {
+        "endpoint_working": true,
+        "status_code": 200,
+        "status_data": {
+          "status": "operational",
+          "total_agents": 7,
+          "active_agents": 7,
+          "total_learning_cycles": 19,
+          "average_learning_score": 134.50714285714284,
+          "last_cycle_start": "2025-07-18T20:07:09.099675",
+          "learning_scheduler_running": true,
+          "api_version": "2.0.0",
+          "websocket_clients": {
+            "learning_analytics": 1,
+            "internet_learning": 0
+          },
+          "supported_features": [
+            "agent_registration",
+            "learning_cycles",
+            "internet_learning",
+            "real_time_analytics",
+            "persistence",
+            "trusted_sources"
+          ],
+          "last_updated": "2025-07-18T20:07:59.904163"
+        }
+      },
+      "capabilities": {
+        "can_run": false,
+        "run_result": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "current_level": 1,
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "compliance": {
+        "has_live_data": true,
+        "no_mock_implementations": true,
+        "proper_error_handling": true,
+        "rate_limiting_enabled": true
+      }
+    },
+    "guardian": {
+      "info": {
+        "name": "Guardian",
+        "type": "Security AI",
+        "focus": "Security analysis and threat detection",
+        "capabilities": [
+          "Code review",
+          "Security analysis",
+          "Quality assurance",
+          "Vulnerability detection",
+          "Secure coding practices"
+        ],
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "status": {
+        "endpoint_working": true,
+        "status_code": 200,
+        "status_data": {}
+      },
+      "capabilities": {
+        "can_run": false,
+        "run_result": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "current_level": 1,
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "compliance": {
+        "has_live_data": true,
+        "no_mock_implementations": true,
+        "proper_error_handling": true,
+        "rate_limiting_enabled": true
+      }
+    },
+    "sandbox": {
+      "info": {
+        "name": "Sandbox",
+        "type": "Experimental AI",
+        "focus": "Innovation and experimentation",
+        "capabilities": [
+          "Experimentation",
+          "Innovation",
+          "Rapid prototyping",
+          "A/B testing",
+          "Novel approaches"
+        ],
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "status": {
+        "endpoint_working": true,
+        "status_code": 200,
+        "status_data": {}
+      },
+      "capabilities": {
+        "can_run": false,
+        "run_result": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "current_level": 1,
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "compliance": {
+        "has_live_data": true,
+        "no_mock_implementations": true,
+        "proper_error_handling": true,
+        "rate_limiting_enabled": true
+      }
+    },
+    "conquest": {
+      "info": {
+        "name": "Conquest",
+        "type": "App Development AI",
+        "focus": "User experience enhancement",
+        "capabilities": [
+          "App development",
+          "User interface design",
+          "Performance optimization",
+          "Mobile frameworks",
+          "UX optimization"
+        ],
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "status": {
+        "endpoint_working": true,
+        "status_code": 200,
+        "status_data": {
+          "status": "success",
+          "conquest_ai": {
+            "is_active": true,
+            "total_deployments": 0,
+            "successful_deployments": 0,
+            "success_rate": 0,
+            "last_deployment": null,
+            "new_apps_created": 0,
+            "apps_improved": 0,
+            "capabilities": [
+              "New app repository creation",
+              "Existing app improvements",
+              "Flutter app generation",
+              "APK building",
+              "GitHub integration",
+              "Automated deployment"
+            ]
+          }
+        }
+      },
+      "capabilities": {
+        "can_run": false,
+        "run_result": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "current_level": 1,
+        "rate_limits": {
+          "requests_per_min": 42,
+          "tokens_per_request": 17000,
+          "requests_per_day": 3400
+        }
+      },
+      "compliance": {
+        "has_live_data": true,
+        "no_mock_implementations": true,
+        "proper_error_handling": true,
+        "rate_limiting_enabled": true
+      }
+    }
+  },
+  "endpoints": {
+    "ai_agents": {
+      "/api/imperium/status": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "operational",
+          "total_agents": 7,
+          "active_agents": 7,
+          "total_learning_cycles": 20,
+          "average_learning_score": 136.72142857142856,
+          "last_cycle_start": "2025-07-18T20:08:17.573785",
+          "learning_scheduler_running": true,
+          "api_version": "2.0.0",
+          "websocket_clients": {
+            "learning_analytics": 1,
+            "internet_learning": 0
+          },
+          "supported_features": [
+            "agent_registration",
+            "learning_cycles",
+            "internet_learning",
+            "real_time_analytics",
+            "persistence",
+            "trusted_sources"
+          ],
+          "last_updated": "2025-07-18T20:08:25.259521"
+        },
+        "response_time": "tested"
+      },
+      "/api/guardian/status": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/sandbox/status": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/conquest/status": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "success",
+          "conquest_ai": {
+            "is_active": true,
+            "total_deployments": 0,
+            "successful_deployments": 0,
+            "success_rate": 0,
+            "last_deployment": null,
+            "new_apps_created": 0,
+            "apps_improved": 0,
+            "capabilities": [
+              "New app repository creation",
+              "Existing app improvements",
+              "Flutter app generation",
+              "APK building",
+              "GitHub integration",
+              "Automated deployment"
+            ]
+          }
+        },
+        "response_time": "tested"
+      },
+      "/api/agents/run/imperium": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "response_time": "tested"
+      },
+      "/api/agents/run/guardian": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "response_time": "tested"
+      },
+      "/api/agents/run/sandbox": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "response_time": "tested"
+      },
+      "/api/agents/run/conquest": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "error",
+          "message": "Could not access repository"
+        },
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 8,
+        "total": 8,
+        "health_percentage": 100.0
+      }
+    },
+    "proposals": {
+      "/api/proposals/": {
+        "status_code": 200,
+        "working": true,
+        "response_data": [],
+        "response_time": "tested"
+      },
+      "/api/proposals/validation/stats": {
+        "status_code": 405,
+        "working": false,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 1,
+        "total": 2,
+        "health_percentage": 50.0
+      }
+    },
+    "learning": {
+      "/api/imperium/learning/": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/imperium/learning/dashboard": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/imperium/learning/analytics": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 3,
+        "total": 3,
+        "health_percentage": 100.0
+      }
+    },
+    "analytics": {
+      "/api/analytics/sckipit/comprehensive": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/analytics/sckipit/performance-metrics": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 2,
+        "total": 2,
+        "health_percentage": 100.0
+      }
+    },
+    "custody": {
+      "/api/custody/": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "success",
+          "message": "Custody Protocol system is active and monitoring all AIs",
+          "timestamp": "2025-07-18T20:08:30.458280",
+          "features": [
+            "rigorous_ai_testing",
+            "level_based_difficulty",
+            "proposal_eligibility_control",
+            "continuous_monitoring",
+            "self_improvement_tracking",
+            "cross_ai_collaboration_validation"
+          ],
+          "analytics": {
+            "overall_metrics": {
+              "total_tests_given": 0,
+              "total_tests_passed": 0,
+              "total_tests_failed": 0,
+              "overall_pass_rate": 0,
+              "active_ai_count": 0
+            },
+            "ai_specific_metrics": {
+              "imperium": {
+                "total_tests_given": 0,
+                "total_tests_passed": 0,
+                "total_tests_failed": 0,
+                "pass_rate": 0,
+                "current_difficulty": "basic",
+                "custody_level": 1,
+                "custody_xp": 0,
+                "consecutive_successes": 0,
+                "consecutive_failures": 0,
+                "last_test_date": null,
+                "can_level_up": false,
+                "can_create_proposals": false
+              },
+              "guardian": {
+                "total_tests_given": 0,
+                "total_tests_passed": 0,
+                "total_tests_failed": 0,
+                "pass_rate": 0,
+                "current_difficulty": "basic",
+                "custody_level": 1,
+                "custody_xp": 0,
+                "consecutive_successes": 0,
+                "consecutive_failures": 0,
+                "last_test_date": null,
+                "can_level_up": false,
+                "can_create_proposals": false
+              },
+              "sandbox": {
+                "total_tests_given": 0,
+                "total_tests_passed": 0,
+                "total_tests_failed": 0,
+                "pass_rate": 0,
+                "current_difficulty": "basic",
+                "custody_level": 1,
+                "custody_xp": 0,
+                "consecutive_successes": 0,
+                "consecutive_failures": 0,
+                "last_test_date": null,
+                "can_level_up": false,
+                "can_create_proposals": false
+              },
+              "conquest": {
+                "total_tests_given": 0,
+                "total_tests_passed": 0,
+                "total_tests_failed": 0,
+                "pass_rate": 0,
+                "current_difficulty": "basic",
+                "custody_level": 1,
+                "custody_xp": 0,
+                "consecutive_successes": 0,
+                "consecutive_failures": 0,
+                "last_test_date": null,
+                "can_level_up": false,
+                "can_create_proposals": false
+              }
+            },
+            "test_performance": {
+              "difficulty_distribution": {},
+              "category_performance": {},
+              "recent_trends": {}
+            },
+            "recommendations": [
+              "imperium AI needs to take their first custody test",
+              "guardian AI needs to take their first custody test",
+              "sandbox AI needs to take their first custody test",
+              "conquest AI needs to take their first custody test"
+            ]
+          }
+        },
+        "response_time": "tested"
+      },
+      "/api/custody/test/imperium/status": {
+        "status_code": 200,
+        "working": true,
+        "response_data": {
+          "status": "success",
+          "data": {
+            "ai_type": "imperium",
+            "total_tests_given": 0,
+            "total_tests_passed": 0,
+            "total_tests_failed": 0,
+            "pass_rate": 0,
+            "current_difficulty": "basic",
+            "custody_level": 1,
+            "custody_xp": 0,
+            "consecutive_successes": 0,
+            "consecutive_failures": 0,
+            "can_level_up": false,
+            "can_create_proposals": false,
+            "last_test_date": null,
+            "test_history": []
+          },
+          "timestamp": "2025-07-18T20:08:30.531502"
+        },
+        "response_time": "tested"
+      },
+      "/api/custody/eligibility/imperium": {
+        "status_code": 405,
+        "working": false,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 2,
+        "total": 3,
+        "health_percentage": 66.66666666666666
+      }
+    },
+    "health": {
+      "/health": {
+        "status_code": 404,
+        "working": true,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "/api/health": {
+        "status_code": 405,
+        "working": false,
+        "response_data": {},
+        "response_time": "tested"
+      },
+      "health": {
+        "working": 1,
+        "total": 2,
+        "health_percentage": 50.0
+      }
+    }
+  },
+  "proposal_system": {
+    "creation": {
+      "endpoint_working": true,
+      "status_code": 200,
+      "result": {}
+    },
+    "validation": {
+      "stats_endpoint_working": true,
+      "stats_data": {
+        "validation_stats": {
+          "total_proposals": 6938,
+          "pending_proposals": 0,
+          "ai_distribution": {
+            "imperium": 23,
+            "guardian": 6,
+            "sandbox": 5,
+            "conquest": 7
+          },
+          "validation_thresholds": {
+            "similarity_threshold": 0.85,
+            "min_learning_interval": "2:00:00",
+            "max_pending_per_ai": {
+              "1": {
+                "max_pending": 1,
+                "daily_limit": 3
+              },
+              "2": {
+                "max_pending": 2,
+                "daily_limit": 5
+              },
+              "3": {
+                "max_pending": 3,
+                "daily_limit": 8
+              },
+              "4": {
+                "max_pending": 4,
+                "daily_limit": 12
+              },
+              "5": {
+                "max_pending": 5,
+                "daily_limit": 15
+              },
+              "6": {
+                "max_pending": 6,
+                "daily_limit": 20
+              },
+              "7": {
+                "max_pending": 7,
+                "daily_limit": 25
+              },
+              "8": {
+                "max_pending": 8,
+                "daily_limit": 30
+              },
+              "9": {
+                "max_pending": 9,
+                "daily_limit": 35
+              },
+              "10": {
+                "max_pending": 10,
+                "daily_limit": 40
+              }
+            },
+            "min_confidence_threshold": 0.6
+          },
+          "internet_learning": {
+            "enabled": true,
+            "sources": 6,
+            "anthropic_integration": false
+          }
+        },
+        "timestamp": "2025-07-18T20:08:57.163784"
+      }
+    },
+    "listing": {
+      "endpoint_working": true,
+      "proposals_returned": 0,
+      "only_test_passed": true
+    },
+    "testing": {
+      "live_testing_enabled": true,
+      "no_mock_tests": true,
+      "test_validation_required": true
+    },
+    "compliance": {
+      "strict_validation": true,
+      "live_data_only": true,
+      "proper_testing_flow": true
+    }
+  },
+  "leveling_system": {
+    "custody_protocol": {
+      "endpoint_working": true,
+      "data": {
+        "status": "success",
+        "message": "Custody Protocol system is active and monitoring all AIs",
+        "timestamp": "2025-07-18T20:08:57.815442",
+        "features": [
+          "rigorous_ai_testing",
+          "level_based_difficulty",
+          "proposal_eligibility_control",
+          "continuous_monitoring",
+          "self_improvement_tracking",
+          "cross_ai_collaboration_validation"
+        ],
+        "analytics": {
+          "overall_metrics": {
+            "total_tests_given": 0,
+            "total_tests_passed": 0,
+            "total_tests_failed": 0,
+            "overall_pass_rate": 0,
+            "active_ai_count": 0
+          },
+          "ai_specific_metrics": {
+            "imperium": {
+              "total_tests_given": 0,
+              "total_tests_passed": 0,
+              "total_tests_failed": 0,
+              "pass_rate": 0,
+              "current_difficulty": "basic",
+              "custody_level": 1,
+              "custody_xp": 0,
+              "consecutive_successes": 0,
+              "consecutive_failures": 0,
+              "last_test_date": null,
+              "can_level_up": false,
+              "can_create_proposals": false
+            },
+            "guardian": {
+              "total_tests_given": 0,
+              "total_tests_passed": 0,
+              "total_tests_failed": 0,
+              "pass_rate": 0,
+              "current_difficulty": "basic",
+              "custody_level": 1,
+              "custody_xp": 0,
+              "consecutive_successes": 0,
+              "consecutive_failures": 0,
+              "last_test_date": null,
+              "can_level_up": false,
+              "can_create_proposals": false
+            },
+            "sandbox": {
+              "total_tests_given": 0,
+              "total_tests_passed": 0,
+              "total_tests_failed": 0,
+              "pass_rate": 0,
+              "current_difficulty": "basic",
+              "custody_level": 1,
+              "custody_xp": 0,
+              "consecutive_successes": 0,
+              "consecutive_failures": 0,
+              "last_test_date": null,
+              "can_level_up": false,
+              "can_create_proposals": false
+            },
+            "conquest": {
+              "total_tests_given": 0,
+              "total_tests_passed": 0,
+              "total_tests_failed": 0,
+              "pass_rate": 0,
+              "current_difficulty": "basic",
+              "custody_level": 1,
+              "custody_xp": 0,
+              "consecutive_successes": 0,
+              "consecutive_failures": 0,
+              "last_test_date": null,
+              "can_level_up": false,
+              "can_create_proposals": false
+            }
+          },
+          "test_performance": {
+            "difficulty_distribution": {},
+            "category_performance": {},
+            "recent_trends": {}
+          },
+          "recommendations": [
+            "imperium AI needs to take their first custody test",
+            "guardian AI needs to take their first custody test",
+            "sandbox AI needs to take their first custody test",
+            "conquest AI needs to take their first custody test"
+          ]
+        }
+      }
+    },
+    "ai_levels": {
+      "imperium": {
+        "status": "success",
+        "data": {
+          "ai_type": "imperium",
+          "total_tests_given": 0,
+          "total_tests_passed": 0,
+          "total_tests_failed": 0,
+          "pass_rate": 0,
+          "current_difficulty": "basic",
+          "custody_level": 1,
+          "custody_xp": 0,
+          "consecutive_successes": 0,
+          "consecutive_failures": 0,
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "last_test_date": null,
+          "test_history": []
+        },
+        "timestamp": "2025-07-18T20:08:57.820532"
+      },
+      "guardian": {
+        "status": "success",
+        "data": {
+          "ai_type": "guardian",
+          "total_tests_given": 0,
+          "total_tests_passed": 0,
+          "total_tests_failed": 0,
+          "pass_rate": 0,
+          "current_difficulty": "basic",
+          "custody_level": 1,
+          "custody_xp": 0,
+          "consecutive_successes": 0,
+          "consecutive_failures": 0,
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "last_test_date": null,
+          "test_history": []
+        },
+        "timestamp": "2025-07-18T20:08:57.966641"
+      },
+      "sandbox": {
+        "status": "success",
+        "data": {
+          "ai_type": "sandbox",
+          "total_tests_given": 0,
+          "total_tests_passed": 0,
+          "total_tests_failed": 0,
+          "pass_rate": 0,
+          "current_difficulty": "basic",
+          "custody_level": 1,
+          "custody_xp": 0,
+          "consecutive_successes": 0,
+          "consecutive_failures": 0,
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "last_test_date": null,
+          "test_history": []
+        },
+        "timestamp": "2025-07-18T20:08:57.977216"
+      },
+      "conquest": {
+        "status": "success",
+        "data": {
+          "ai_type": "conquest",
+          "total_tests_given": 0,
+          "total_tests_passed": 0,
+          "total_tests_failed": 0,
+          "pass_rate": 0,
+          "current_difficulty": "basic",
+          "custody_level": 1,
+          "custody_xp": 0,
+          "consecutive_successes": 0,
+          "consecutive_failures": 0,
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "last_test_date": null,
+          "test_history": []
+        },
+        "timestamp": "2025-07-18T20:08:58.210437"
+      }
+    },
+    "eligibility": {
+      "imperium": {
+        "status": "success",
+        "data": {
+          "ai_type": "imperium",
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "requirements": {
+            "level_up": {
+              "recent_pass_rate": "80% or higher in last 5 tests",
+              "consecutive_failures": "2 or fewer",
+              "custody_xp": "100 or higher"
+            },
+            "proposals": {
+              "at_least_one_test_passed": "Must have passed at least one test",
+              "consecutive_failures": "3 or fewer",
+              "recent_test": "Must have passed a test in last 24 hours"
+            }
+          },
+          "current_status": {
+            "total_tests_passed": 0,
+            "consecutive_failures": 0,
+            "custody_xp": 0,
+            "last_test_date": null
+          }
+        },
+        "timestamp": "2025-07-18T20:08:58.284444"
+      },
+      "guardian": {
+        "status": "success",
+        "data": {
+          "ai_type": "guardian",
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "requirements": {
+            "level_up": {
+              "recent_pass_rate": "80% or higher in last 5 tests",
+              "consecutive_failures": "2 or fewer",
+              "custody_xp": "100 or higher"
+            },
+            "proposals": {
+              "at_least_one_test_passed": "Must have passed at least one test",
+              "consecutive_failures": "3 or fewer",
+              "recent_test": "Must have passed a test in last 24 hours"
+            }
+          },
+          "current_status": {
+            "total_tests_passed": 0,
+            "consecutive_failures": 0,
+            "custody_xp": 0,
+            "last_test_date": null
+          }
+        },
+        "timestamp": "2025-07-18T20:08:58.292257"
+      },
+      "sandbox": {
+        "status": "success",
+        "data": {
+          "ai_type": "sandbox",
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "requirements": {
+            "level_up": {
+              "recent_pass_rate": "80% or higher in last 5 tests",
+              "consecutive_failures": "2 or fewer",
+              "custody_xp": "100 or higher"
+            },
+            "proposals": {
+              "at_least_one_test_passed": "Must have passed at least one test",
+              "consecutive_failures": "3 or fewer",
+              "recent_test": "Must have passed a test in last 24 hours"
+            }
+          },
+          "current_status": {
+            "total_tests_passed": 0,
+            "consecutive_failures": 0,
+            "custody_xp": 0,
+            "last_test_date": null
+          }
+        },
+        "timestamp": "2025-07-18T20:08:58.449022"
+      },
+      "conquest": {
+        "status": "success",
+        "data": {
+          "ai_type": "conquest",
+          "can_level_up": false,
+          "can_create_proposals": false,
+          "requirements": {
+            "level_up": {
+              "recent_pass_rate": "80% or higher in last 5 tests",
+              "consecutive_failures": "2 or fewer",
+              "custody_xp": "100 or higher"
+            },
+            "proposals": {
+              "at_least_one_test_passed": "Must have passed at least one test",
+              "consecutive_failures": "3 or fewer",
+              "recent_test": "Must have passed a test in last 24 hours"
+            }
+          },
+          "current_status": {
+            "total_tests_passed": 0,
+            "consecutive_failures": 0,
+            "custody_xp": 0,
+            "last_test_date": null
+          }
+        },
+        "timestamp": "2025-07-18T20:08:58.455327"
+      }
+    },
+    "xp_system": {
+      "custody_xp_tracking": true,
+      "level_based_difficulty": true,
+      "proposal_eligibility_control": true,
+      "continuous_monitoring": true
+    },
+    "analytics_integration": {
+      "dashboard_compatible": true,
+      "real_time_updates": true,
+      "cross_ai_tracking": true
+    }
+  },
+  "data_flow": {
+    "analytics": {
+      "endpoint_working": false,
+      "data_comprehensive": false,
+      "real_time_data": true
+    },
+    "learning": {
+      "endpoint_working": false,
+      "learning_tracking": true,
+      "cross_ai_learning": true
+    },
+    "performance": {
+      "endpoint_working": false,
+      "metrics_tracking": true,
+      "ai_performance_monitoring": true
+    },
+    "data_integrity": {
+      "live_data_only": true,
+      "no_mock_data": true,
+      "real_database_queries": true,
+      "proper_error_handling": true
+    }
+  },
+  "recommendations": [
+    "Investigate and fix proposals endpoints",
+    "Investigate and fix custody endpoints",
+    "Investigate and fix health endpoints"
+  ],
+  "issues_found": [
+    "Endpoint category proposals has low health: 50.0%",
+    "Endpoint category custody has low health: 66.66666666666666%",
+    "Endpoint category health has low health: 50.0%"
+  ],
+  "compliance_score": 89.66
+}

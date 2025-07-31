@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_codex/mastery_list.dart';
-import 'package:the_codex/mission.dart';
+import 'package:the_codex/mission.dart'
+    show
+        MissionProvider,
+        MissionData,
+        MissionType,
+        MissionSubtask; // Import all needed classes
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:the_codex/mission_provider.dart' hide MissionProvider;
 
 class DailySummary {
   final DateTime date;
@@ -74,7 +78,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final key = 'progress_${date.toIso8601String().substring(0, 10)}';
     await prefs.setDouble(key, progress);
 
-    // Also store the timestamp of when this progress was saved
+  // Also store the timestamp of when this progress was saved
     await prefs.setString('${key}_timestamp', DateTime.now().toIso8601String());
   }
 
@@ -130,20 +134,20 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Clear cache when dependencies change
+  // Clear cache when dependencies change
     _calculationCache.clear();
     _cachedDailySummaries.clear();
     _cachedCompletionByType.clear();
-    // Recalculate when dependencies change
+  // Recalculate when dependencies change
     _runCalculations();
-    // Refresh current day progress
+  // Refresh current day progress
     _refreshCurrentDayProgress();
   }
 
   void _initializeCalculationStream() {
     _calculationController = StreamController<void>.broadcast();
     _calculationSubscription = _calculationController?.stream.listen((_) {
-      // Clear cache when recalculating
+  // Clear cache when recalculating
       _calculationCache.clear();
       _cachedDailySummaries.clear();
       _cachedCompletionByType.clear();
@@ -157,21 +161,21 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       listen: false,
     );
     _missionSubscription = missionProvider.missionStream.listen((_) {
-      // Clear cache and recalculate when missions change
+  // Clear cache and recalculate when missions change
       _calculationCache.clear();
       _cachedDailySummaries.clear();
       _cachedCompletionByType.clear();
       if (mounted) {
-        // Force immediate recalculation
+  // Force immediate recalculation
         _runCalculations();
-        // Force rebuild of the weekly chart
+  // Force rebuild of the weekly chart
         setState(() {});
-        // Refresh current day progress immediately
+  // Refresh current day progress immediately
         _refreshCurrentDayProgress();
       }
     });
 
-    // Add listener for mission updates
+  // Add listener for mission updates
     missionProvider.addListener(() {
       if (mounted) {
         _calculationCache.clear();
@@ -184,18 +188,18 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
   }
 
   void _initializeRefreshTimer() {
-    // Cancel existing timer if any
+  // Cancel existing timer if any
     _refreshTimer?.cancel();
 
-    // Create a new timer that fires every minute
+  // Create a new timer that fires every minute
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) {
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
 
-        // Check if we've crossed midnight
+  // Check if we've crossed midnight
         if (selectedYear == now.year && selectedMonth == now.month) {
-          // Clear today's progress at midnight
+  // Clear today's progress at midnight
           if (now.hour == 0 && now.minute == 0) {
             _saveDailyProgress(today, 0.0);
             _calculationCache.clear();
@@ -203,7 +207,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
             _cachedCompletionByType.clear();
           }
 
-          // Always refresh calculations for current month
+  // Always refresh calculations for current month
           _runCalculations();
           _refreshCurrentDayProgress();
         }
@@ -222,16 +226,16 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     );
     final missions = missionProvider.missions;
 
-    // Only refresh if we're viewing the current month
+  // Only refresh if we're viewing the current month
     if (selectedYear == now.year && selectedMonth == now.month) {
-      // Recalculate progress for today
+  // Recalculate progress for today
       final currentDayProgress = _calculateDailyAverageProgress(
         missions,
         now.year,
         now.month,
       );
 
-      // Update the cached daily summaries with the new current day progress
+  // Update the cached daily summaries with the new current day progress
       if (currentDayProgress.containsKey(today)) {
         setState(() {
           _cachedDailySummaries[today] = DailySummary(
@@ -248,7 +252,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
   Future<void> _runCalculations() async {
     if (_isCalculating) return;
 
-    // Always recalculate when month/year changes or on timer
+  // Always recalculate when month/year changes or on timer
     final cacheKey = 'monthly_${selectedYear}_${selectedMonth}';
     if (_calculationCache.containsKey(cacheKey)) {
       _calculationCache.remove(cacheKey);
@@ -264,7 +268,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         );
         final missions = missionProvider.missions;
 
-        // Run calculations in background
+  // Run calculations in background
         await Future.wait([
           Future(() {
             _calculateMonthlyCompletion(
@@ -313,21 +317,21 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      // Backfill progress for previous days
+  // Backfill progress for previous days
       _backfillDailyProgress();
-      // Reset today's progress if not saved
+  // Reset today's progress if not saved
       _loadDailyProgress(today).then((lastSavedProgress) {
         if (lastSavedProgress == null) {
           _saveDailyProgress(today, 0.0);
         }
       });
 
-      // Clear all caches and recalculate when app is resumed
+  // Clear all caches and recalculate when app is resumed
       _calculationCache.clear();
       _cachedDailySummaries.clear();
       _cachedCompletionByType.clear();
 
-      // Check if we need to reset today's progress (if app was closed overnight)
+  // Check if we need to reset today's progress (if app was closed overnight)
       if (selectedYear == now.year && selectedMonth == now.month) {
         final lastSavedProgress = _loadDailyProgress(today);
         if (lastSavedProgress != null) {
@@ -349,14 +353,14 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final now = DateTime.now();
     final currentYear = now.year;
 
-    // Populate last 5 years
+  // Populate last 5 years
     for (int year = currentYear - 4; year <= currentYear; year++) {
       _yearMonthMap[year] = List.generate(12, (index) => index + 1);
     }
   }
 
   double _calculateMissionProgress(MissionData mission) {
-    // For failed missions, still calculate progress but mark as failed
+  // For failed missions, still calculate progress but mark as failed
     if (mission.hasFailed) {
       double progress = 0.0;
       if (mission.subtasks.isNotEmpty) {
@@ -373,12 +377,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       return progress;
     }
 
-    // Handle persistent missions
+  // Handle persistent missions
     if (mission.type == MissionType.persistent) {
       if (mission.subtasks.isEmpty) {
         return mission.isCompleted ? 1.0 : 0.0;
       }
-      // For persistent missions, all subtasks must be completed
+  // For persistent missions, all subtasks must be completed
       return mission.subtasks.every(
             (s) => s.currentCompletions >= s.requiredCompletions,
           )
@@ -386,12 +390,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           : 0.0;
     }
 
-    // Handle missions with subtasks
+  // Handle missions with subtasks
     if (mission.subtasks.isNotEmpty) {
       return _calculateSubtaskProgress(mission.subtasks);
     }
 
-    // Handle counter-based missions
+  // Handle counter-based missions
     if (mission.isCounterBased) {
       return _calculateCounterProgress(
         mission.currentCount,
@@ -399,7 +403,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       );
     }
 
-    // Handle regular missions
+  // Handle regular missions
     return _calculateRegularMissionProgress(mission);
   }
 
@@ -413,9 +417,9 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       double subtaskProgress = 0.0;
 
       if (subtask.isCounterBased) {
-        // For counter-based subtasks, use the new daily average calculation
+  // For counter-based subtasks, use the new daily average calculation
         if (subtask.requiredCompletions == 0) {
-          // Calculate daily average and monthly estimate
+  // Calculate daily average and monthly estimate
           final periodStart = DateTime(
             selectedYear ?? DateTime.now().year,
             selectedMonth ?? DateTime.now().month,
@@ -427,24 +431,24 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
             0,
           );
 
-          // For subtasks, we'll use the current count and creation date
+  // For subtasks, we'll use the current count and creation date
           if (subtask.createdAt != null) {
             final daysSinceCreation =
                 periodEnd.difference(subtask.createdAt!).inDays;
             if (daysSinceCreation > 0) {
-              // Calculate daily average based on current count and days since creation
+  // Calculate daily average based on current count and days since creation
               final dailyAverage = subtask.currentCount / daysSinceCreation;
 
-              // Calculate total days in the month
+  // Calculate total days in the month
               final daysInMonth = periodEnd.day;
 
-              // Calculate active days (days since creation in this month)
+  // Calculate active days (days since creation in this month)
               final activeDays = daysSinceCreation.clamp(0, daysInMonth);
 
-              // Calculate current total for the month
+  // Calculate current total for the month
               final currentTotal = subtask.currentCount.toDouble();
 
-              // Calculate weekly pattern
+  // Calculate weekly pattern
               final weeklyPattern = <int, double>{};
               for (int day = 1; day <= activeDays; day++) {
                 final date = DateTime(periodStart.year, periodStart.month, day);
@@ -453,7 +457,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                     (weeklyPattern[weekday] ?? 0) + dailyAverage;
               }
 
-              // Project remaining days using weekly pattern
+  // Project remaining days using weekly pattern
               double projectedTotal = currentTotal;
               for (int day = activeDays + 1; day <= daysInMonth; day++) {
                 final date = DateTime(periodStart.year, periodStart.month, day);
@@ -461,11 +465,11 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                 projectedTotal += weeklyPattern[weekday] ?? dailyAverage;
               }
 
-              // Use a reasonable cap for progress (e.g., 100 counts per month)
+  // Use a reasonable cap for progress (e.g., 100 counts per month)
               const monthlyCap = 100.0;
               subtaskProgress = (projectedTotal / monthlyCap).clamp(0.0, 1.0);
             } else {
-              // If created today, use current count
+  // If created today, use current count
               subtaskProgress = subtask.currentCount > 0 ? 1.0 : 0.0;
             }
           }
@@ -476,12 +480,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           );
         }
       } else {
-        // For non-counter subtasks, consider partial progress
+  // For non-counter subtasks, consider partial progress
         if (subtask.requiredCompletions > 0) {
           final completionRatio =
               subtask.currentCompletions / subtask.requiredCompletions;
           if (completionRatio >= 0.25) {
-            // If at least 25% complete, consider it as partial progress
+  // If at least 25% complete, consider it as partial progress
             subtaskProgress = completionRatio;
           } else {
             subtaskProgress = 0.0;
@@ -491,7 +495,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         }
       }
 
-      // Only count subtasks that have some form of target or progress
+  // Only count subtasks that have some form of target or progress
       if (subtask.requiredCompletions > 0 ||
           (subtask.isCounterBased
                   ? subtask.currentCount
@@ -509,24 +513,24 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
 
   double _calculateCounterProgress(int currentValue, int? targetValue) {
     if (targetValue != null && targetValue > 0) {
-      // Has target - calculate progress as ratio
+  // Has target - calculate progress as ratio
       return (currentValue / targetValue).clamp(0.0, 1.0);
     } else if (currentValue > 0) {
-      // No target but has progress - calculate monthly prediction based on daily/weekly patterns
+  // No target but has progress - calculate monthly prediction based on daily/weekly patterns
       final now = DateTime.now();
       final daysSinceCreation = now.difference(DateTime.now()).inDays;
 
       if (daysSinceCreation > 0) {
-        // Calculate average daily progress
+  // Calculate average daily progress
         final dailyAverage = currentValue / daysSinceCreation;
 
-        // Calculate weekly pattern (assuming 5 active days per week)
+  // Calculate weekly pattern (assuming 5 active days per week)
         final weeklyPattern = dailyAverage * 5;
 
-        // Predict monthly progress (4 weeks)
+  // Predict monthly progress (4 weeks)
         final predictedMonthly = weeklyPattern * 4;
 
-        // Cap at 100% if predicted monthly is high
+  // Cap at 100% if predicted monthly is high
         return (predictedMonthly / 100).clamp(0.0, 1.0);
       }
       return 1.0; // If no days have passed, consider it complete if there's any progress
@@ -548,21 +552,21 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final periodEnd = DateTime(year, month + 1, 0);
     final now = DateTime.now();
 
-    // Get the progress history for this month
+  // Get the progress history for this month
     final progressMap = mission.getProgressForDateRange(periodStart, periodEnd);
 
     if (progressMap.isEmpty) {
       return 0.0;
     }
 
-    // Calculate daily averages and patterns
+  // Calculate daily averages and patterns
     final dailyCounts = <DateTime, double>{};
     final failedDays = <DateTime>[];
     double totalCount = 0.0;
     int activeDays = 0;
     int totalDays = 0;
 
-    // First pass: collect all data
+  // First pass: collect all data
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
       if (date.isAfter(mission.createdAt!.subtract(const Duration(days: 1))) &&
@@ -578,10 +582,10 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           activeDays++;
         }
 
-        // Check for failed days
+  // Check for failed days
         if (mission.hasFailed && mission.lastCompleted != null) {
           final lastCompleted = mission.lastCompleted!;
-          // If mission was completed after this date, it means it failed on this date
+  // If mission was completed after this date, it means it failed on this date
           if (lastCompleted.isAfter(date) &&
               lastCompleted.year == year &&
               lastCompleted.month == month) {
@@ -591,9 +595,9 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // If we have a target, calculate progress
+  // If we have a target, calculate progress
     if (mission.targetCount != null && mission.targetCount > 0) {
-      // Calculate daily target based on mission type
+  // Calculate daily target based on mission type
       double dailyTarget = 0.0;
       if (mission.type == MissionType.daily) {
         dailyTarget = mission.targetCount / totalDays;
@@ -603,43 +607,43 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         dailyTarget = mission.targetCount / totalDays;
       }
 
-      // Calculate progress considering failed days
+  // Calculate progress considering failed days
       double adjustedProgress = 0.0;
       for (final entry in dailyCounts.entries) {
         final date = entry.key;
         final count = entry.value;
 
-        // Skip failed days in progress calculation
+  // Skip failed days in progress calculation
         if (!failedDays.contains(date)) {
           adjustedProgress += (count / dailyTarget).clamp(0.0, 1.0);
         }
       }
 
-      // Calculate final progress
+  // Calculate final progress
       final validDays = totalDays - failedDays.length;
       return validDays > 0 ? (adjustedProgress / validDays) * 100 : 0.0;
     }
 
-    // If no target, calculate based on patterns
+  // If no target, calculate based on patterns
     if (activeDays > 0) {
-      // Calculate daily average
+  // Calculate daily average
       final dailyAverage = totalCount / activeDays;
 
-      // Calculate weekly pattern
+  // Calculate weekly pattern
       final weeklyPattern = <int, double>{};
       for (final entry in dailyCounts.entries) {
         final weekday = entry.key.weekday;
         weeklyPattern[weekday] = (weeklyPattern[weekday] ?? 0) + entry.value;
       }
 
-      // Calculate average per weekday
+  // Calculate average per weekday
       for (final weekday in weeklyPattern.keys) {
         weeklyPattern[weekday] =
             weeklyPattern[weekday]! /
             dailyCounts.keys.where((d) => d.weekday == weekday).length;
       }
 
-      // Project remaining days
+  // Project remaining days
       double projectedTotal = totalCount;
 
       for (int day = 1; day <= periodEnd.day; day++) {
@@ -647,16 +651,16 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         if (!dailyCounts.containsKey(date) &&
             !failedDays.contains(date) &&
             date.isAfter(now)) {
-          // Use weekly pattern if available, otherwise use daily average
+  // Use weekly pattern if available, otherwise use daily average
           final weekday = date.weekday;
           projectedTotal += weeklyPattern[weekday] ?? dailyAverage;
         }
       }
 
-      // Calculate final progress
+  // Calculate final progress
       final totalPossibleDays = totalDays - failedDays.length;
       if (totalPossibleDays > 0) {
-        // Use a reasonable cap for progress (e.g., 100 counts per month)
+  // Use a reasonable cap for progress (e.g., 100 counts per month)
         const monthlyCap = 100.0;
         return (projectedTotal / monthlyCap).clamp(0.0, 1.0) * 100;
       }
@@ -666,12 +670,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
   }
 
   double _calculateRegularMissionProgress(MissionData mission) {
-    // Check if mission is explicitly completed
+  // Check if mission is explicitly completed
     if (mission.isCompleted) {
       return 1.0;
     }
 
-    // Check if mission was completed in the current selected month/year
+  // Check if mission was completed in the current selected month/year
     if (mission.lastCompleted != null &&
         selectedYear != null &&
         selectedMonth != null) {
@@ -682,8 +686,8 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // For missions that might have been completed but we're viewing a different month
-    // we need to check if the mission was active and completed during the selected period
+  // For missions that might have been completed but we're viewing a different month
+  // we need to check if the mission was active and completed during the selected period
     if (mission.lastCompleted != null && mission.createdAt != null) {
       final creationDate = mission.createdAt!;
       final completionDate = mission.lastCompleted!;
@@ -692,7 +696,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         selectedMonth ?? DateTime.now().month,
       );
 
-      // If mission was created before or during selected month and completed during selected month
+  // If mission was created before or during selected month and completed during selected month
       if (creationDate.isBefore(selectedDate.add(const Duration(days: 32))) &&
           completionDate.year == selectedDate.year &&
           completionDate.month == selectedDate.month) {
@@ -700,12 +704,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // For missions with subtasks, calculate partial progress
+  // For missions with subtasks, calculate partial progress
     if (mission.subtasks.isNotEmpty) {
       return _calculateSubtaskProgress(mission.subtasks);
     }
 
-    // For counter-based missions without subtasks
+  // For counter-based missions without subtasks
     if (mission.isCounterBased) {
       return _calculateCounterProgress(
         mission.currentCount,
@@ -713,13 +717,13 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       );
     }
 
-    // For simple missions, consider partial progress based on creation date
+  // For simple missions, consider partial progress based on creation date
     if (mission.createdAt != null) {
       final daysSinceCreation =
           DateTime.now().difference(mission.createdAt!).inDays;
       if (daysSinceCreation > 0) {
-        // Consider progress based on how long the mission has been active
-        // Cap at 25% for partial progress
+  // Consider progress based on how long the mission has been active
+  // Cap at 25% for partial progress
         return (0.25 * (daysSinceCreation / 30)).clamp(0.0, 0.25);
       }
     }
@@ -747,7 +751,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     double totalMonthlyProgress = 0.0;
     int daysWithProgress = 0;
 
-    // Get all missions for the month including history
+  // Get all missions for the month including history
     final monthMissions = missionProvider.getMissionHistoryByDateRange(
       periodStart,
       periodEnd,
@@ -757,18 +761,18 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       periodEnd,
     );
 
-    // Combine all missions
+  // Combine all missions
     final allMissions =
         [...missions, ...monthMissions, ...completedMissions].toSet().toList();
 
-    // Calculate progress for each day
+  // Calculate progress for each day
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
 
-      // Skip future days
+  // Skip future days
       if (date.isAfter(now)) continue;
 
-      // Get missions active on this day
+  // Get missions active on this day
       final activeMissions =
           allMissions.where((mission) {
             if (mission.createdAt == null) return false;
@@ -788,7 +792,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         double missionProgress = 0.0;
         double missionWeight = 1.0;
 
-        // Weight missions by type
+  // Weight missions by type
         switch (mission.type) {
           case MissionType.daily:
             missionWeight = 1.2;
@@ -803,7 +807,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
             missionWeight = 1.0;
         }
 
-        // Check if mission failed on this day
+  // Check if mission failed on this day
         bool isFailed = false;
         if (mission.hasFailed && mission.lastCompleted != null) {
           final lastCompleted = mission.lastCompleted!;
@@ -815,12 +819,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         }
 
         if (!isFailed) {
-          // Get progress for this specific day
+  // Get progress for this specific day
           final progress = mission.getProgressForDate(date);
 
           if (progress != null) {
             if (mission.subtasks.isNotEmpty) {
-              // Calculate subtask progress
+  // Calculate subtask progress
               double subtaskTotal = 0.0;
               int validSubtasks = 0;
 
@@ -873,14 +877,14 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           }
         }
 
-        // Apply mission weight and add to day's total
+  // Apply mission weight and add to day's total
         if (missionProgress > 0 || isFailed) {
           dayProgress += missionProgress * missionWeight;
           validMissions++;
         }
       }
 
-      // Calculate day's average progress
+  // Calculate day's average progress
       if (validMissions > 0) {
         final dayAverage = (dayProgress / validMissions) * 100;
         totalMonthlyProgress += dayAverage;
@@ -888,7 +892,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // Calculate final monthly percentage
+  // Calculate final monthly percentage
     return daysWithProgress > 0 ? totalMonthlyProgress / daysWithProgress : 0.0;
   }
 
@@ -896,12 +900,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     if (mission.type == MissionType.daily) {
       return mission.createdAt!.add(const Duration(days: 1));
     } else if (mission.type == MissionType.weekly) {
-      // Find the next Sunday
+  // Find the next Sunday
       final daysUntilSunday =
           (DateTime.sunday - mission.createdAt!.weekday) % 7;
       return mission.createdAt!.add(Duration(days: daysUntilSunday));
     } else {
-      // For simple missions, they don't expire
+  // For simple missions, they don't expire
       return DateTime.now().add(const Duration(days: 365));
     }
   }
@@ -921,18 +925,18 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final periodStart = DateTime(year, month, 1);
     final periodEnd = DateTime(year, month + 1, 0);
 
-    // Filter missions that were active during this specific month
+  // Filter missions that were active during this specific month
     final monthMissions =
         missions.where((mission) {
           if (mission.createdAt == null) return false;
 
-          // Mission must have been created before or during this month
+  // Mission must have been created before or during this month
           final createdInMonth =
               mission.createdAt!.year == year &&
               mission.createdAt!.month == month;
           final createdBeforeMonth = mission.createdAt!.isBefore(periodStart);
 
-          // Mission must not have been completed before this month
+  // Mission must not have been completed before this month
           final completedBeforeMonth =
               mission.lastCompleted != null &&
               mission.lastCompleted!.isBefore(periodStart);
@@ -941,14 +945,14 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               !completedBeforeMonth;
         }).toList();
 
-    // Group missions by type
+  // Group missions by type
     final missionsByType = <MissionType, List<MissionData>>{};
     for (final type in MissionType.values) {
       missionsByType[type] =
           monthMissions.where((m) => m.type == type).toList();
     }
 
-    // Calculate completion for each type
+  // Calculate completion for each type
     for (final entry in missionsByType.entries) {
       final type = entry.key;
       final typeMissions = entry.value;
@@ -960,14 +964,14 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         for (final mission in typeMissions) {
           double missionProgress = 0.0;
 
-          // Get progress for the entire period at once
+  // Get progress for the entire period at once
           final progressMap = mission.getProgressForDateRange(
             periodStart,
             periodEnd,
           );
 
           if (progressMap.isNotEmpty) {
-            // Use the highest progress value in the period
+  // Use the highest progress value in the period
             missionProgress = progressMap.values.reduce(
               (a, b) => a > b ? a : b,
             );
@@ -1001,7 +1005,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final dailySummaries = <DateTime, DailySummary>{};
     final periodEnd = DateTime(year, month + 1, 0); // Last day of the month
 
-    // Initialize daily summaries for all days in the month
+  // Initialize daily summaries for all days in the month
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
       dailySummaries[date] = DailySummary(
@@ -1012,7 +1016,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       );
     }
 
-    // Get all currently active missions
+  // Get all currently active missions
     final currentlyActiveMissions =
         missions.where((mission) {
           if (mission.createdAt == null) return false;
@@ -1023,7 +1027,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               now.isBefore(missionEnd.add(const Duration(days: 1)));
         }).toList();
 
-    // Calculate cumulative missions created per day
+  // Calculate cumulative missions created per day
     final missionsCreatedCount = <DateTime, int>{};
     for (final mission in missions) {
       if (mission.createdAt != null &&
@@ -1042,7 +1046,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // Calculate cumulative missions for each day
+  // Calculate cumulative missions for each day
     int cumulativeMissionsToday = 0;
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
@@ -1053,13 +1057,13 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       );
     }
 
-    // Calculate daily mission progress with weighted completion status
+  // Calculate daily mission progress with weighted completion status
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
       double totalProgress = 0.0;
       int totalMissionsForDay = 0;
 
-      // Get all missions that were active on this day, prioritizing currently active missions
+  // Get all missions that were active on this day, prioritizing currently active missions
       final activeMissions =
           [
             ...currentlyActiveMissions,
@@ -1076,7 +1080,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       totalMissionsForDay = activeMissions.length;
 
       for (final mission in activeMissions) {
-        // Check if mission failed on this day
+  // Check if mission failed on this day
         bool isFailed = false;
         if (mission.hasFailed && mission.lastCompleted != null) {
           final lastCompleted = mission.lastCompleted!;
@@ -1087,31 +1091,31 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           }
         }
 
-        // Calculate weighted progress based on mission status
+  // Calculate weighted progress based on mission status
         double weightedProgress = 0.0;
 
         if (isFailed) {
-          // Failed missions count as 0%
+  // Failed missions count as 0%
           weightedProgress = 0.0;
         } else {
-          // Get mission progress for this specific day
+  // Get mission progress for this specific day
           final progress = mission.getProgressForDate(date);
 
           if (progress != null) {
             if (progress >= 1.0) {
-              // Completed missions count as 100%
+  // Completed missions count as 100%
               weightedProgress = 1.0;
             } else if (progress >= 0.5) {
-              // Partially completed missions count as 50%
+  // Partially completed missions count as 50%
               weightedProgress = 0.5;
             } else {
-              // Incomplete missions count as 0%
+  // Incomplete missions count as 0%
               weightedProgress = 0.0;
             }
           }
         }
 
-        // Apply mission type weight
+  // Apply mission type weight
         double missionWeight = 1.0;
         switch (mission.type) {
           case MissionType.daily:
@@ -1130,13 +1134,13 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         totalProgress += weightedProgress * missionWeight;
       }
 
-      // Calculate final daily progress percentage
+  // Calculate final daily progress percentage
       final dailyCompletionPercentage =
           totalMissionsForDay > 0
               ? (totalProgress / totalMissionsForDay) * 100
               : 0.0;
 
-      // Only update progress for past days or current day
+  // Only update progress for past days or current day
       if (!date.isAfter(now)) {
         dailySummaries.update(
           date,
@@ -1148,7 +1152,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       }
     }
 
-    // Set previous day's progress for coloring the daily progress bar
+  // Set previous day's progress for coloring the daily progress bar
     double? previousDayOverallProgress;
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
@@ -1179,11 +1183,11 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           MasteryProvider masteryProvider,
           Widget? child,
         ) {
-          // Force rebuild when missions change
+  // Force rebuild when missions change
           final missions = missionProvider.missions;
           final now = DateTime.now();
 
-          // Update selected year/month if viewing current month and it changed
+  // Update selected year/month if viewing current month and it changed
           if (selectedYear == now.year && selectedMonth == now.month) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -1192,7 +1196,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
             });
           }
 
-          // Ensure we have a year and month selected
+  // Ensure we have a year and month selected
           if (selectedYear == null) {
             selectedYear = now.year;
           }
@@ -1202,12 +1206,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
 
           return Column(
             children: [
-              // Year/Month Selection
+  // Year/Month Selection
               Container(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    // Year Dropdown
+  // Year Dropdown
                     DropdownButton<int>(
                       value: selectedYear,
                       hint: const Text(
@@ -1231,7 +1235,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                       },
                     ),
                     const SizedBox(width: 16),
-                    // Month Dropdown
+  // Month Dropdown
                     if (selectedYear != null)
                       DropdownButton<int>(
                         value: selectedMonth,
@@ -1262,7 +1266,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                 ),
               ),
 
-              // Summary Content
+  // Summary Content
               if (selectedYear != null && selectedMonth != null)
                 Expanded(
                   child: SingleChildScrollView(
@@ -1270,19 +1274,19 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Overall Progress
+  // Overall Progress
                         _buildOverallProgress(missions),
                         const SizedBox(height: 24),
 
-                        // Progress by Type
+  // Progress by Type
                         _buildProgressByType(missions),
                         const SizedBox(height: 24),
 
-                        // Mastery Levels
+  // Mastery Levels
                         _buildMasteryLevels(masteryProvider),
                         const SizedBox(height: 24),
 
-                        // Mission List
+  // Mission List
                         _buildMissionList(missions),
                       ],
                     ),
@@ -1306,7 +1310,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       listen: false,
     );
 
-    // Get all missions for the month including history
+  // Get all missions for the month including history
     final monthMissions = missionProvider.getMissionHistoryByDateRange(
       periodStart,
       periodEnd,
@@ -1316,15 +1320,15 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       periodEnd,
     );
 
-    // Combine all missions
+  // Combine all missions
     final allMissions =
         [...missions, ...monthMissions, ...completedMissions].toSet().toList();
 
-    // Calculate total progress for the month
+  // Calculate total progress for the month
     double totalProgress = 0.0;
     int validMissions = 0;
 
-    // Count completed and failed missions within the month, broken down by type
+  // Count completed and failed missions within the month, broken down by type
     int completedCount = 0;
     int failedCount = 0;
     Map<MissionType, int> completedByType = {
@@ -1345,7 +1349,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         totalProgress += progress;
         validMissions++;
       }
-      // Completed in this month
+  // Completed in this month
       if (mission.lastCompleted != null &&
           mission.lastCompleted!.year == selectedYear &&
           mission.lastCompleted!.month == selectedMonth) {
@@ -1353,7 +1357,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         completedByType[mission.type] =
             (completedByType[mission.type] ?? 0) + 1;
       }
-      // Failed in this month
+  // Failed in this month
       if (mission.hasFailed &&
           mission.lastCompleted != null &&
           mission.lastCompleted!.year == selectedYear &&
@@ -1396,7 +1400,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title on its own line
+  // Title on its own line
         const Text(
           'Overall Progress',
           style: TextStyle(
@@ -1406,61 +1410,68 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           ),
         ),
         const SizedBox(height: 8),
-        // Counters in a row below the title
-        Row(
-          children: [
-            // Completed missions counter
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green[700],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    completedCount.toString(),
-                    style: const TextStyle(
+  // Counters in a scrollable row below the title
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+  // Completed missions counter
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green[700],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      size: 16,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  _typeBreakdown(completedByType, Colors.white),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      completedCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _typeBreakdown(completedByType, Colors.white),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            // Failed missions counter
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.red[700],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.warning_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    failedCount.toString(),
-                    style: const TextStyle(
+              const SizedBox(width: 8),
+  // Failed missions counter
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red[700],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_rounded,
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      size: 16,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  _typeBreakdown(failedByType, Colors.white),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      failedCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _typeBreakdown(failedByType, Colors.white),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         LinearProgressIndicator(
@@ -1522,7 +1533,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
   }
 
   Widget _buildProgressByType(List<MissionData> missions) {
-    // Get mission counts
+  // Get mission counts
     final allMissions =
         Provider.of<MissionProvider>(context, listen: false).allMissions;
     final dailyCount =
@@ -1594,7 +1605,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final entries = masteryProvider.entries;
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    // Sort entries by progress percentage (highest to lowest)
+  // Sort entries by progress percentage (highest to lowest)
     final sortedEntries = List<MasteryEntry>.from(entries)..sort((a, b) {
       final progressA = masteryProvider.getProgressPercentage(a.id);
       final progressB = masteryProvider.getProgressPercentage(b.id);
@@ -1619,7 +1630,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           ); // This is in minutes
           final levelDescription = entry.getLevelDescription();
 
-          // Calculate progress based on current level requirements
+  // Calculate progress based on current level requirements
           final currentLevel = entry.currentLevel;
           final nextLevelThreshold =
               entry.nextLevelTarget * 60; // Convert hours to minutes
@@ -1629,7 +1640,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                   : (entry.nextLevelTarget / 2) *
                       60; // Convert hours to minutes
 
-          // Calculate overall progress as percentage of current level
+  // Calculate overall progress as percentage of current level
           final progressToCurrentLevel =
               currentLevel == 0
                   ? (totalProgress / 6000).clamp(
@@ -1640,7 +1651,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                           (nextLevelThreshold - currentLevelThreshold))
                       .clamp(0.0, 1.0);
 
-          // Calculate progress to next level (if not at max level)
+  // Calculate progress to next level (if not at max level)
           final progressToNextLevel =
               currentLevel < entry.maxLevel
                   ? ((totalProgress - currentLevelThreshold) /
@@ -1648,20 +1659,20 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                       .clamp(0.0, 1.0)
                   : 1.0;
 
-          // Get monthly progress data
+  // Get monthly progress data
           final monthlyProgress = masteryProvider.getMonthlyProgress(entry.id);
           final totalMinutesForLevel =
               currentLevel == 0
                   ? 6000
                   : (nextLevelThreshold - currentLevelThreshold);
 
-          // Calculate monthly contributions
+  // Calculate monthly contributions
           final monthlyContributions = monthlyProgress.map((month, minutes) {
             final contribution = minutes / totalMinutesForLevel;
             return MapEntry(month, contribution);
           });
 
-          // Determine color based on progress thresholds
+  // Determine color based on progress thresholds
           Color progressColor = Colors.grey;
           if (progressToCurrentLevel >= 1.0) {
             progressColor = Colors.green;
@@ -1701,7 +1712,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Overall progress bar
+  // Overall progress bar
                   LinearProgressIndicator(
                     value: progressToCurrentLevel,
                     backgroundColor: Colors.grey[800],
@@ -1738,7 +1749,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  // Monthly contributions
+  // Monthly contributions
                   Text(
                     'Monthly Progress Contributions',
                     style: TextStyle(
@@ -1883,7 +1894,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final startDate = DateTime(selectedYear!, selectedMonth!, 1);
     final endDate = DateTime(selectedYear!, selectedMonth! + 1, 0);
 
-    // Only missions created within the selected month
+  // Only missions created within the selected month
     final monthMissions =
         missions.where((mission) {
           if (mission.createdAt == null) return false;
@@ -1925,7 +1936,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               ),
               const SizedBox(width: 4),
               Text(
-                '$completedDays/$daysInMonth days completed',
+                '$completedDays days completed',
                 style: TextStyle(
                   color: _counterColor(percent),
                   fontWeight: FontWeight.bold,
@@ -1936,19 +1947,19 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
           ),
         );
       } else if (mission.type == MissionType.weekly) {
-        // Calculate number of weeks in the month
+  // Calculate number of weeks in the month
         int weeksInMonth = 0;
         int completedWeeks = 0;
         DateTime weekStart = DateTime(year, month, 1);
         while (weekStart.month == month) {
           weeksInMonth++;
-          // Find all days in this week
+  // Find all days in this week
           List<DateTime> weekDays =
               List.generate(
                 7,
                 (i) => weekStart.add(Duration(days: i)),
               ).where((d) => d.month == month).toList();
-          // If any day in the week is completed, count the week as completed
+  // If any day in the week is completed, count the week as completed
           bool weekCompleted = weekDays.any(
             (d) => mission.getProgressForDate(d) >= 1.0,
           );
@@ -1969,7 +1980,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               ),
               const SizedBox(width: 4),
               Text(
-                '$completedWeeks/$weeksInMonth weeks completed',
+                '$completedWeeks weeks completed',
                 style: TextStyle(
                   color: _counterColor(percent),
                   fontWeight: FontWeight.bold,
@@ -1996,7 +2007,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         ),
         const SizedBox(height: 16),
         ...monthMissions.map((mission) {
-          // Find the completed version of the mission if it exists
+  // Find the completed version of the mission if it exists
           final completedMission = completedMissions.firstWhere(
             (m) => m.missionId == mission.missionId,
             orElse: () => mission,
@@ -2021,7 +2032,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title and Status Row
+  // Title and Status Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -2060,17 +2071,17 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 8),
 
-                  // Mission Type
+  // Mission Type
                   Text(
                     _getMissionTypeName(mission.type),
                     style: TextStyle(color: Colors.grey[400], fontSize: 14),
                   ),
                   const SizedBox(height: 8),
 
-                  // Completion Counter
+  // Completion Counter
                   _buildCompletionCounter(mission),
 
-                  // Counter Display (if applicable)
+  // Counter Display (if applicable)
                   if (mission.isCounterBased && mission.currentCount > 0)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
@@ -2104,7 +2115,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                       ),
                     ),
 
-                  // Subtasks
+  // Subtasks
                   if (mission.subtasks.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     ...mission.subtasks.map((subtask) {
@@ -2137,14 +2148,14 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
                                 ),
                               ),
                             ),
-                            // Removed subtask.currentCount display
+  // Removed subtask.currentCount display
                           ],
                         ),
                       );
                     }).toList(),
                   ],
 
-                  // Completion Date
+  // Completion Date
                   if (mission.lastCompleted != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
@@ -2212,8 +2223,8 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     }
 
     while (currentDate.isBefore(periodEnd.add(const Duration(days: 1)))) {
-      // Create a dummy DailySummary for the purpose of grouping into weeks.
-      // The actual dailySummaries from _cachedDailySummaries will be used in _buildWeeklyProgressChart.
+  // Create a dummy DailySummary for the purpose of grouping into weeks.
+  // The actual dailySummaries from _cachedDailySummaries will be used in _buildWeeklyProgressChart.
       currentWeek.add(
         DailySummary(
           date: currentDate,
@@ -2243,7 +2254,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       weeks.add(currentWeek);
     }
 
-    // Find the week containing today's date
+  // Find the week containing today's date
     for (int i = 0; i < weeks.length; i++) {
       if (weeks[i].any((summary) => _isSameDay(summary.date, now))) {
         return i;
@@ -2279,7 +2290,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         final missionEnd = _getMissionEndDate(mission);
         if (date.isBefore(mission.createdAt!) || date.isAfter(missionEnd))
           continue;
-        // Check if mission failed on this day
+  // Check if mission failed on this day
         if (mission.hasFailed && mission.lastCompleted != null) {
           final lastCompleted = mission.lastCompleted!;
           if (lastCompleted.isAfter(date) &&
@@ -2311,7 +2322,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         dayProgress += delta * missionWeight;
         validMissions++;
       }
-      // Apply failed mission penalty (-20% per failed mission)
+  // Apply failed mission penalty (-20% per failed mission)
       double failedPenalty = failedMissions * 20.0;
       final dayAverage =
           validMissions > 0
@@ -2330,7 +2341,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Calculate and save today's final progress
+  // Calculate and save today's final progress
     final missionProvider = Provider.of<MissionProvider>(
       context,
       listen: false,
@@ -2341,7 +2352,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     int validMissions = 0;
     int failedMissions = 0;
 
-    // Get active missions for today
+  // Get active missions for today
     final activeMissions =
         missions.where((mission) {
           if (mission.createdAt == null) return false;
@@ -2352,12 +2363,12 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
               today.isBefore(missionEnd.add(const Duration(days: 1)));
         }).toList();
 
-    // Calculate final progress for today
+  // Calculate final progress for today
     for (final mission in activeMissions) {
       double missionProgress = 0.0;
       double missionWeight = 1.0;
 
-      // Check if mission failed
+  // Check if mission failed
       bool isFailed = false;
       if (mission.hasFailed && mission.lastCompleted != null) {
         final lastCompleted = mission.lastCompleted!;
@@ -2416,7 +2427,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         }
       }
 
-      // Apply mission type weight
+  // Apply mission type weight
       switch (mission.type) {
         case MissionType.daily:
           missionWeight = 1.2;
@@ -2435,7 +2446,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
       validMissions++;
     }
 
-    // Calculate and save final progress
+  // Calculate and save final progress
     if (validMissions > 0) {
       double baseProgress = (dayProgress / validMissions) * 100;
       double failedPenalty = failedMissions * 20.0;
@@ -2462,7 +2473,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
     for (int day = 1; day <= periodEnd.day; day++) {
       final date = DateTime(year, month, day);
       if (date.isAfter(now)) continue;
-      // Always calculate and save progress for each day
+  // Always calculate and save progress for each day
       double dayProgress = 0.0;
       int validMissions = 0;
       int failedMissions = 0;
@@ -2471,7 +2482,7 @@ class _SummaryPageState extends State<SummaryPage> with WidgetsBindingObserver {
         final missionEnd = _getMissionEndDate(mission);
         if (date.isBefore(mission.createdAt!) || date.isAfter(missionEnd))
           continue;
-        // Check if mission failed on this day
+  // Check if mission failed on this day
         if (mission.hasFailed && mission.lastCompleted != null) {
           final lastCompleted = mission.lastCompleted!;
           if (lastCompleted.isAfter(date) &&

@@ -9,20 +9,118 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      
+      - name: Clear Flutter SDK Cache
+        run: |
+          rm -rf /opt/hostedtoolcache/flutter
+          echo "Cleared Flutter SDK cache to ensure correct version"
+          ls -la /opt/hostedtoolcache || true
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.7.2'
-      - run: flutter pub get
-      - run: flutter build apk --release
+          flutter-version: '3.32.5'
+          channel: 'stable'
+          cache: false
+      
+      - name: Verify Flutter and Dart versions
+        run: |
+          echo "Flutter version:"
+          flutter --version
+          echo "Dart version:"
+          dart --version
+          echo "Flutter SDK path:"
+          which flutter
+          echo "Dart SDK path:"
+          which dart
+          echo "Flutter SDK contents:"
+          ls -la /opt/hostedtoolcache/flutter || true
+          echo "Checking Flutter installation integrity:"
+          flutter doctor --verbose
+      
+      - name: Debug pubspec.yaml
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "Contents of pubspec.yaml:"
+            cat pubspec.yaml
+          else
+            echo "Error: pubspec.yaml not found"
+            exit 1
+          fi
+      
+      - name: Fix flutter_lints version
+        run: |
+          if grep -q "flutter_lints: ^[3-4]" pubspec.yaml; then
+            echo "Replacing flutter_lints: ^[3-4].* with ^2.0.0"
+            sed'âme -i 's/flutter_lints: ^[3-4].*/flutter_lints: ^2.0.0/' pubspec.yaml
+            cat pubspec.yaml
+          else
+            echo "flutter_lints version is already correct or not found"
+          fi
+      
+      - name: Run flutter pub get
+        run: flutter pub get
+      
+      - name: List directory contents (before build)
+        run: ls -la
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: List directory contents (after build)
+        run: ls -la build/app/outputs/flutter-apk || true
+      
       - name: Upload APK to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-release.apk
           path: build/app/outputs/flutter-apk/app-release.apk
+      
       - name: Upload APK to Release (on main)
         if: github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
           artifacts: build/app/outputs/flutter-apk/app-release.apk
-          tag: latest 
+          tag: latest
+      
+      - name: Print working directory
+        run: pwd
+      
+      - name: List root directory contents
+        run: ls -la
+      
+      - name: Run Flutter tests
+        run: flutter test --machine > test_output.log
+      
+      - name: Notify backend of Conquest build failure
+        if: failure()
+        run: |
+          ERROR_LOG="No test log found. See previous logs."
+          if [ -f test_output.log ]; then
+            ERROR_LOG=$(cat test_output.log)
+          fi
+          curl -X POST http://34.202.215.209:8000/api/conquest/build-failure \
+            -H 'Content-Type: application/json' \
+            -d '{"appId":"${{ github.run_id }}","error":"Conquest build failed. ${{ github.workflow }} at ${{ github.job }}. Error log: '"'"${ERROR_LOG}"'"'"}'
+      
+      - name: Report test failure to Conquest backend
+        if: failure()
+        run: |
+          if [ -f test_output.log ]; then
+            ERROR_LOG=$(cat test_output.log)
+          elif [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            ERROR_LOG="APK built, but test step failed. See previous logs."
+          else
+            ERROR_LOG="No test log found. See previous logs."
+          fi
+          curl -X POST http://34.202.215.209:8000/api/conquest/app-error \
+            -H "Content-Type: application/json" \
+            -d '{
+              "appId": "${{ github.repository }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}",
+              "error": '"'"${ERROR_LOG}"'"',
+              "source": "github-actions",
+              "step": "flutter test"
+            }'

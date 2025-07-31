@@ -62,6 +62,33 @@ class AIAgentService:
         return True
     
     @classmethod
+    async def _check_rate_limit(self, ai_type: str) -> bool:
+        """Check if we're within rate limits for the AI type"""
+        try:
+            # Get current usage
+            current_usage = await self._get_current_usage(ai_type)
+            
+            # Check hourly limits
+            if current_usage.get('hourly_tokens', 0) > 100000:  # 100k tokens per hour
+                logger.warning(f"Hourly rate limit exceeded for {ai_type}")
+                return False
+                
+            # Check cooldown period
+            last_request = current_usage.get('last_request_time')
+            if last_request:
+                from datetime import datetime, timedelta
+                time_diff = datetime.utcnow() - last_request
+                if time_diff < timedelta(seconds=5):  # 5 second cooldown
+                    logger.warning(f"Cooldown period not met for {ai_type}")
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking rate limit for {ai_type}: {str(e)}")
+            return True  # Allow if we can't check
+
+    @classmethod
     async def initialize(cls):
         """Initialize the AI Agent service"""
         instance = cls()
@@ -431,7 +458,7 @@ class AIAgentService:
             }
          
         except Exception as e:
-            logger.error("Error running Sandbox agent", error=str(e))
+            logger.error(f"Error running Sandbox agent: {str(e)}")
             # Claude failure analysis
             try:
                 advice = await anthropic_rate_limited_call(
@@ -484,7 +511,7 @@ class AIAgentService:
             }
             
         except Exception as e:
-            logger.error("Error running Conquest agent", error=str(e))
+            logger.error(f"Error running Conquest agent: {str(e)}")
             # Claude failure analysis
             try:
                 advice = await anthropic_rate_limited_call(
@@ -531,7 +558,7 @@ class AIAgentService:
             }
             
         except Exception as e:
-            logger.error("Error running all agents", error=str(e))
+            logger.error(f"Error running all agents: {str(e)}")
             return {"status": "error", "message": str(e)}
     
     # Helper methods for AI agents
@@ -1278,7 +1305,7 @@ class AIAgentService:
                 }
                 
         except Exception as e:
-            logger.error("Error running experiment", error=str(e))
+            logger.error(f"Error running experiment: {str(e)}")
             return None
 
     async def _analyze_experiment_code(self, experiment_dir: str) -> Dict[str, Any]:
@@ -1346,7 +1373,7 @@ class AIAgentService:
             return analysis_results
             
         except Exception as e:
-            logger.error("Error analyzing experiment code", error=str(e))
+            logger.error(f"Error analyzing experiment code: {str(e)}")
             return {"error": str(e)}
 
     async def _save_experiment_results(self, experiment_metadata: Dict, experiment_dir: str):
@@ -1393,7 +1420,7 @@ class AIAgentService:
             logger.info(f"Saved experiment results to {results_dir}")
             
         except Exception as e:
-            logger.error("Error saving experiment results", error=str(e))
+            logger.error(f"Error saving experiment results: {str(e)}")
 
     def _format_test_results(self, test_results: List[Dict]) -> str:
         """Format test results for summary"""
@@ -1488,7 +1515,7 @@ class AIAgentService:
             return test_results
             
         except Exception as e:
-            logger.error("Error running automated tests", error=str(e))
+            logger.error(f"Error running automated tests: {str(e)}")
             return [{
                 "test_name": "Test Execution",
                 "status": "error",
@@ -1523,7 +1550,7 @@ class AIAgentService:
                     for proposal in proposals
                 ]
         except Exception as e:
-            logger.error("Error getting approved proposals", error=str(e))
+            logger.error(f"Error getting approved proposals: {str(e)}")
             return []
     
     async def _deploy_proposal(self, proposal) -> bool:
@@ -1610,7 +1637,7 @@ class AIAgentService:
                     return True
                     
         except Exception as e:
-            logger.error("Error deploying proposal", error=str(e))
+            logger.error(f"Error deploying proposal: {str(e)}")
             return False
     
     async def _push_approved_changes(self) -> int:
@@ -1748,7 +1775,7 @@ class AIAgentService:
             return 1
             
         except Exception as e:
-            logger.error("Error pushing changes", error=str(e))
+            logger.error(f"Error pushing changes: {str(e)}")
             return 0
     
     async def _create_deployment_report(self, deployments: int, changes_pushed: int):
@@ -1767,7 +1794,7 @@ class AIAgentService:
                 labels=["deployment", "report"]
             )
         except Exception as e:
-            logger.error("Error creating deployment report", error=str(e))
+            logger.error(f"Error creating deployment report: {str(e)}")
     
     def _generate_dynamic_description(self, proposal_data: dict) -> str:
         """Generate a dynamic, context-aware description for a proposal."""
@@ -1911,7 +1938,7 @@ class AIAgentService:
                     return None
                     
         except Exception as e:
-            logger.error("Error creating security proposal", error=str(e))
+            logger.error(f"Error creating security proposal: {str(e)}")
             return None
 
     async def _create_quality_proposal(self, issue: Dict, ai_type: str) -> Optional[Dict]:
@@ -1969,7 +1996,7 @@ class AIAgentService:
                     return None
                     
         except Exception as e:
-            logger.error("Error creating quality proposal", error=str(e))
+            logger.error(f"Error creating quality proposal: {str(e)}")
             return None
 
     async def _create_experiment_proposal(self, experiment: Dict, ai_type: str) -> Optional[Dict]:
@@ -2027,7 +2054,7 @@ class AIAgentService:
                     return None
                     
         except Exception as e:
-            logger.error("Error creating experiment proposal", error=str(e))
+            logger.error(f"Error creating experiment proposal: {str(e)}")
             return None
     
     async def _learn_from_analysis(self, ai_type: str, files_analyzed: int, issues_found: int):
@@ -2051,7 +2078,7 @@ class AIAgentService:
                 session.add(learning_entry)
                 await session.commit()
         except Exception as e:
-            logger.error("Error learning from analysis", error=str(e))
+            logger.error(f"Error learning from analysis: {str(e)}")
 
     async def _create_experiment_repository(self) -> Optional[str]:
         """Create a dedicated repository for Sandbox experiments"""
@@ -2180,7 +2207,7 @@ All experiments are run in isolated environments and do not affect the main code
                 return temp_dir
                 
         except Exception as e:
-            logger.error("Error creating experiment repository", error=str(e))
+            logger.error(f"Error creating experiment repository: {str(e)}")
             return None
 
     async def _create_github_repository(self, repo_name: str) -> Optional[str]:
@@ -2216,7 +2243,7 @@ All experiments are run in isolated environments and do not affect the main code
                         return None
                         
         except Exception as e:
-            logger.error("Error creating GitHub repository", error=str(e))
+            logger.error(f"Error creating GitHub repository: {str(e)}")
             return None 
 
     async def _run_ai_code_generation_experiments(self) -> List[Dict[str, Any]]:
@@ -2394,7 +2421,7 @@ All experiments are run in isolated environments and do not affect the main code
                 }
                 
         except Exception as e:
-            logger.error("Error creating AI code generation proposal", error=str(e))
+            logger.error(f"Error creating AI code generation proposal: {str(e)}")
             return None 
 
     def anthropic_experimentation(self, prompt: str) -> str:

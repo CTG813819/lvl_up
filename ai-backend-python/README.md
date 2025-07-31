@@ -1,308 +1,202 @@
-# AI Backend with scikit-learn Integration
+# LVL AI Backend
 
-This is a Python-based AI backend that replaces the original JavaScript backend, featuring advanced machine learning capabilities using scikit-learn.
+A comprehensive AI-powered backend system for the LVL (Level Up) application, designed for deployment on Railway with Neon database.
 
 ## Features
 
-- **FastAPI Framework**: Modern, fast web framework for building APIs
-- **scikit-learn Integration**: Advanced machine learning for proposal analysis
-- **MongoDB Integration**: Async database operations with motor
-- **Natural Language Processing**: Text analysis using NLTK and TextBlob
-- **AI Learning System**: Continuous learning from user feedback
-- **Proposal Quality Analysis**: ML-powered proposal evaluation
-- **Structured Logging**: Comprehensive logging with structlog
+- **AI Agent Management**: Complete AI agent lifecycle management with learning and adaptation
+- **Adversarial Testing**: Advanced testing system with dynamic difficulty scaling
+- **Database Integration**: PostgreSQL integration with Neon database
+- **Real-time Analytics**: Comprehensive metrics and analytics tracking
+- **Token Management**: Intelligent token usage and fallback systems
+- **Learning Systems**: Adaptive learning with XP and leveling mechanics
 
-## Key ML Capabilities
+## Quick Start
 
-### Proposal Analysis
-- **Quality Scoring**: ML models predict proposal quality
-- **Approval Probability**: Predict likelihood of user approval
-- **Feature Extraction**: Analyze code complexity, text sentiment, and patterns
-- **Recommendations**: Generate improvement suggestions
+### Prerequisites
 
-### Learning System
-- **Pattern Recognition**: Identify common mistakes and success patterns
-- **Model Training**: Continuous retraining based on feedback
-- **Insights Generation**: Provide actionable recommendations
-- **Performance Tracking**: Monitor learning effectiveness
+- Python 3.8+
+- PostgreSQL database (Neon recommended)
+- Railway account
 
-## Installation
-
-1. **Clone the repository**
-   ```bash
-   cd ai-backend-python
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Download NLTK data**
-   ```bash
-   python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
-   ```
-
-5. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-## Configuration
+### Environment Variables
 
 Create a `.env` file with the following variables:
 
 ```env
-# Database
-MONGODB_URI=mongodb://localhost:27017
-DATABASE_NAME=ai_backend
-
-# Server
-PORT=4000
-HOST=0.0.0.0
-DEBUG=false
-
-# AI Services
-OPENAI_API_KEY=your_openai_key
-GOOGLE_API_KEY=your_google_key
-
-# GitHub
-GITHUB_TOKEN=your_github_token
-GITHUB_REPO=your_repo
-
-# ML Settings
-ML_MODEL_PATH=./models
-ENABLE_ML_LEARNING=true
-ML_CONFIDENCE_THRESHOLD=0.7
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FORMAT=json
+DATABASE_URL=your_neon_database_url
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+JWT_SECRET_KEY=your_jwt_secret
 ```
 
-## Running the Application
+### Local Development
 
-### Development Mode
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+alembic upgrade head
+
+# Start the server
 python start.py
 ```
 
-### Production Mode
-```bash
-uvicorn main:app --host 0.0.0.0 --port 4000
-```
+### Railway Deployment
 
-### Using Docker
-```bash
-docker build -t ai-backend-python .
-docker run -p 4000:4000 ai-backend-python
-```
+The application is configured for Railway deployment with:
+
+- **Start Command**: `python start.py`
+- **Health Check**: `/health` endpoint
+- **Port**: Automatically configured via `PORT` environment variable
+- **Database**: Neon PostgreSQL integration
+- **Configuration**: See `RAILWAY_DEPLOYMENT.md` for detailed setup
+
+#### Quick Railway Setup
+
+1. **Prepare for deployment**:
+   ```bash
+   python deploy_to_railway.py
+   ```
+
+2. **Deploy to Railway**:
+   ```bash
+   # Install Railway CLI
+   npm install -g @railway/cli
+   
+   # Login and deploy
+   railway login
+   railway up
+   ```
+
+3. **Set environment variables** in Railway dashboard:
+   - `DATABASE_URL`: Your Neon PostgreSQL connection string
+   - `DEBUG`: false (for production)
+   - Optional: AI service API keys
 
 ## API Endpoints
 
-### Health Checks
-- `GET /health` - Basic health check
-- `GET /api/health` - API health check
-- `GET /debug` - Debug information
+### Core Endpoints
+- `GET /health` - Health check
+- `GET /docs` - API documentation (Swagger UI)
 
-### Proposals
-- `POST /api/proposals/` - Create new proposal with ML analysis
-- `GET /api/proposals/` - Get proposals with filtering
-- `GET /api/proposals/{id}` - Get specific proposal
-- `PUT /api/proposals/{id}` - Update proposal and trigger learning
-- `DELETE /api/proposals/{id}` - Delete proposal
-- `GET /api/proposals/stats/summary` - Get proposal statistics
-- `POST /api/proposals/{id}/analyze` - Analyze proposal using ML
+### AI Agent Endpoints
+- `POST /agents/create` - Create new AI agent
+- `GET /agents/{agent_id}` - Get agent details
+- `PUT /agents/{agent_id}/update` - Update agent
+- `DELETE /agents/{agent_id}` - Delete agent
 
-### Learning
-- `GET /api/learning/stats/{ai_type}` - Get learning statistics
-- `GET /api/learning/insights/{ai_type}` - Get learning insights
-- `POST /api/learning/train` - Train ML models
-- `GET /api/learning/ml-insights` - Get ML insights
+### Testing Endpoints
+- `POST /testing/adversarial` - Run adversarial tests
+- `GET /testing/results` - Get test results
+- `POST /testing/custody` - Run custody tests
 
-### AI Types
-- `GET /api/imperium/` - Imperium AI endpoints
-- `GET /api/guardian/` - Guardian AI endpoints
-- `GET /api/sandbox/` - Sandbox AI endpoints
-- `GET /api/conquest/` - Conquest AI endpoints
+### Analytics Endpoints
+- `GET /analytics/metrics` - Get system metrics
+- `GET /analytics/learning` - Get learning analytics
+- `POST /analytics/track` - Track custom events
 
-## ML Models
+## Architecture
 
-The system uses several scikit-learn models:
+### Core Components
 
-1. **Quality Predictor**: GradientBoostingClassifier for proposal quality scoring
-2. **Approval Predictor**: RandomForestClassifier for approval probability
-3. **Text Vectorizer**: TF-IDF for text feature extraction
-4. **Feature Extractors**: Custom feature engineering for code analysis
+1. **AI Services** (`app/services/`)
+   - Agent management and coordination
+   - Learning systems and adaptation
+   - Token management and fallback
 
-### Model Training
+2. **Routers** (`app/routers/`)
+   - REST API endpoints
+   - Request/response handling
+   - Authentication and authorization
 
-Models are automatically trained when:
-- Sufficient data is available (>50 proposals with feedback)
-- Manual training is triggered via API
-- System detects performance degradation
+3. **Models** (`app/models/`)
+   - Database models and schemas
+   - Pydantic validation models
+   - Data transfer objects
 
-### Feature Engineering
+4. **Core** (`app/core/`)
+   - Configuration management
+   - Database connections
+   - Security and authentication
 
-The system extracts features from:
-- **Code Analysis**: Length, complexity, similarity metrics
-- **Text Analysis**: Sentiment, token count, lexical diversity
-- **File Analysis**: File type, AI type, improvement type
-- **Historical Data**: Previous success/failure patterns
+### Database Schema
 
-## Database Schema
+The system uses PostgreSQL with the following key tables:
 
-### Proposals Collection
-```json
-{
-  "_id": "ObjectId",
-  "ai_type": "string",
-  "file_path": "string",
-  "code_before": "string",
-  "code_after": "string",
-  "status": "string",
-  "confidence": "float",
-  "improvement_type": "string",
-  "ai_reasoning": "string",
-  "user_feedback": "string",
-  "user_feedback_reason": "string",
-  "created_at": "datetime",
-  "updated_at": "datetime"
-}
+- `agent_metrics` - AI agent performance metrics
+- `learning_logs` - Learning and adaptation data
+- `custody_tests` - Test results and analytics
+- `proposals` - AI-generated proposals and suggestions
+
+## Deployment
+
+### Railway Deployment
+
+1. Connect your GitHub repository to Railway
+2. Configure environment variables in Railway dashboard
+3. Deploy automatically on push to main branch
+
+### Environment Configuration
+
+Required environment variables for Railway:
+
+```env
+DATABASE_URL=postgresql://user:password@host:port/database
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+JWT_SECRET_KEY=your-secret-key
+RAILWAY_ENVIRONMENT=production
 ```
 
-### Learning Collection
-```json
-{
-  "_id": "ObjectId",
-  "proposal_id": "ObjectId",
-  "ai_type": "string",
-  "status": "string",
-  "feedback_reason": "string",
-  "ml_analysis": "object",
-  "created_at": "datetime"
-}
-```
+## Monitoring and Health Checks
+
+The application includes comprehensive monitoring:
+
+- **Health Check**: `/health` endpoint for Railway
+- **Metrics**: Real-time performance metrics
+- **Logging**: Structured logging with structlog
+- **Error Tracking**: Comprehensive error handling and reporting
 
 ## Development
 
-### Project Structure
-```
-ai-backend-python/
-├── app/
-│   ├── core/           # Core configuration and utilities
-│   ├── models/         # Pydantic models
-│   ├── routers/        # API route handlers
-│   └── services/       # Business logic and ML services
-├── models/             # Trained ML models
-├── main.py            # FastAPI application
-├── start.py           # Startup script
-└── requirements.txt   # Dependencies
-```
+### Adding New Features
 
-### Adding New ML Features
-
-1. **Extend MLService**: Add new methods to `app/services/ml_service.py`
-2. **Update Models**: Modify feature extraction in `extract_features()`
-3. **Add Endpoints**: Create new routes in appropriate router
-4. **Update Documentation**: Document new capabilities
+1. Create new router in `app/routers/`
+2. Add corresponding service in `app/services/`
+3. Update database models if needed
+4. Add tests in `test/` directory
+5. Update documentation
 
 ### Testing
 
 ```bash
-# Run tests
-pytest
+# Run all tests
+python -m pytest
+
+# Run specific test file
+python -m pytest test/test_agents.py
 
 # Run with coverage
-pytest --cov=app
-
-# Run specific test
-pytest tests/test_ml_service.py
+python -m pytest --cov=app
 ```
-
-## Monitoring
-
-### Logging
-- Structured JSON logging with structlog
-- Configurable log levels
-- Request/response logging
-- Error tracking with context
-
-### Metrics
-- Proposal processing times
-- ML model accuracy
-- Learning effectiveness
-- API response times
-
-### Health Checks
-- Database connectivity
-- ML model availability
-- External service status
-- System resource usage
-
-## Migration from JavaScript
-
-### Key Differences
-1. **Async/Await**: Native Python async support
-2. **Type Safety**: Pydantic models for validation
-3. **ML Integration**: Direct scikit-learn integration
-4. **Performance**: FastAPI's high performance
-5. **Documentation**: Automatic API documentation
-
-### Migration Steps
-1. **Data Migration**: Export MongoDB data from JS backend
-2. **Model Training**: Train ML models with historical data
-3. **API Testing**: Verify all endpoints work correctly
-4. **Performance Testing**: Ensure performance meets requirements
-5. **Deployment**: Deploy Python backend alongside JS backend
-6. **Switchover**: Gradually migrate traffic to Python backend
-
-## Troubleshooting
-
-### Common Issues
-
-1. **NLTK Data Missing**
-   ```bash
-   python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
-   ```
-
-2. **MongoDB Connection**
-   - Check MONGODB_URI in .env
-   - Ensure MongoDB is running
-   - Verify network connectivity
-
-3. **ML Model Loading**
-   - Check ML_MODEL_PATH exists
-   - Ensure sufficient disk space
-   - Verify model file permissions
-
-4. **Memory Issues**
-   - Increase Python memory limit
-   - Optimize batch processing
-   - Monitor memory usage
-
-### Performance Optimization
-
-1. **Database Indexing**: Ensure proper MongoDB indexes
-2. **Model Caching**: Cache trained models in memory
-3. **Async Processing**: Use background tasks for heavy operations
-4. **Connection Pooling**: Optimize database connections
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests for new functionality
 5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is part of the LVL (Level Up) system.
+
+## Support
+
+For issues and questions:
+- Create an issue in the GitHub repository
+- Check the documentation in `/docs`
+- Review the deployment logs in Railway dashboard 

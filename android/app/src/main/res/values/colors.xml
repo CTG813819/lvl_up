@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dynamic Island Colors -->
+    <color name="text_color">#FFFFFF</color>
+    <color name="text_color_secondary">#B3FFFFFF</color>
+    <color name="icon_color">#FF2D55</color>
+    <color name="progress_text_color">#CCFFFFFF</color>
+    <color name="close_button_color">#80FFFFFF</color>
+    
+    <!-- Theme Colors -->
+    <color name="primary_color">#FF2D55</color>
+    <color name="secondary_color">#FF6B8A</color>
+    <color name="background_color">#1E1E1E</color>
+    <color name="surface_color">#2D2D2D</color>
+    
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#1E1E1E</color>
+    <color name="gradient_center">#2D2D2D</color>
+    <color name="gradient_end">#1E1E1E</color>
+    
+    <!-- Icon Background Colors -->
+    <color name="icon_bg_start">#40FF2D55</color>
+    <color name="icon_bg_end">#20FF2D55</color>
+    
+    <!-- Progress Colors -->
+    <color name="progress_bg">#20FFFFFF</color>
+    <color name="progress_fill_start">#FF2D55</color>
+    <color name="progress_fill_end">#FF6B8A</color>
+</resources> 

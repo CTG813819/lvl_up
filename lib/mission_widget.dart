@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:the_codex/mastery_list.dart';
-import './mission.dart';
+import './mission.dart'
+    show
+        MissionProvider,
+        MissionData,
+        MissionType,
+        MissionSubtask; // Import all needed classes
 import 'dart:math';
 import './entry_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,7 +62,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 500),
     )..forward();
-    // Debug: Periodically check for mission uniqueness and independence
+    /// Debug: Periodically check for mission uniqueness and independence
     if (kDebugMode) {
       _debugMissionCheckTimer = Timer.periodic(
         const Duration(seconds: 10),
@@ -99,14 +104,14 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
 
       if (image != null) {
         await _entryManager.addCustomImage(image.path);
-        // Refresh the UI to show the new image
+        /// Refresh the UI to show the new image
         setState(() {});
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error picking image: $e');
       }
-      // Show error message to user
+      /// Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -127,7 +132,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       print('FAB tapped');
     }
     try {
-      // Ensure mastery entries are loaded
+      /// Ensure mastery entries are loaded
       await masteryProvider.loadEntries();
 
       final titleController = TextEditingController();
@@ -141,9 +146,9 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       bool missionCreated = false;
       String selectedImage = _getNextImage();
 
-      // Add validation function
+      /// Add validation function
       bool validateMissionData(String title, MissionType type) {
-        // Check for duplicate missions
+        /// Check for duplicate missions
         final now = DateTime.now();
         final isDuplicate = missionProvider.missions.any(
           (m) =>
@@ -162,7 +167,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
           return false;
         }
 
-        // Validate title
+        /// Validate title
         if (title.isEmpty) {
           if (kDebugMode) {
             print('Mission validation failed: Empty title');
@@ -170,7 +175,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
           return false;
         }
 
-        // Validate subtasks if present
+        /// Validate subtasks if present
         if (subtasks.isNotEmpty) {
           for (var subtask in subtasks) {
             if (subtask.name.isEmpty) {
@@ -190,8 +195,8 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
           }
         }
 
-        // For simple missions, we don't need subtasks or counter
-        // For all other missions, allow creation even if there are no subtasks and not counter-based (completion-based)
+        /// For simple missions, we don't need subtasks or counter
+        /// For all other missions, allow creation even if there are no subtasks and not counter-based (completion-based)
         if (kDebugMode) {
           print('Mission validation passed');
         }
@@ -199,7 +204,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       }
 
       await showDialog<bool>(
-        // ignore: use_build_context_synchronously
+        /// ignore: use_build_context_synchronously
         context: context,
         builder:
             (context) => StatefulBuilder(
@@ -215,7 +220,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Image selector: scrollable picker
+                          /// Image selector: scrollable picker
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -301,7 +306,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  // Add Image button
+                                  /// Add Image button
                                   GestureDetector(
                                     onTap: _pickImage,
                                     child: Container(
@@ -358,7 +363,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                 MissionType.values.map((type) {
                                   String displayName =
                                       type.toString().split('.').last;
-                                  // Capitalize first letter and add spaces before capital letters
+                                  /// Capitalize first letter and add spaces before capital letters
                                   displayName =
                                       displayName[0].toUpperCase() +
                                       displayName
@@ -381,7 +386,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                             },
                           ),
                           const SizedBox(height: 16),
-                          // Add Simple Mission switch
+                          /// Add Simple Mission switch
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -409,7 +414,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // Add completion-based toggle if not a simple mission
+                          /// Add completion-based toggle if not a simple mission
                           if (!(selectedType == MissionType.simple &&
                               !isCounterBased &&
                               targetCount == 0)) ...[
@@ -512,14 +517,14 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                       decimal: false,
                                     ),
                                 onChanged: (value) {
-                                  // Validate input is a positive number
+                                  /// Validate input is a positive number
                                   final intValue = int.tryParse(value);
                                   if (intValue != null && intValue > 0) {
                                     setState(() {
                                       masteryValueController.text = value;
                                     });
                                   } else if (value.isNotEmpty) {
-                                    // If invalid input, revert to previous valid value
+                                    /// If invalid input, revert to previous valid value
                                     masteryValueController.text =
                                         masteryValueController.text;
                                   }
@@ -573,14 +578,14 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                     decimal: false,
                                   ),
                               onChanged: (value) {
-                                // Validate input is a positive number
+                                /// Validate input is a positive number
                                 final intValue = int.tryParse(value);
                                 if (intValue != null && intValue > 0) {
                                   setState(() {
                                     masteryValueController.text = value;
                                   });
                                 } else if (value.isNotEmpty) {
-                                  // If invalid input, revert to previous valid value
+                                  /// If invalid input, revert to previous valid value
                                   masteryValueController.text =
                                       masteryValueController.text;
                                 }
@@ -839,7 +844,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                         onPressed: () async {
                           if (titleController.text.isNotEmpty &&
                               !missionCreated) {
-                            // Validate mission data before creating
+                            /// Validate mission data before creating
                             if (!validateMissionData(
                               titleController.text,
                               selectedType,
@@ -892,14 +897,15 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                               isCounterBased: isCounterBased,
                               targetCount: targetCount,
                               notificationId:
-                                  missionProvider.aiGuardian.generateValidNotificationId(),
+                                  missionProvider.aiGuardian
+                                      .generateValidNotificationId(),
                               boltColor: _getRandomColor(),
                               timelapseColor: _getRandomColor(),
                               imageUrl: selectedImage,
                               createdAt: DateTime.now(),
                             );
 
-                            // Validate the complete mission before adding
+                            /// Validate the complete mission before adding
                             if (!_validateMissionState(mission)) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -912,18 +918,18 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                               return;
                             }
 
-                            // Add mission and handle any errors
+                            /// Add mission and handle any errors
                             try {
                               print('Creating new mission: ${mission.title}');
 
-                              // Check for existing deleted mission with same title
+                              /// Check for existing deleted mission with same title
                               MissionData? existingDeletedMission =
                                   missionProvider.deletedMissions
                                       .where((m) => m.title == mission.title)
                                       .firstOrNull;
 
                               if (existingDeletedMission != null) {
-                                // Clear any cached data from the deleted mission
+                                /// Clear any cached data from the deleted mission
                                 await _clearMissionCache(
                                   existingDeletedMission.id!,
                                 );
@@ -967,11 +973,11 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                 imageUrl: selectedImage,
                               );
 
-                              // Initialize mission state after creation
+                              /// Initialize mission state after creation
                               await _initializeMissionState();
                               print('Mission created successfully');
                               Navigator.of(context).pop(true);
-                              // After mission creation, show the popup in debug mode
+                              /// After mission creation, show the popup in debug mode
                               if (kDebugMode) {
                                 _showMissionListPopup(context);
                               }
@@ -1016,7 +1022,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
               onPressed: () => Navigator.of(context).pop(),
             ),
             actions: [
-              // AI/Robot icon for background activity
+              /// AI/Robot icon for background activity
               Consumer<MissionProvider>(
                 builder: (context, provider, _) {
                   return AnimatedOpacity(
@@ -1043,7 +1049,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   );
                 },
               ),
-              // Add science icon button for testing mode
+              /// Add science icon button for testing mode
               IconButton(
                 icon: Icon(
                   Icons.science,
@@ -1066,7 +1072,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   );
                 },
               ),
-              // Update refresh button to work in testing mode
+              /// Update refresh button to work in testing mode
               IconButton(
                 icon: Icon(
                   Icons.refresh,
@@ -1076,7 +1082,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   try {
                     if (missionProvider.refreshButtonColor == Colors.red ||
                         missionProvider.refreshButtonColor == Colors.orange) {
-                      // Show confirmation dialog before refresh
+                      /// Show confirmation dialog before refresh
                       final shouldRefresh = await showDialog<bool>(
                         context: context,
                         builder:
@@ -1145,7 +1151,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   }
                 },
               ),
-              // Add shield icon button with integrated comprehensive cleanup
+              /// Add shield icon button with integrated comprehensive cleanup
               Consumer<MissionProvider>(
                 builder: (context, missionProvider, child) {
                   final isAIGuardianWorking =
@@ -1165,7 +1171,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                         listen: false,
                       );
 
-                      // If AI Guardian is not working, try to activate it
+                      /// If AI Guardian is not working, try to activate it
                       if (!isAIGuardianWorking) {
                         await provider.activateAIGuardian();
                       }
@@ -1184,7 +1190,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                         listen: false,
                       );
 
-                      // Show confirmation dialog for comprehensive cleanup
+                      /// Show confirmation dialog for comprehensive cleanup
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder:
@@ -1220,7 +1226,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                       );
 
                       if (confirmed == true) {
-                        // Show progress dialog
+                        /// Show progress dialog
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -1247,10 +1253,10 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                               ),
                         );
 
-                        // Perform comprehensive cleanup
+                        /// Perform comprehensive cleanup
                         await provider.performComprehensiveCleanup();
 
-                        // Close progress dialog
+                        /// Close progress dialog
                         if (mounted) {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1451,7 +1457,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                             size: 20,
                                                           ),
                                                         ),
-                                                      // Exclamation mark for overdue daily or weekly mission
+                                                      /// Exclamation mark for overdue daily or weekly mission
                                                       if ((mission.type ==
                                                                   MissionType
                                                                       .daily ||
@@ -1478,7 +1484,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                                     59,
                                                                   );
                                                             } else {
-                                                              // End of week: Sunday 23:59:59
+                                                              /// End of week: Sunday 23:59:59
                                                               final daysUntilSunday =
                                                                   (DateTime
                                                                           .sunday -
@@ -1680,7 +1686,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        // Always show the progress bar for normal subtasks if any exist
+                                        /// Always show the progress bar for normal subtasks if any exist
                                         if (normalSubtasks.isNotEmpty) ...[
                                           Builder(
                                             builder: (context) {
@@ -1756,9 +1762,9 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                               );
                                             },
                                           ),
-                                          // Show each normal subtask as a tappable row
+                                          /// Show each normal subtask as a tappable row
                                           ...normalSubtasks.map((subtask) {
-                                            // Find the actual index in the full mission's subtasks list
+                                            /// Find the actual index in the full mission's subtasks list
                                             final fullIndex = mission.subtasks
                                                 .indexWhere(
                                                   (s) =>
@@ -1841,7 +1847,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                             );
                                           }).toList(),
                                         ],
-                                        // Add increment button for counter-based missions with no subtasks
+                                        /// Add increment button for counter-based missions with no subtasks
                                         if (mission.isCounterBased &&
                                             mission.subtasks.isEmpty) ...[
                                           Padding(
@@ -1872,7 +1878,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                   );
                                                   return;
                                                 }
-                                                // Find the exact mission in the provider's list
+                                                /// Find the exact mission in the provider's list
                                                 final missionIndex =
                                                     missionProvider.missions
                                                         .indexWhere(
@@ -1887,11 +1893,11 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                   );
                                                   return;
                                                 }
-                                                // Get the current mission from the provider
+                                                /// Get the current mission from the provider
                                                 final currentMission =
                                                     missionProvider
                                                         .missions[missionIndex];
-                                                // Increment counter mission
+                                                /// Increment counter mission
                                                 final updatedMission =
                                                     currentMission.copyWith(
                                                       currentCount:
@@ -1900,13 +1906,13 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                           1,
                                                       hasFailed: false,
                                                     );
-                                                // Update through provider
+                                                /// Update through provider
                                                 await missionProvider
                                                     .editMission(
                                                       currentMission,
                                                       updatedMission,
                                                     );
-                                                // Add mastery progress if linked
+                                                /// Add mastery progress if linked
                                                 if (currentMission
                                                             .linkedMasteryId !=
                                                         null &&
@@ -2000,7 +2006,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                             ),
                                           ),
                                         ],
-                                        // Show completion progress for completion-based missions without subtasks
+                                        /// Show completion progress for completion-based missions without subtasks
                                         if (!mission.isCounterBased &&
                                             mission.subtasks.isEmpty) ...[
                                           if (mission.isCompleted) ...[
@@ -2103,7 +2109,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                                 mission,
                                                                 updatedMission,
                                                               );
-                                                          // Add mastery progress if linked
+                                                          /// Add mastery progress if linked
                                                           if (updatedMission
                                                                       .linkedMasteryId !=
                                                                   null &&
@@ -2203,7 +2209,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                                 mission.targetCount ==
                                                                         0
                                                                     ? '${mission.currentCount}'
-                                                                    : '${mission.currentCount}/${mission.targetCount}',
+                                                                    : '${mission.currentCount}',
                                                                 style: TextStyle(
                                                                   color:
                                                                       mission
@@ -2233,7 +2239,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                   ),
                                   if (counterSubtasks.isNotEmpty) ...[
                                     ...counterSubtasks.map((subtask) {
-                                      // Find the actual index in the full mission's subtasks list
+                                      /// Find the actual index in the full mission's subtasks list
                                       final fullIndex = mission.subtasks
                                           .indexWhere(
                                             (s) =>
@@ -2291,7 +2297,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                           counterSubtasks.every(
                                             (s) => s.currentCount > 0,
                                           ))) ...[
-                                    // Show Complete Mission button
+                                    /// Show Complete Mission button
                                     Padding(
                                       padding: const EdgeInsets.all(16.0),
                                       child: GestureDetector(
@@ -2318,7 +2324,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                           if (!mission.isCompleted) {
                                             await missionProvider
                                                 .completeMission(mission);
-                                            // Get the updated mission from the provider
+                                            /// Get the updated mission from the provider
                                             final updatedMission =
                                                 missionProvider.missions
                                                     .firstWhere(
@@ -2328,7 +2334,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                               .notificationId,
                                                       orElse: () => mission,
                                                     );
-                                            // Add mastery progress if linked
+                                            /// Add mastery progress if linked
                                             if (updatedMission
                                                         .linkedMasteryId !=
                                                     null &&
@@ -2380,7 +2386,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                       ),
                                     ),
                                   ],
-                                  // Show warning for overdue missions with no counters or incomplete subtasks
+                                  /// Show warning for overdue missions with no counters or incomplete subtasks
                                   if (((!mission.isCounterBased &&
                                               mission.subtasks.isEmpty) ||
                                           (mission.subtasks.isNotEmpty &&
@@ -2426,7 +2432,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                       ),
                                     ),
                                   ],
-                                  // Show UI for simple missions (MissionType.simple, no counter, no completion, no subtasks)
+                                  /// Show UI for simple missions (MissionType.simple, no counter, no completion, no subtasks)
                                   if (mission.type == MissionType.simple &&
                                       !mission.isCounterBased &&
                                       mission.targetCount == 0 &&
@@ -2490,7 +2496,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                             if (!mission.isCompleted) {
                                               await missionProvider
                                                   .completeMission(mission);
-                                              // Add mastery progress if linked
+                                              /// Add mastery progress if linked
                                               final updatedMission =
                                                   missionProvider.missions
                                                       .firstWhere(
@@ -2509,7 +2515,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                                                     Provider.of<
                                                       MasteryProvider
                                                     >(context, listen: false);
-                                                // Add mastery value for each completion
+                                                /// Add mastery value for each completion
                                                 await masteryProvider.addProgress(
                                                   updatedMission
                                                       .linkedMasteryId!,
@@ -2605,7 +2611,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Image selector: scrollable picker
+                    /// Image selector: scrollable picker
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2690,7 +2696,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Add Image button
+                            /// Add Image button
                             GestureDetector(
                               onTap: _pickImage,
                               child: Container(
@@ -3088,7 +3094,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                             subtaskMasteryValues: subtaskMasteryValues,
                             imageUrl: selectedImage,
                             linkedMasteryId: selectedMasteryId,
-                            // Always preserve these:
+                            /// Always preserve these:
                             id: mission.id,
                             notificationId: mission.notificationId,
                             createdAt: mission.createdAt,
@@ -3176,7 +3182,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
 
     return Consumer<MissionProvider>(
       builder: (context, provider, child) {
-        // Get the current mission and subtask with proper error handling
+        /// Get the current mission and subtask with proper error handling
         final currentMission = provider.missions.firstWhere(
           (m) => m.notificationId == mission.notificationId,
           orElse: () {
@@ -3187,20 +3193,20 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
           },
         );
 
-        // Validate mission state
+        /// Validate mission state
         if (!_validateMissionState(currentMission)) {
           print('Error: Invalid mission state detected');
           return const SizedBox.shrink();
         }
 
-        // Validate subtask index
+        /// Validate subtask index
         if (subtaskIndex < 0 ||
             subtaskIndex >= currentMission.subtasks.length) {
           print('Error: Invalid subtask index: $subtaskIndex');
           return const SizedBox.shrink();
         }
 
-        // For counter-based missions without subtasks, use the mission's currentCount
+        /// For counter-based missions without subtasks, use the mission's currentCount
         if (currentMission.isCounterBased && currentMission.subtasks.isEmpty) {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -3223,33 +3229,33 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
               }
               print('Tap detected for counter-based mission without subtasks');
               try {
-                // Validate mission state before update
+                /// Validate mission state before update
                 if (!_validateMissionState(currentMission)) {
                   print('Mission state validation failed');
                   return;
                 }
 
-                // Create updated mission with incremented count
+                /// Create updated mission with incremented count
                 final updatedMission = currentMission.copyWith(
                   currentCount: currentMission.currentCount + 1,
                   hasFailed: false,
                 );
 
-                // Log mission state change
+                /// Log mission state change
                 print('Mission state change:');
                 print('  Title: ${currentMission.title}');
                 print('  Previous count: ${currentMission.currentCount}');
                 print('  New count: ${updatedMission.currentCount}');
                 print('  Mission ID: ${currentMission.notificationId}');
 
-                // Add mastery progress if linked
+                /// Add mastery progress if linked
                 if (currentMission.linkedMasteryId != null &&
                     currentMission.masteryValue > 0) {
                   final masteryProvider = Provider.of<MasteryProvider>(
                     context,
                     listen: false,
                   );
-                  // Add mastery value for each increment
+                  /// Add mastery value for each increment
                   await masteryProvider.addProgress(
                     currentMission.linkedMasteryId!,
                     'Mission: ${currentMission.title}',
@@ -3260,7 +3266,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                   );
                 }
 
-                // Update mission through provider
+                /// Update mission through provider
                 print('Updating mission through provider');
                 await missionProvider.editMission(
                   currentMission,
@@ -3269,7 +3275,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
               } catch (e, stackTrace) {
                 print('Error handling mission tap: $e');
                 print('Stack trace: $stackTrace');
-                // Show error to user
+                /// Show error to user
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error: ${e.toString()}'),
@@ -3303,10 +3309,10 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
           );
         }
 
-        // Use the index to get the correct subtask
+        /// Use the index to get the correct subtask
         final currentSubtask = currentMission.subtasks[subtaskIndex];
 
-        // Validate subtask state
+        /// Validate subtask state
         if (!_validateSubtaskState(currentSubtask)) {
           print('Error: Invalid subtask state detected');
           return const SizedBox.shrink();
@@ -3339,7 +3345,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
               'Tap detected for subtask: ${currentSubtask.name} at index: $subtaskIndex',
             );
             try {
-              // Create updated subtask with incremented count
+              /// Create updated subtask with incremented count
               final updatedSubtask =
                   currentSubtask.isCounterBased
                       ? currentSubtask.copyWith(
@@ -3353,13 +3359,13 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                 'Created updated subtask - count: ${updatedSubtask.currentCount}, completions: ${updatedSubtask.currentCompletions}',
               );
 
-              // Create updated mission with new subtask
+              /// Create updated mission with new subtask
               final updatedSubtasks = List<MissionSubtask>.from(
                 currentMission.subtasks,
               );
               updatedSubtasks[subtaskIndex] = updatedSubtask;
 
-              // Check if all subtasks are complete
+              /// Check if all subtasks are complete
               bool allSubtasksComplete = updatedSubtasks.every(
                 (s) =>
                     s.isCounterBased
@@ -3377,17 +3383,17 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                 subtasks: updatedSubtasks,
               );
 
-              // Update mission through provider
+              /// Update mission through provider
               await missionProvider.editMission(currentMission, updatedMission);
 
-              // Add mastery progress if linked
+              /// Add mastery progress if linked
               if (currentSubtask.linkedMasteryId != null &&
                   currentSubtask.masteryValue > 0) {
                 final masteryProvider = Provider.of<MasteryProvider>(
                   context,
                   listen: false,
                 );
-                // Add mastery value for each increment
+                /// Add mastery value for each increment
                 await masteryProvider.addProgress(
                   currentSubtask.linkedMasteryId!,
                   'Mission: ${currentMission.title} - ${currentSubtask.name}',
@@ -3425,7 +3431,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
                 child: Text(
                   currentSubtask.isCounterBased
                       ? '${currentSubtask.currentCount}'
-                      : '${currentSubtask.currentCompletions}/${currentSubtask.requiredCompletions}',
+                      : '${currentSubtask.currentCompletions}',
                   style: TextStyle(
                     color: currentSubtask.boltColor ?? Colors.blue,
                     fontWeight: FontWeight.bold,
@@ -3452,15 +3458,15 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
     );
   }
 
-  // Add validation function for subtask state
+  /// Add validation function for subtask state
   bool _validateSubtaskState(MissionSubtask subtask) {
-    // Validate subtask name
+    /// Validate subtask name
     if (subtask.name.isEmpty) {
       print('Subtask validation failed: Empty name');
       return false;
     }
 
-    // Validate counter-based subtask
+    /// Validate counter-based subtask
     if (subtask.isCounterBased) {
       if (subtask.currentCount < 0) {
         print('Subtask validation failed: Invalid current count');
@@ -3468,7 +3474,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       }
     }
 
-    // Validate completions
+    /// Validate completions
     if (subtask.currentCompletions < 0) {
       print('Subtask validation failed: Invalid current completions');
       return false;
@@ -3478,7 +3484,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       return false;
     }
 
-    // Validate mastery value if linked
+    /// Validate mastery value if linked
     if (subtask.linkedMasteryId != null && subtask.masteryValue < 0) {
       print('Subtask validation failed: Invalid mastery value');
       return false;
@@ -3488,21 +3494,21 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
     return true;
   }
 
-  // Add validation function for mission state
+  /// Add validation function for mission state
   bool _validateMissionState(MissionData mission) {
-    // Validate mission ID
+    /// Validate mission ID
     if (mission.id == null || mission.missionId == null) {
       print('Mission validation failed: Missing ID');
       return false;
     }
 
-    // Validate mission title
+    /// Validate mission title
     if (mission.title.trim().isEmpty) {
       print('Mission validation failed: Empty title');
       return false;
     }
 
-    // Validate subtasks if present
+    /// Validate subtasks if present
     if (mission.subtasks.isNotEmpty) {
       for (final subtask in mission.subtasks) {
         if (!_validateSubtaskState(subtask)) {
@@ -3512,7 +3518,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       }
     }
 
-    // Validate counter configuration
+    /// Validate counter configuration
     if (mission.isCounterBased) {
       if (mission.targetCount < 0) {
         print('Mission validation failed: Invalid target count');
@@ -3524,13 +3530,13 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
       }
     }
 
-    // Validate mastery values
+    /// Validate mastery values
     if (mission.linkedMasteryId != null && mission.masteryValue <= 0) {
       print('Mission validation failed: Invalid mastery value');
       return false;
     }
 
-    // Validate subtask mastery values
+    /// Validate subtask mastery values
     for (final entry in mission.subtaskMasteryValues.entries) {
       if (entry.value <= 0) {
         print('Mission validation failed: Invalid subtask mastery value');
@@ -3562,15 +3568,15 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
         if (lastRefresh.year == currentDate.year &&
             lastRefresh.month == currentDate.month &&
             lastRefresh.day == currentDate.day) {
-          // Already refreshed today
+          /// Already refreshed today
           return;
         }
       }
 
-      // Check if it's the last day of the week
+      /// Check if it's the last day of the week
       final isLastDayOfWeek = currentDate.weekday == DateTime.sunday;
 
-      // Only refresh if it's a new day and not after midday
+      /// Only refresh if it's a new day and not after midday
       if (currentDate.hour < 12 || isLastDayOfWeek) {
         await _refreshMissions();
         await prefs.setString(
@@ -3595,7 +3601,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
     }
   }
 
-  // Debug: Periodically check for uniqueness and independence
+  /// Debug: Periodically check for uniqueness and independence
   Future<void> _debugCheckMissions(BuildContext context) async {
     final missionProvider = Provider.of<MissionProvider>(
       context,
@@ -3634,7 +3640,7 @@ class _MissionState extends State<Mission> with SingleTickerProviderStateMixin {
     }
   }
 
-  // Debug: Show popup with current missions and their IDs after creation
+  /// Debug: Show popup with current missions and their IDs after creation
   Future<void> _showMissionListPopup(BuildContext context) async {
     if (!kDebugMode) return;
     final missionProvider = Provider.of<MissionProvider>(
@@ -3682,15 +3688,15 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
     super.dispose();
   }
 
-  // Add validation function for mission state
+  /// Add validation function for mission state
   bool _validateMissionState(MissionData mission) {
-    // Validate mission ID
+    /// Validate mission ID
     if (mission.notificationId == null) {
       print('Mission validation failed: Missing notification ID');
       return false;
     }
 
-    // Validate counter-based mission
+    /// Validate counter-based mission
     if (mission.isCounterBased) {
       if (mission.currentCount < 0) {
         print('Mission validation failed: Invalid current count');
@@ -3702,7 +3708,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
       }
     }
 
-    // Validate subtasks if present
+    /// Validate subtasks if present
     if (mission.subtasks.isNotEmpty) {
       for (var subtask in mission.subtasks) {
         if (subtask.name.isEmpty) {
@@ -3724,15 +3730,15 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
     return true;
   }
 
-  // Add validation function for subtask state
+  /// Add validation function for subtask state
   bool _validateSubtaskState(MissionSubtask subtask) {
-    // Validate subtask name
+    /// Validate subtask name
     if (subtask.name.isEmpty) {
       print('Subtask validation failed: Empty name');
       return false;
     }
 
-    // Validate counter-based subtask
+    /// Validate counter-based subtask
     if (subtask.isCounterBased) {
       if (subtask.currentCount < 0) {
         print('Subtask validation failed: Invalid current count');
@@ -3740,7 +3746,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
       }
     }
 
-    // Validate completions
+    /// Validate completions
     if (subtask.currentCompletions < 0) {
       print('Subtask validation failed: Invalid current completions');
       return false;
@@ -3750,7 +3756,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
       return false;
     }
 
-    // Validate mastery value if linked
+    /// Validate mastery value if linked
     if (subtask.linkedMasteryId != null && subtask.masteryValue < 0) {
       print('Subtask validation failed: Invalid mastery value');
       return false;
@@ -3766,7 +3772,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
 
     return Consumer<MissionProvider>(
       builder: (context, provider, child) {
-        // Get the current mission and subtask with proper error handling
+        /// Get the current mission and subtask with proper error handling
         final currentMission = provider.missions.firstWhere(
           (m) => m.notificationId == widget.mission.notificationId,
           orElse: () {
@@ -3777,23 +3783,23 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
           },
         );
 
-        // Validate mission state
+        /// Validate mission state
         if (!_validateMissionState(currentMission)) {
           print('Error: Invalid mission state detected');
           return const SizedBox.shrink();
         }
 
-        // Validate subtask index
+        /// Validate subtask index
         if (widget.subtaskIndex < 0 ||
             widget.subtaskIndex >= currentMission.subtasks.length) {
           print('Error: Invalid subtask index: ${widget.subtaskIndex}');
           return const SizedBox.shrink();
         }
 
-        // Use the index to get the correct subtask
+        /// Use the index to get the correct subtask
         final currentSubtask = currentMission.subtasks[widget.subtaskIndex];
 
-        // Validate subtask state
+        /// Validate subtask state
         if (!_validateSubtaskState(currentSubtask)) {
           print('Error: Invalid subtask state detected');
           return const SizedBox.shrink();
@@ -3826,7 +3832,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
               'Tap detected for subtask: ${currentSubtask.name} at index: ${widget.subtaskIndex}',
             );
             try {
-              // Create updated subtask with incremented count
+              /// Create updated subtask with incremented count
               final updatedSubtask =
                   currentSubtask.isCounterBased
                       ? currentSubtask.copyWith(
@@ -3840,13 +3846,13 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
                 'Created updated subtask - count: ${updatedSubtask.currentCount}, completions: ${updatedSubtask.currentCompletions}',
               );
 
-              // Create updated mission with new subtask
+              /// Create updated mission with new subtask
               final updatedSubtasks = List<MissionSubtask>.from(
                 currentMission.subtasks,
               );
               updatedSubtasks[widget.subtaskIndex] = updatedSubtask;
 
-              // Check if all subtasks are complete
+              /// Check if all subtasks are complete
               bool allSubtasksComplete = updatedSubtasks.every(
                 (s) =>
                     s.isCounterBased
@@ -3864,17 +3870,17 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
                 subtasks: updatedSubtasks,
               );
 
-              // Update mission through provider
+              /// Update mission through provider
               await missionProvider.editMission(currentMission, updatedMission);
 
-              // Add mastery progress if linked
+              /// Add mastery progress if linked
               if (currentSubtask.linkedMasteryId != null &&
                   currentSubtask.masteryValue > 0) {
                 final masteryProvider = Provider.of<MasteryProvider>(
                   context,
                   listen: false,
                 );
-                // Add mastery value for each increment
+                /// Add mastery value for each increment
                 await masteryProvider.addProgress(
                   currentSubtask.linkedMasteryId!,
                   'Mission: ${currentMission.title} - ${currentSubtask.name}',
@@ -3912,7 +3918,7 @@ class _SubtaskCounterState extends State<_SubtaskCounter> {
                 child: Text(
                   currentSubtask.isCounterBased
                       ? '${currentSubtask.currentCount}'
-                      : '${currentSubtask.currentCompletions}/${currentSubtask.requiredCompletions}',
+                      : '${currentSubtask.currentCompletions}',
                   style: TextStyle(
                     color: currentSubtask.boltColor ?? Colors.blue,
                     fontWeight: FontWeight.bold,
@@ -3955,7 +3961,7 @@ class _SubtaskCounter extends StatefulWidget {
   State<_SubtaskCounter> createState() => _SubtaskCounterState();
 }
 
-// Add this widget at the top-level (or near other widgets)
+/// Add this widget at the top-level (or near other widgets)
 class MissionHealthCheckDialog extends StatefulWidget {
   final MissionProvider provider;
   const MissionHealthCheckDialog({super.key, required this.provider});
@@ -3984,8 +3990,8 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
   late List<bool> isRepairing; // true if repair in progress for this check
   bool allDone = false;
   bool started = false;
-  
-  // AI Guardian learning and repair tracking
+
+  /// AI Guardian learning and repair tracking
   List<String> learningEvents = [];
   List<Map<String, dynamic>> repairEvents = [];
   List<HealthCheckResult> healthResults = [];
@@ -3997,22 +4003,24 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
     checkStates = List.filled(checkTitles.length, 0);
     checkResults = List.filled(checkTitles.length, '');
     isRepairing = List.filled(checkTitles.length, false);
-    
-    // Listen to AI Guardian learning and repair events
+
+    /// Listen to AI Guardian learning and repair events
     widget.provider.aiGuardian.learningStream.listen((event) {
       setState(() {
-        learningEvents.add('${DateTime.now().toString().substring(11, 19)}: $event');
+        learningEvents.add(
+          '${DateTime.now().toString().substring(11, 19)}: $event',
+        );
         if (learningEvents.length > 10) learningEvents.removeAt(0);
       });
     });
-    
+
     widget.provider.aiGuardian.issueStream.listen((event) {
       setState(() {
         repairEvents.add(event);
         if (repairEvents.length > 10) repairEvents.removeAt(0);
       });
     });
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) => runChecks());
   }
 
@@ -4022,28 +4030,31 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
     print('Provider runtime type: ${widget.provider.runtimeType}');
     print('MissionHealthCheckDialog: Starting health checks...');
 
-    // Check AI Guardian status
+    /// Check AI Guardian status
     setState(() {
       checkResults[0] =
           'AI Guardian Status: ${widget.provider.aiGuardianStatus}';
       checkStates[0] = widget.provider.isAIGuardianRunning ? 1 : 2;
     });
 
-    // First pass: attempt comprehensive repairs using AI Guardian
+    /// First pass: attempt comprehensive repairs using AI Guardian
     try {
       setState(() {
         checkStates[1] = 0; // Running
         checkResults[1] = 'Performing AI Guardian comprehensive repair...';
       });
-      
-      // Use the enhanced AI Guardian repair system
-      final healthResults = await widget.provider.aiGuardian.performComprehensiveHealthChecks();
-      final repairResults = await widget.provider.aiGuardian.performComprehensiveRepairs();
-      
+
+      /// Use the enhanced AI Guardian repair system
+      final healthResults =
+          await widget.provider.aiGuardian.performComprehensiveHealthChecks();
+      final repairResults =
+          await widget.provider.aiGuardian.performComprehensiveRepairs();
+
       setState(() {
         this.healthResults = healthResults;
         this.repairResults = repairResults;
-        checkResults[1] = '✅ AI Guardian repair completed - ${repairResults.where((r) => r.success).length} repairs successful';
+        checkResults[1] =
+            '✅ AI Guardian repair completed - ${repairResults.where((r) => r.success).length} repairs successful';
         checkStates[1] = 1;
       });
     } catch (e) {
@@ -4053,7 +4064,7 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
       });
     }
 
-    // Second pass: validate all missions after repairs
+    /// Second pass: validate all missions after repairs
     await widget.provider.validateAllMissions(
       attemptRepair: false,
       stepwise: true,
@@ -4092,7 +4103,7 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // AI Guardian Learning Status
+              /// AI Guardian Learning Status
               if (learningEvents.isNotEmpty) ...[
                 const Text(
                   '🧠 AI Guardian Learning:',
@@ -4121,8 +4132,8 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
                 ),
                 const SizedBox(height: 16),
               ],
-              
-              // AI Guardian Repair Events
+
+              /// AI Guardian Repair Events
               if (repairEvents.isNotEmpty) ...[
                 const Text(
                   '🛠️ Recent Repairs:',
@@ -4139,7 +4150,8 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
                   child: ListView.builder(
                     itemCount: repairEvents.length,
                     itemBuilder: (context, index) {
-                      final event = repairEvents[repairEvents.length - 1 - index];
+                      final event =
+                          repairEvents[repairEvents.length - 1 - index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Text(
@@ -4152,72 +4164,77 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
                 ),
                 const SizedBox(height: 16),
               ],
-              
-              // Health Check Results
+
+              /// Health Check Results
               if (healthResults.isNotEmpty) ...[
                 const Text(
                   '🔍 Health Check Results:',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                ...healthResults.map((result) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      Icon(
-                        result.hasIssue ? Icons.error : Icons.check_circle,
-                        color: result.hasIssue ? Colors.red : Colors.green,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${result.checkName}: ${result.hasIssue ? 'Issue detected' : 'OK'}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: result.hasIssue ? Colors.red : Colors.green,
+                ...healthResults.map(
+                  (result) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Icon(
+                          result.hasIssue ? Icons.error : Icons.check_circle,
+                          color: result.hasIssue ? Colors.red : Colors.green,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${result.checkName}: ${result.hasIssue ? 'Issue detected' : 'OK'}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  result.hasIssue ? Colors.red : Colors.green,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 16),
               ],
-              
-              // Repair Results
+
+              /// Repair Results
               if (repairResults.isNotEmpty) ...[
                 const Text(
                   '🔧 Repair Results:',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                ...repairResults.map((result) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      Icon(
-                        result.success ? Icons.check_circle : Icons.error,
-                        color: result.success ? Colors.green : Colors.red,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${result.repairName}: ${result.success ? 'Success' : 'Failed'}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: result.success ? Colors.green : Colors.red,
+                ...repairResults.map(
+                  (result) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Icon(
+                          result.success ? Icons.check_circle : Icons.error,
+                          color: result.success ? Colors.green : Colors.red,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${result.repairName}: ${result.success ? 'Success' : 'Failed'}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: result.success ? Colors.green : Colors.red,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 16),
               ],
-              
-              // Traditional health checks
+
+              /// Traditional health checks
               const Text(
                 '📋 System Health Checks:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -4299,7 +4316,7 @@ class _MissionHealthCheckDialogState extends State<MissionHealthCheckDialog> {
   }
 }
 
-// Helper widget to display both asset and file images
+/// Helper widget to display both asset and file images
 class SmartImage extends StatelessWidget {
   final String imagePath;
   final double? width;
@@ -4318,8 +4335,8 @@ class SmartImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if it's a file path (starts with / or contains file://)
-    if (imagePath.startsWith('/') || imagePath.startsWith('file://')) {
+    /// Check if it's a file path (starts with / or contains file:/)
+    if (imagePath.startsWith('/') || imagePath.startsWith('file:/')) {
       return Image.file(
         File(imagePath),
         width: width,
@@ -4340,7 +4357,7 @@ class SmartImage extends StatelessWidget {
         },
       );
     } else {
-      // It's an asset image
+      /// It's an asset image
       return Image.asset(
         imagePath,
         width: width,

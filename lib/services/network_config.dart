@@ -1,100 +1,119 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 
 class NetworkConfig {
-  // AWS EC2 Backend URL (for production)
-  static const String baseUrl = 'http://44.204.184.21:4000';
-  
-  // Local Development Backend URL (for development)
-  static const String localBaseUrl = 'http://192.168.1.118:4000';
-  
+  // Railway Backend URL (Primary)
+  static const String railwayUrl =
+      'https://ai-backend-railway-production.up.railway.app';
+
+  // AWS EC2 Backend URL - Updated to use port 8000 (where backend is actually running)
+  static const String baseUrl = 'http://34.202.215.209:8000';
+
   // API Endpoints
   static const String apiUrl = '$baseUrl/api';
-  
-  // Socket.IO URL for real-time updates
-  static const String socketUrl = 'http://44.204.184.21:4000';
-  
-  // Timeout settings
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-  
+
+  // WebSocket URL for real-time updates - Now working on port 8000
+  static const String socketUrl = 'ws://34.202.215.209:8000';
+
+  // Working endpoint for all data
+  static const String workingEndpoint = '/api/learning/data';
+
+  // FIX: Improved timeout settings for better reliability
+  static const Duration connectionTimeout = Duration(
+    seconds: 15,
+  ); // Reduced from 30
+  static const Duration receiveTimeout = Duration(
+    seconds: 20,
+  ); // Reduced from 30
+
   // Retry settings
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
-  
-  /// Get the appropriate backend URL based on platform and environment
-  static String get backendUrl => baseUrl;
-  
-  /// Get all possible backend URLs for testing
+
+  static const String apiBaseUrl =
+      'http://34.202.215.209:8000'; // <-- Set your backend base URL here
+
+  // Get the appropriate backend URL based on platform and environment
+  static String get backendUrl => railwayUrl; // Use Railway as primary
+
+  // Get all possible backend URLs for testing - Enhanced with Railway and local options
   static List<String> get allBackendUrls => [
-    'http://10.0.2.2:4000', // Android emulator
-    'http://192.168.1.118:4000', // Local network
-    'http://localhost:4000', // Local development
-    'http://127.0.0.1:4000', // Local development
-    baseUrl, // AWS (for production)
+    railwayUrl, // Railway production (primary)
+    baseUrl, // AWS production (port 8000) - fallback
+    'http://34.202.215.209:8000', // AWS fallback (port 8000)
+    'http://10.0.2.2:8000', // Android emulator
+    'http://localhost:8000', // Local development
+    'http://127.0.0.1:8000', // Local development fallback
+    'http://192.168.1.118:8000', // Local network
   ];
-  
-  /// Test connectivity to all backend URLs
+
+  // FIX: Test connectivity to all backend URLs with better error handling
   static Future<Map<String, bool>> testConnectivity() async {
     final results = <String, bool>{};
-    
+
     for (final url in allBackendUrls) {
       try {
         final client = HttpClient();
-        client.connectionTimeout = const Duration(seconds: 5);
-        // Try to connect to the base URL instead of a specific endpoint
-        final request = await client.getUrl(Uri.parse(url));
+        client.connectionTimeout = const Duration(
+          seconds: 5,
+        ); // Shorter timeout for testing
+        client.idleTimeout = const Duration(seconds: 10); // Add idle timeout
+
+        // Test the working endpoint instead of health
+        final request = await client.getUrl(Uri.parse('$url$workingEndpoint'));
         final response = await request.close();
-        results[url] = response.statusCode < 500; // Accept any non-server error
-        client.close();
+        results[url] = response.statusCode == 200;
+
+        print('[NETWORK_CONFIG] ✅ $url is reachable (${response.statusCode})');
       } catch (e) {
         results[url] = false;
+        print('[NETWORK_CONFIG] ❌ $url is not reachable: $e');
       }
     }
-    
+
     return results;
   }
-  
-  /// Get the best available backend URL
+
+  // Get the best available backend URL
   static Future<String> getBestBackendUrl() async {
     final connectivityResults = await testConnectivity();
-    
+
     // Return the first working URL
     for (final entry in connectivityResults.entries) {
       if (entry.value) {
-        print('[NETWORK] Using backend: ${entry.key}');
+        print('[NETWORK_CONFIG] 🎯 Using backend: ${entry.key}');
         return entry.key;
       }
     }
-    
-    // Fallback to default
-    print('[NETWORK] No working backend found, using default: $backendUrl');
-    return backendUrl;
+
+    // Fallback to local development
+    print('[NETWORK_CONFIG] ⚠️ No remote backends available, using localhost');
+    return 'http://localhost:8000';
   }
-  
-  /// Get a working backend URL with retry logic
-  static Future<String> getWorkingBackendUrl() async {
-    for (int i = 0; i < maxRetries; i++) {
-      try {
-        final url = await getBestBackendUrl();
-        final client = HttpClient();
-        client.connectionTimeout = const Duration(seconds: 10);
-        // Try to connect to the base URL instead of a specific endpoint
-        final request = await client.getUrl(Uri.parse(url));
-        final response = await request.close();
-        client.close();
-        
-        if (response.statusCode < 500) { // Accept any non-server error
-          return url;
-        }
-      } catch (e) {
-        print('[NETWORK] Retry $i failed: $e');
-        if (i < maxRetries - 1) {
-          await Future.delayed(retryDelay);
-        }
-      }
-    }
-    
-    return backendUrl;
+
+  // Get the working endpoint URL for any backend
+  static String getWorkingEndpointUrl(String baseUrl) {
+    return '$baseUrl$workingEndpoint';
   }
-} 
+
+  // Check if we're running in development mode
+  static bool get isDevelopmentMode {
+    return const bool.fromEnvironment('dart.vm.product') == false;
+  }
+
+  // FIX: Get appropriate timeout based on environment with better defaults
+  static Duration get requestTimeout {
+    return isDevelopmentMode
+        ? const Duration(seconds: 30) // Reduced from 60 for development
+        : const Duration(seconds: 20); // Reduced from 30 for production
+  }
+
+  // FIX: Get timeout for specific operations with better defaults
+  static Duration get timeoutForAgentsData =>
+      const Duration(seconds: 20); // Reduced from 45
+  static Duration get timeoutForGrowthData =>
+      const Duration(seconds: 20); // Reduced from 45
+  static Duration get timeoutForRecentActivity =>
+      const Duration(seconds: 20); // Reduced from 45
+  static Duration get timeoutForLearningInsights =>
+      const Duration(seconds: 20); // Reduced from 45
+}

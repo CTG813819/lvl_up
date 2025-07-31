@@ -13,6 +13,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import structlog
+from multiprocessing import Process
 
 # Import routers
 from app.routers import (
@@ -105,9 +106,6 @@ async def lifespan(app: FastAPI):
     
     # Start enhanced adversarial testing service on port 8001
     try:
-        import uvicorn
-        from multiprocessing import Process
-        
         def start_enhanced_adversarial_service():
             """Start the enhanced adversarial testing service on port 8001"""
             import sys
@@ -277,7 +275,7 @@ async def debug_info():
         finally:
             await session.close()
     except Exception as e:
-        logger.error("Error in debug endpoint", error=str(e))
+        logger.error(f"Error in debug endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # App functionality endpoints

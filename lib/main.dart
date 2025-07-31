@@ -6,11 +6,17 @@ import 'package:the_codex/ai_guardian_analytics_screen.dart';
 import 'package:the_codex/mission_widget.dart';
 import 'package:the_codex/screens/notification_center_screen.dart';
 import 'package:the_codex/screens/proposal_approval_screen.dart';
+import 'package:the_codex/screens/conquest_screen.dart';
+import 'package:the_codex/screens/conquest_apps_screen.dart';
+import 'package:the_codex/screens/ai_growth_analytics_screen.dart';
+import 'package:the_codex/screens/dynamic_island_settings_screen.dart';
 import 'dart:async';
 import 'models/entry.dart';
 import 'loading_screen.dart';
 import 'home_page.dart';
-import 'mission.dart' show MissionProvider, MasteryProvider;
+
+import 'mission.dart'
+    show MissionProvider; // Use MissionProvider from mission.dart
 import 'entries/add_entry.dart';
 import 'entries/list_entries.dart';
 import 'entries/view_entry.dart';
@@ -23,15 +29,32 @@ import 'providers/app_history_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/proposal_provider.dart';
 import 'providers/ai_learning_provider.dart';
-import 'providers/chaos_warp_provider.dart';
+import 'providers/conquest_ai_provider.dart';
+import 'providers/system_status_provider.dart';
+import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
+import 'services/app_logger.dart';
+import 'services/websocket_service.dart';
+import 'services/ai_progress_notification_service.dart';
 import 'package:pinput/pinput.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import './mechanicum.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme.dart';
+import 'providers/oath_papers_provider.dart';
+import 'providers/ai_growth_analytics_provider.dart';
+import 'providers/ai_customization_provider.dart';
+import 'app_pin_entry_screen.dart';
+import 'package:the_codex/screens/oath_papers_screen.dart';
+import 'package:the_codex/screens/book_of_lorgar_screen.dart';
+import 'test_home_page.dart';
+import 'widgets/front_view.dart';
+import 'guardian_service.dart';
+import 'services/network_config.dart';
+import 'side_menu.dart' show DynamicIslandManager;
 
 // Global Key for Navigator
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -57,10 +80,14 @@ void callbackDispatcher() {
 
 void main() async {
   print('HELLO FROM MAIN');
-  
+
   try {
     WidgetsFlutterBinding.ensureInitialized();
     print('Flutter binding initialized');
+
+    // Initialize AppLogger early to capture all logs
+    AppLogger.instance.initialize();
+    print('AppLogger initialized');
 
     // Add global error handler to catch stack overflow and other errors
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -75,10 +102,44 @@ void main() async {
     print('Initializing Hive...');
     // Initialize Hive
     await Hive.initFlutter();
-    Hive.registerAdapter(EntryAdapter());
+
+    // Register adapters with error handling to prevent duplicate registration
+    try {
+      Hive.registerAdapter(EntryAdapter());
+    } catch (e) {
+      print('EntryAdapter already registered: $e');
+    }
+
     await Hive.openBox<Entry>('entries');
     await Hive.openBox<String>('images');
-    await NotificationService.instance.initialize(); // Initialize notification service
+
+    // Initialize notification service with error handling
+    try {
+      await NotificationService.instance.initialize();
+      print('NotificationService initialized successfully');
+    } catch (e) {
+      print('NotificationService initialization failed: $e');
+      // Continue without notifications
+    }
+
+    // Initialize WebSocket service for real-time updates
+    try {
+      await WebSocketService.instance.initialize();
+      print('WebSocketService initialized successfully');
+    } catch (e) {
+      print('WebSocketService initialization failed: $e');
+      // Continue without WebSocket
+    }
+
+    // Initialize AI Progress Notification Service
+    try {
+      await AIProgressNotificationService.instance.initialize();
+      print('AIProgressNotificationService initialized successfully');
+    } catch (e) {
+      print('AIProgressNotificationService initialization failed: $e');
+      // Continue without AI progress notifications
+    }
+
     print('Hive initialized successfully');
 
     // Set system UI overlay style
@@ -90,13 +151,18 @@ void main() async {
     );
 
     print('Initializing notifications...');
-    // Initialize notifications for foreground
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-    print('Notifications initialized');
+    // Initialize notifications for foreground with error handling
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@drawable/notification_icon');
+      final InitializationSettings initializationSettings =
+          InitializationSettings(android: initializationSettingsAndroid);
+      await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+      print('Notifications initialized');
+    } catch (e) {
+      print('Notifications initialization failed: $e');
+      // Continue without notifications
+    }
 
     print('Initializing Workmanager...');
     // Initialize Workmanager
@@ -110,143 +176,200 @@ void main() async {
 
     print('Starting app...');
 
-    // Initialize Socket.IO client for real-time notifications
-    final IO.Socket socket = IO.io(
-      'http://31.54.106.71:4000',
-      IO.OptionBuilder()
-        .setTransports(['websocket'])
-        .disableAutoConnect() // We'll connect manually
-        .build(),
-    );
-    socket.connect();
-    socket.onConnect((_) {
-      print('Socket.IO connected!');
-    });
-    socket.onDisconnect((_) {
-      print('Socket.IO disconnected!');
-    });
-    socket.on('proposal:applied', (data) {
-      print('[SOCKET] Proposal applied: $data');
-      final aiType = data['aiType'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      final prUrl = data['prUrl'] ?? '';
-      NotificationService.instance.showNotification(
-        aiSource: aiType,
-        message: 'Proposal applied to $filePath. PR: $prUrl',
-        iconChar: '🚀',
+    // Initialize WebSocket client for real-time notifications
+    try {
+      final channel = WebSocketChannel.connect(
+        Uri.parse('ws://34.202.215.209:8000/api/imperium/status'),
       );
-    });
 
-    socket.on('proposal:created', (data) {
-      print('[SOCKET] Proposal created: $data');
-      final aiType = data['aiType'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      NotificationService.instance.showNotification(
-        aiSource: aiType,
-        message: 'New proposal for $filePath.',
-        iconChar: '💡',
+      channel.stream.listen(
+        (data) {
+          print('[WEBSOCKET] Received: $data');
+          try {
+            final message = jsonDecode(data.toString());
+            if (message['type'] == 'proposal:applied') {
+              final aiType = message['aiType'] ?? 'AI';
+              final filePath = message['filePath'] ?? 'unknown file';
+              final prUrl = message['prUrl'] ?? '';
+              NotificationService.instance.showNotification(
+                aiSource: aiType,
+                message: 'Proposal applied to $filePath. PR: $prUrl',
+                iconChar: '🚀',
+              );
+            }
+          } catch (e) {
+            print('[WEBSOCKET] Error parsing message: $e');
+          }
+        },
+        onError: (error) {
+          print('[WEBSOCKET] Error: $error');
+        },
+        onDone: () {
+          print('[WEBSOCKET] Connection closed');
+        },
       );
-    });
 
-    socket.on('proposal:approved', (data) {
-      print('[SOCKET] Proposal approved: $data');
-      final aiType = data['aiType'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      NotificationService.instance.showNotification(
-        aiSource: aiType,
-        message: 'Proposal for $filePath approved.',
-        iconChar: '✅',
-      );
-    });
-
-    socket.on('proposal:rejected', (data) {
-      print('[SOCKET] Proposal rejected: $data');
-      final aiType = data['aiType'] ?? 'AI';
-      final filePath = data['filePath'] ?? 'unknown file';
-      NotificationService.instance.showNotification(
-        aiSource: aiType,
-        message: 'Proposal for $filePath rejected.',
-        iconChar: '❌',
-      );
-    });
-
-    // Listen for AI pulling from GitHub
-    socket.on('ai:pull', (data) {
-      print('[SOCKET] AI Pull: $data');
-      final ai = data['ai'] ?? 'AI';
-      final message = data['message'] ?? 'AI is pulling latest code from GitHub.';
-      NotificationService.instance.showNotification(
-        aiSource: ai,
-        message: message,
-        iconChar: '🔄',
-      );
-    });
+      print('[WEBSOCKET] Connected to backend');
+    } catch (e) {
+      print('[WEBSOCKET] Connection failed: $e');
+    }
 
     // Initialize shared preferences
     await SharedPreferences.getInstance();
 
+    // Enable notifications after app is ready
+    NotificationService.enableNotifications();
+
     runApp(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => MissionProvider(), lazy: false),
-          ChangeNotifierProvider(create: (_) => MasteryProvider()),
           ChangeNotifierProvider(create: (_) => AppHistoryProvider()),
           ChangeNotifierProvider(create: (_) => NotificationProvider()),
-          ChangeNotifierProvider(create: (_) => AILearningProvider()),
-          ChangeNotifierProxyProvider<AILearningProvider, ProposalProvider>(
+          ChangeNotifierProvider(create: (_) => MasteryProvider()),
+          ChangeNotifierProvider(create: (_) => OathPapersProvider()),
+          ChangeNotifierProvider(create: (_) => SystemStatusProvider()),
+          ChangeNotifierProvider<MissionProvider>(
+            create: (_) => MissionProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<ProposalProvider>(
             create: (_) => ProposalProvider(),
-            update: (_, aiLearningProvider, proposalProvider) {
-              proposalProvider ??= ProposalProvider();
-              proposalProvider.initialize(aiLearningProvider: aiLearningProvider);
-              return proposalProvider;
+            lazy: false,
+          ),
+          ChangeNotifierProvider<AILearningProvider>(
+            create: (_) => AILearningProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<AIGrowthAnalyticsProvider>(
+            create: (_) {
+              final provider = AIGrowthAnalyticsProvider();
+              provider.initialize();
+              return provider;
             },
+            lazy: false,
           ),
-          ChangeNotifierProvider(create: (_) => ChaosWarpProvider()),
+          ChangeNotifierProvider<ConquestAIProvider>(
+            create: (_) => ConquestAIProvider(),
+            lazy: false,
+          ),
+
+          ChangeNotifierProvider<AICustomizationProvider>(
+            create: (_) => AICustomizationProvider(),
+            lazy: false,
+          ),
+          ChangeNotifierProvider<ThemeProvider>(
+            create: (_) => ThemeProvider(),
+            lazy: false,
+          ),
         ],
-        child: MaterialApp(
-          title: 'LVL UP',
-          navigatorKey: navigatorKey,
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            brightness: Brightness.light,
-          ),
-          darkTheme: ThemeData(
-            primarySwatch: Colors.blue,
-            brightness: Brightness.dark,
-          ),
-          themeMode: ThemeMode.system,
-          home: LoadingScreen(onVideoComplete: () {}),
-          debugShowCheckedModeBanner: false,
-          routes: {
-            '/home': (context) => const Homepage(),
-            AddEntry.routeName: (context) => const AddEntry(),
-            ListEntries.routeName: (context) => const ListEntries(),
-            ViewEntry.routeName:
-                (context) => ViewEntry(
-                  entry: ModalRoute.of(context)!.settings.arguments as Entry,
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return MaterialApp(
+              title: 'Imperium Growth Matrix',
+              navigatorKey: navigatorKey,
+              theme: ThemeData(
+                brightness:
+                    themeProvider.themeMode == ThemeMode.dark
+                        ? Brightness.dark
+                        : Brightness.light,
+                primarySwatch: Colors.blue,
+                scaffoldBackgroundColor:
+                    themeProvider.themeMode == ThemeMode.dark
+                        ? Colors.black
+                        : Colors.white,
+                floatingActionButtonTheme: FloatingActionButtonThemeData(
+                  backgroundColor:
+                      themeProvider.themeMode == ThemeMode.dark
+                          ? Colors.white
+                          : Colors.black,
                 ),
-            EditEntry.routeName:
-                (context) => EditEntry(
-                  entry: ModalRoute.of(context)!.settings.arguments as Entry,
+              ),
+              darkTheme: ThemeData(
+                brightness: Brightness.dark,
+                primarySwatch: Colors.blue,
+                scaffoldBackgroundColor: Colors.black,
+                floatingActionButtonTheme: FloatingActionButtonThemeData(
+                  backgroundColor: Colors.white,
                 ),
-            '/tally': (context) => const Tally(),
-            '/summary': (context) => const SummaryPage(),
-            '/mastery': (context) => const MasteryList(),
-            '/mission': (context) => const Mission(),
-            '/app_history': (context) => const AppHistoryScreen(),
-            '/mechanicum_analytics':
-                (context) => const MechanicumAnalyticsScreen(),
-            '/notification_center': (context) => const NotificationCenterScreen(),
-            '/proposal_approval': (context) => const ProposalApprovalScreen(),
-          },
-          builder: (context, child) {
-            // Initialize ChaosWarpProvider
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final chaosWarpProvider = Provider.of<ChaosWarpProvider>(context, listen: false);
-              chaosWarpProvider.getStatus();
-              chaosWarpProvider.startStatusPolling();
-            });
-            return child!;
+              ),
+              themeMode: themeProvider.themeMode,
+              home: HomeScreen(
+                isDarkMode: themeProvider.themeMode == ThemeMode.dark,
+                onToggleTheme: () {
+                  themeProvider.toggleTheme();
+                },
+              ),
+              debugShowCheckedModeBanner: false,
+              routes: {
+                '/home': (context) => const Homepage(),
+                AddEntry.routeName: (context) => const AddEntry(),
+                ListEntries.routeName: (context) => const ListEntries(),
+                ViewEntry.routeName:
+                    (context) => ViewEntry(
+                      entry:
+                          ModalRoute.of(context)!.settings.arguments as Entry,
+                    ),
+                EditEntry.routeName:
+                    (context) => EditEntry(
+                      entry:
+                          ModalRoute.of(context)!.settings.arguments as Entry,
+                    ),
+                '/tally': (context) => const Tally(),
+                '/summary': (context) => const SummaryPage(),
+                '/mastery': (context) => const MasteryList(),
+                '/mission': (context) => const Mission(),
+                '/app_history': (context) => const AppHistoryScreen(),
+                '/mechanicum_analytics':
+                    (context) => const MechanicumAnalyticsScreen(),
+                '/ai_growth_analytics':
+                    (context) => const AIGrowthAnalyticsScreen(),
+                '/dynamic_island_settings':
+                    (context) => const DynamicIslandSettingsScreen(),
+                OathPapersScreen.routeName:
+                    (context) => const OathPapersScreen(),
+                '/notification_center':
+                    (context) => const NotificationCenterScreen(),
+                '/proposal_approval':
+                    (context) => const ProposalApprovalScreen(),
+                '/conquest': (context) => const ConquestScreen(),
+                '/conquest-apps': (context) => const ConquestAppsScreen(),
+                '/book_of_lorgar': (context) => const BookOfLorgarScreen(),
+                '/test': (context) => const TestHomePage(),
+              },
+              onGenerateRoute: (settings) {
+                // Handle dynamic routes or routes with arguments
+                if (settings.name == OathPapersScreen.routeName) {
+                  return MaterialPageRoute(
+                    builder: (context) => const OathPapersScreen(),
+                    settings: settings,
+                  );
+                }
+                return null;
+              },
+              builder: (context, child) {
+                // Initialize GuardianService with context
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  GuardianService.initialize(context);
+                });
+                // Initialize MissionProvider
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final missionProvider = Provider.of<MissionProvider>(
+                    context,
+                    listen: false,
+                  );
+                  // missionProvider.getStatus(); // Removed as per edit hint
+                  // missionProvider.startStatusPolling(); // Removed as per edit hint
+                });
+
+                // Initialize AI Progress Notification Service monitoring
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  AIProgressNotificationService.instance.startMonitoring(
+                    context,
+                  );
+                });
+                return child!;
+              },
+            );
           },
         ),
       ),
@@ -255,7 +378,7 @@ void main() async {
   } catch (e, stackTrace) {
     print('ERROR IN MAIN: $e');
     print('Stack trace: $stackTrace');
-    
+
     // Fallback app in case of error
     runApp(
       MaterialApp(
@@ -281,6 +404,58 @@ void main() async {
         ),
       ),
     );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
+  const HomeScreen({
+    Key? key,
+    required this.isDarkMode,
+    required this.onToggleTheme,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _AppPinGate();
+  }
+}
+
+class _AppPinGate extends StatefulWidget {
+  @override
+  State<_AppPinGate> createState() => _AppPinGateState();
+}
+
+class _AppPinGateState extends State<_AppPinGate> {
+  bool _pinVerified = false;
+  bool _loadingComplete = false;
+
+  void _onPinEntered(String pin, BuildContext context) {
+    setState(() {
+      _pinVerified = true;
+    });
+  }
+
+  void _onLoadingComplete() {
+    setState(() {
+      _loadingComplete = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_pinVerified) {
+      return AppPinEntryScreen(
+        onPinEntered: _onPinEntered,
+        title: 'Enter App PIN',
+      );
+    }
+    if (!_loadingComplete) {
+      return LoadingScreen(onVideoComplete: _onLoadingComplete);
+    }
+    // After loading is complete, show the homepage
+    return const Homepage();
   }
 }
 

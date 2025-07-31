@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/network_config.dart';
 
 class ApprovalDashboard extends StatefulWidget {
   @override
@@ -26,21 +27,23 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
     });
 
     try {
-      // Load pending approvals
+  // Load pending approvals
       final approvalsResponse = await http.get(
-        Uri.parse('http://localhost:4000/api/approval/pending'),
+        Uri.parse('${NetworkConfig.backendUrl}/api/approval/pending'),
       );
 
       if (approvalsResponse.statusCode == 200) {
         final approvalsData = json.decode(approvalsResponse.body);
         setState(() {
-          pendingApprovals = List<Map<String, dynamic>>.from(approvalsData['approvals']);
+          pendingApprovals = List<Map<String, dynamic>>.from(
+            approvalsData['approvals'],
+          );
         });
       }
 
-      // Load approval statistics
+  // Load approval statistics
       final statsResponse = await http.get(
-        Uri.parse('http://localhost:4000/api/approval/stats/overview'),
+        Uri.parse('${NetworkConfig.backendUrl}/api/approval/pending'),
       );
 
       if (statsResponse.statusCode == 200) {
@@ -64,7 +67,9 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
   Future<void> _approveImprovement(String approvalId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:4000/api/approval/$approvalId/approve'),
+        Uri.parse(
+          '${NetworkConfig.backendUrl}/api/approval/pending',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userId': 'flutter-user',
@@ -98,39 +103,40 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
 
     final reason = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Reject Improvement'),
-        content: TextField(
-          controller: reasonController,
-          decoration: InputDecoration(
-            labelText: 'Reason for rejection',
-            hintText: 'Enter reason for rejecting this improvement...',
+      builder:
+          (context) => AlertDialog(
+            title: Text('Reject Improvement'),
+            content: TextField(
+              controller: reasonController,
+              decoration: InputDecoration(
+                labelText: 'Reason for rejection',
+                hintText: 'Enter reason for rejecting this improvement...',
+              ),
+              maxLines: 3,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.of(context).pop(reasonController.text),
+                child: Text('Reject'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              ),
+            ],
           ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(reasonController.text),
-            child: Text('Reject'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          ),
-        ],
-      ),
     );
 
     if (reason != null) {
       try {
         final response = await http.post(
-          Uri.parse('http://localhost:4000/api/approval/$approvalId/reject'),
+          Uri.parse(
+            '${NetworkConfig.backendUrl}/api/approval/pending',
+          ),
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'userId': 'flutter-user',
-            'reason': reason,
-          }),
+          body: json.encode({'userId': 'flutter-user', 'reason': reason}),
         );
 
         if (response.statusCode == 200) {
@@ -162,99 +168,119 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
         title: Text('AI Approval Dashboard'),
         backgroundColor: Colors.deepPurple,
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _loadApprovalData,
-          ),
+          IconButton(icon: Icon(Icons.refresh), onPressed: _loadApprovalData),
         ],
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : error != null
+      body:
+          isLoading
+              ? Center(child: CircularProgressIndicator())
+              : error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error, size: 64, color: Colors.red),
-                      SizedBox(height: 16),
-                      Text('Error: $error'),
-                      SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadApprovalData,
-                        child: Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error, size: 64, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text('Error: $error'),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadApprovalData,
+                      child: Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
               : SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Statistics Card
-                      Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Approval Statistics',
-                                style: Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildStatItem('Total', approvalStats['total']?.toString() ?? '0', Colors.blue),
-                                  _buildStatItem('Pending', approvalStats['pending']?.toString() ?? '0', Colors.orange),
-                                  _buildStatItem('Approved', approvalStats['approved']?.toString() ?? '0', Colors.green),
-                                  _buildStatItem('Rejected', approvalStats['rejected']?.toString() ?? '0', Colors.red),
-                                ],
-                              ),
-                            ],
-                          ),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+  // Statistics Card
+                    Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Approval Statistics',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildStatItem(
+                                  'Total',
+                                  approvalStats['total']?.toString() ?? '0',
+                                  Colors.blue,
+                                ),
+                                _buildStatItem(
+                                  'Pending',
+                                  approvalStats['pending']?.toString() ?? '0',
+                                  Colors.orange,
+                                ),
+                                _buildStatItem(
+                                  'Approved',
+                                  approvalStats['approved']?.toString() ?? '0',
+                                  Colors.green,
+                                ),
+                                _buildStatItem(
+                                  'Rejected',
+                                  approvalStats['rejected']?.toString() ?? '0',
+                                  Colors.red,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 24),
-                      
-                      // Pending Approvals
-                      Text(
-                        'Pending Approvals (${pendingApprovals.length})',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      SizedBox(height: 16),
-                      
-                      if (pendingApprovals.isEmpty)
-                        Card(
-                          child: Padding(
-                            padding: EdgeInsets.all(32),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(Icons.check_circle, size: 64, color: Colors.green),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No pending approvals',
-                                    style: Theme.of(context).textTheme.headlineSmall,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'All AI improvements have been reviewed',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    ),
+                    SizedBox(height: 24),
+
+  // Pending Approvals
+                    Text(
+                      'Pending Approvals (${pendingApprovals.length})',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    SizedBox(height: 16),
+
+                    if (pendingApprovals.isEmpty)
+                      Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 64,
+                                  color: Colors.green,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No pending approvals',
+                                  style:
+                                      Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'All AI improvements have been reviewed',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: Colors.grey[600]),
+                                ),
+                              ],
                             ),
                           ),
-                        )
-                      else
-                        ...pendingApprovals.map((approval) => _buildApprovalCard(approval)),
-                    ],
-                  ),
+                        ),
+                      )
+                    else
+                      ...pendingApprovals.map(
+                        (approval) => _buildApprovalCard(approval),
+                      ),
+                  ],
                 ),
+              ),
     );
   }
 
@@ -277,13 +303,7 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
           ),
         ),
         SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
@@ -316,10 +336,7 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
                 Spacer(),
                 Text(
                   'ID: ${approval['id']}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
@@ -383,7 +400,7 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
             if (approval['prUrl'] != null)
               InkWell(
                 onTap: () {
-                  // Open PR URL in browser
+  // Open PR URL in browser
                 },
                 child: Text(
                   'View Pull Request',
@@ -411,4 +428,4 @@ class _ApprovalDashboardState extends State<ApprovalDashboard> {
         return Colors.grey;
     }
   }
-} 
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Autonomous Subject Learning Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/python autonomous_subject_learning_service_simple.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

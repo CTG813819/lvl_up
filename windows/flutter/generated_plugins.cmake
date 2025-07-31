@@ -8,6 +8,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_timezone
   media_kit_video
   permission_handler_windows
+  simple_animation_progress_bar
+  url_launcher_windows
   volume_controller
 )
 

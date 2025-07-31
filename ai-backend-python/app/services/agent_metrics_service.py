@@ -65,7 +65,7 @@ class AgentMetricsService:
                 return None
                 
         except Exception as e:
-            logger.error(f"Error getting metrics for {agent_type}", error=str(e))
+            logger.error(f"Error getting metrics for {agent_type}: {str(e)}")
             return None
     
     async def get_all_agent_metrics(self) -> Dict[str, Dict[str, Any]]:
@@ -82,7 +82,7 @@ class AgentMetricsService:
                 return metrics_dict
                 
         except Exception as e:
-            logger.error("Error getting all agent metrics", error=str(e))
+            logger.error(f"Error getting all agent metrics: {str(e)}")
             return {}
     
     async def create_or_update_agent_metrics(self, agent_type: str, metrics_data: Dict[str, Any]) -> bool:
@@ -112,7 +112,7 @@ class AgentMetricsService:
                 return True
                 
         except Exception as e:
-            logger.error(f"Error updating metrics for {agent_type}", error=str(e))
+            logger.error(f"Error updating metrics for {agent_type}: {str(e)}")
             return False
     
     async def update_specific_metrics(self, agent_type: str, updates: Dict[str, Any]) -> bool:
@@ -134,7 +134,7 @@ class AgentMetricsService:
                     return False
                     
         except Exception as e:
-            logger.error(f"Error updating specific metrics for {agent_type}", error=str(e))
+            logger.error(f"Error updating specific metrics for {agent_type}: {str(e)}")
             return False
     
     # ==================== CUSTODY PROTOCOL METRICS ====================
@@ -198,7 +198,7 @@ class AgentMetricsService:
                 
                 # Award custody XP
                 if test_result.get("passed", False):
-                    xp_awarded = test_result.get("xp_awarded", 10)
+                    xp_awarded = test_result.get("xp_awarded", 50)  # Default to 50 XP for passed tests
                     agent_metrics.custody_xp += xp_awarded
                     
                     # Check for level up
@@ -212,7 +212,7 @@ class AgentMetricsService:
                 return True
                 
         except Exception as e:
-            logger.error(f"Error updating custody test results for {agent_type}", error=str(e))
+            logger.error(f"Error updating custody test results for {agent_type}: {str(e)}")
             return False
     
     async def get_custody_metrics(self, agent_type: str) -> Optional[Dict[str, Any]]:
@@ -239,7 +239,7 @@ class AgentMetricsService:
             return None
             
         except Exception as e:
-            logger.error(f"Error getting custody metrics for {agent_type}", error=str(e))
+            logger.error(f"Error getting custody metrics for {agent_type}: {str(e)}")
             return None
     
     # ==================== LEARNING METRICS ====================
@@ -311,7 +311,7 @@ class AgentMetricsService:
                 return True
                 
         except Exception as e:
-            logger.error(f"Error updating learning metrics for {agent_type}", error=str(e))
+            logger.error(f"Error updating learning metrics for {agent_type}: {str(e)}")
             return False
     
     # ==================== UTILITY METHODS ====================
@@ -528,7 +528,7 @@ class AgentMetricsService:
                     return False
                     
         except Exception as e:
-            logger.error(f"Error updating custody XP for {agent_type}", error=str(e))
+            logger.error(f"Error updating custody XP for {agent_type}: {str(e)}")
             return False
 
     async def update_adversarial_test_result(self, agent_type: str, test_result: Dict[str, Any]) -> bool:
@@ -640,7 +640,7 @@ class AgentMetricsService:
                 return True
                 
         except Exception as e:
-            logger.error(f"Error updating adversarial test results for {agent_type}", error=str(e))
+            logger.error(f"Error updating adversarial test results for {agent_type}: {str(e)}")
             return False
     
     # ==================== BULK OPERATIONS ====================
@@ -671,7 +671,7 @@ class AgentMetricsService:
                 return True
                 
         except Exception as e:
-            logger.error("Error in bulk metrics update", error=str(e))
+            logger.error(f"Error in bulk metrics update: {str(e)}")
             return False
     
     async def reset_agent_metrics(self, agent_type: str) -> bool:
@@ -718,5 +718,5 @@ class AgentMetricsService:
                     return False
                     
         except Exception as e:
-            logger.error(f"Error resetting metrics for {agent_type}", error=str(e))
+            logger.error(f"Error resetting metrics for {agent_type}: {str(e)}")
             return False 

@@ -52,12 +52,10 @@ class _EntryPinScreenState extends State<EntryPinScreen> {
     final savedPin = prefs.getString('entry_pin');
     if (savedPin == null) {
       if (mounted) {
-        final result = await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const SetupPinScreen(),
-          ),
-        );
-        if (result != true) {
+        final result = await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const SetupPinScreen()));
+        if (result != true && mounted) {
           Navigator.of(context).pop(); // Go back if setup was cancelled
         }
       }
@@ -74,16 +72,16 @@ class _EntryPinScreenState extends State<EntryPinScreen> {
   Widget build(BuildContext context) {
     final focusedPinTheme = defaultPinTheme.copyWith(
       decoration: BoxDecoration(
-        color: Colors.green,
-        border: Border.all(color: Colors.green),
+        color: Colors.purple,
+        border: Border.all(color: Colors.purple),
         borderRadius: BorderRadius.circular(8),
       ),
     );
 
     final submittedPinTheme = defaultPinTheme.copyWith(
       decoration: BoxDecoration(
-        color: Colors.green,
-        border: Border.all(color: Colors.green),
+        color: Colors.purple,
+        border: Border.all(color: Colors.purple),
         borderRadius: BorderRadius.circular(8),
       ),
     );
@@ -98,82 +96,69 @@ class _EntryPinScreenState extends State<EntryPinScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Pinput(
-                controller: pinController,
-                length: 6,
-                defaultPinTheme: defaultPinTheme,
-                focusedPinTheme: focusedPinTheme,
-                submittedPinTheme: submittedPinTheme,
-                errorPinTheme: errorMessage.isNotEmpty ? errorPinTheme : null,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
-                    enteredPin = value;
-                    errorMessage = '';
-                  });
-                },
-                onCompleted: (value) async {
-                  if (value.length == 6) {
-                    final isValid = await _verifyPin(value);
-                    if (isValid) {
-                      widget.onPinEntered(value, context);
-                    } else {
-                      setState(() {
-                        errorMessage = 'Invalid PIN';
-                      });
-                      pinController.clear();
-                    }
-                  }
-                },
-              ),
-              if (errorMessage.isNotEmpty) ...[
-                const SizedBox(height: 16),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  errorMessage,
-                  style: const TextStyle(color: Colors.red, fontSize: 16),
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ],
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  if (enteredPin.length == 6) {
-                    final isValid = await _verifyPin(enteredPin);
-                    if (isValid) {
-                      widget.onPinEntered(enteredPin, context);
-                    } else {
+                const SizedBox(height: 32),
+                SizedBox(
+                  height: 80, // Fixed height for Pinput
+                  child: Pinput(
+                    controller: pinController,
+                    length: 6,
+                    defaultPinTheme: defaultPinTheme,
+                    focusedPinTheme: focusedPinTheme,
+                    submittedPinTheme: submittedPinTheme,
+                    errorPinTheme:
+                        errorMessage.isNotEmpty ? errorPinTheme : null,
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
                       setState(() {
-                        errorMessage = 'Invalid PIN';
+                        enteredPin = value;
+                        errorMessage = '';
                       });
-                      pinController.clear();
-                    }
-                  } else {
-                    setState(() {
-                      errorMessage = 'PIN must be 6 digits';
-                    });
-                  }
-                },
-                child: Text(widget.isViewing ? 'View Entry' : 'Add Entry'),
-              ),
-            ],
+                    },
+                    onCompleted: (value) async {
+                      if (value.length == 6) {
+                        final isValid = await _verifyPin(value);
+                        if (isValid && mounted) {
+                          widget.onPinEntered(value, context);
+                        } else if (mounted) {
+                          setState(() {
+                            errorMessage = 'Invalid PIN';
+                          });
+                          pinController.clear();
+                        }
+                      }
+                    },
+                  ),
+                ),
+                if (errorMessage.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    errorMessage,
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-} 
+}

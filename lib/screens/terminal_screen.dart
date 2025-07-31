@@ -15,30 +15,35 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _isFullScreen ? null : AppBar(
-        title: const Text(
-          'AI Learning Terminal',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.grey[900],
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: Icon(_isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen),
-            onPressed: () {
-              setState(() {
-                _isFullScreen = !_isFullScreen;
-              });
-            },
-            tooltip: _isFullScreen ? 'Exit Full Screen' : 'Full Screen',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _showTerminalSettings,
-            tooltip: 'Terminal Settings',
-          ),
-        ],
-      ),
+      appBar:
+          _isFullScreen
+              ? null
+              : AppBar(
+                title: const Text(
+                  'AI Learning Terminal',
+                  style: TextStyle(color: Colors.white),
+                ),
+                backgroundColor: Colors.grey[900],
+                iconTheme: const IconThemeData(color: Colors.white),
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isFullScreen = !_isFullScreen;
+                      });
+                    },
+                    tooltip: _isFullScreen ? 'Exit Full Screen' : 'Full Screen',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: _showTerminalSettings,
+                    tooltip: 'Terminal Settings',
+                  ),
+                ],
+              ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -92,9 +97,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
                     ],
                   ),
                 ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Terminal Widget
               Expanded(
                 child: TerminalWidget(
@@ -111,7 +116,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
     );
   }
 
-  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildQuickActionButton(
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 16),
@@ -120,9 +129,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         backgroundColor: Colors.grey[800],
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
     );
   }
@@ -142,60 +149,69 @@ class _TerminalScreenState extends State<TerminalScreen> {
   void _showTerminalSettings() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Terminal Settings',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSettingSwitch(
-              'Auto-scroll',
-              'Automatically scroll to latest output',
-              true,
-              (value) {
-                // Handle auto-scroll setting
-              },
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              'Terminal Settings',
+              style: TextStyle(color: Colors.white),
             ),
-            _buildSettingSwitch(
-              'Show timestamps',
-              'Display timestamps for each line',
-              true,
-              (value) {
-                // Handle timestamp setting
-              },
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSettingSwitch(
+                  'Auto-scroll',
+                  'Automatically scroll to latest output',
+                  true,
+                  (value) {
+                    // Handle auto-scroll setting
+                  },
+                ),
+                _buildSettingSwitch(
+                  'Show timestamps',
+                  'Display timestamps for each line',
+                  true,
+                  (value) {
+                    // Handle timestamp setting
+                  },
+                ),
+                _buildSettingSwitch(
+                  'Sound notifications',
+                  'Play sound for important events',
+                  false,
+                  (value) {
+                    // Handle sound setting
+                  },
+                ),
+              ],
             ),
-            _buildSettingSwitch(
-              'Sound notifications',
-              'Play sound for important events',
-              false,
-              (value) {
-                // Handle sound setting
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Apply settings
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Apply'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Apply settings
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _buildSettingSwitch(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSettingSwitch(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -213,21 +229,14 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.green,
-          ),
+          Switch(value: value, onChanged: onChanged, activeColor: Colors.green),
         ],
       ),
     );
   }
-} 
+}

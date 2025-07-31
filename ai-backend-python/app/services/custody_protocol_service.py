@@ -51,6 +51,9 @@ from app.services.dynamic_target_service import DynamicTargetService
 from app.services.adaptive_target_service import AdaptiveTargetService
 from app.services.agent_metrics_service import AgentMetricsService
 from app.services.adaptive_threshold_service import AdaptiveThresholdService, TestType, TestComplexity
+from app.services.enhanced_test_generator import EnhancedTestGenerator
+from diverse_test_generator import DiverseTestGenerator
+from improved_scoring_system import ImprovedScoringSystem
 from sqlalchemy import text
 
 logger = structlog.get_logger()
@@ -94,8 +97,9 @@ class CustodyProtocolService:
             self.testing_service = TestingService()
             self.learning_service = AILearningService()
             self.growth_service = AIGrowthService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.adaptive_threshold_service = None
+            self.enhanced_test_generator = None  # Will be initialized in initialize()
             self.test_models = {}
             self.test_history = []
             self.ai_test_records = {}
@@ -136,6 +140,10 @@ class CustodyProtocolService:
         """Initialize the Custody Protocol service"""
         instance = cls()
         
+        # Initialize database first
+        from app.core.database import init_database
+        await init_database()
+        
         # Create custody protocol directory
         os.makedirs(f"{settings.ml_model_path}/custody", exist_ok=True)
         
@@ -174,6 +182,23 @@ class CustodyProtocolService:
         except Exception as e:
             logger.warning(f"Failed to initialize Adaptive Threshold Service: {e}")
             instance.adaptive_threshold_service = None
+        
+        # Initialize SckipitService
+        try:
+            from .sckipit_service import SckipitService
+            instance.sckipit_service = await SckipitService.initialize()
+            logger.info("SckipitService initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize SckipitService: {e}")
+            instance.sckipit_service = None
+        
+        # Initialize EnhancedTestGenerator
+        try:
+            instance.enhanced_test_generator = await EnhancedTestGenerator.initialize()
+            logger.info("EnhancedTestGenerator initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize EnhancedTestGenerator: {e}")
+            instance.enhanced_test_generator = None
         
         logger.info("Custody Protocol Service initialized successfully")
         return instance
@@ -273,8 +298,8 @@ class CustodyProtocolService:
             
             # Update custody metrics
             logger.info(f"[ADMINISTER TEST] Updating custody metrics...")
-            # Update custody metrics with test result using AgentMetricsService
-            await self.agent_metrics_service.update_custody_test_result(ai_type, test_result)
+            # Update custody metrics with test result using the proper XP awarding method
+            await self._update_custody_metrics(ai_type, test_result)
             logger.info(f"[ADMINISTER TEST] Custody metrics updated successfully")
             
             # Check if AI can level up or create proposals
@@ -285,7 +310,7 @@ class CustodyProtocolService:
             # Claude verification using unified AI service for proper fallback
             try:
                 verification_prompt = f"Custody Protocol test administered to {ai_type} AI. Difficulty: {difficulty.value}, Category: {test_category.value}, Result: {test_result['passed']}. Please verify the test was appropriate and suggest improvements."
-                verification, verifier_provider_info = await unified_ai_service_shared.call_ai(
+                verification = await unified_ai_service_shared(
                     prompt=verification_prompt,
                     ai_name=ai_type.lower()
                 )
@@ -379,57 +404,54 @@ class CustodyProtocolService:
             return categories[0]
     
     async def _generate_custody_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
-        # Gather AI learning history, knowledge gaps, and analytics
+        """Generate self-generated custody test based on AI's knowledge and internet research"""
         try:
-            learning_history = await self.learning_service.get_learning_insights(ai_type)
-        except:
-            learning_history = {}
-        try:
-            # Fallback: use empty list if method not present
-            if hasattr(self.learning_service, 'identify_knowledge_gaps'):
-                knowledge_gaps = await self.learning_service.identify_knowledge_gaps(ai_type)
-            else:
-                knowledge_gaps = []
-        except:
-            knowledge_gaps = []
-        try:
-            analytics = await self.learning_service.get_enhanced_learning_analytics()
-        except:
-            analytics = {}
-        # Use SCKIPIT/LLM to generate a challenging, adaptive test if available, else fallback
-        if hasattr(self.sckipit_service, 'generate_adaptive_custody_test'):
-            test_content = await self.sckipit_service.generate_adaptive_custody_test(
-                ai_type=ai_type,
-                category=category.name,
-                learning_history=learning_history,
-                knowledge_gaps=knowledge_gaps,
-                analytics=analytics,
-                difficulty=max(difficulty.value, TestDifficulty.INTERMEDIATE.value)  # Enforce high baseline
-            )
-        else:
-            # Fallback to local test generation methods
+            logger.info(f"🔍 Generating self-generated test for {ai_type} - {category.value} - {difficulty.value}")
+            
+            # Get AI's current knowledge and learning history
+            learning_history = await self._get_ai_learning_history(ai_type)
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            
+            # Generate unique test based on category
             if category == TestCategory.KNOWLEDGE_VERIFICATION:
-                test_content = await self._generate_knowledge_test(ai_type, difficulty, learning_history)
+                test_content = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CODE_QUALITY:
-                test_content = await self._generate_code_quality_test(ai_type, difficulty, [])
+                test_content = await self._generate_self_generated_code_quality_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SECURITY_AWARENESS:
-                test_content = await self._generate_security_test(ai_type, difficulty, [])
+                test_content = await self._generate_self_generated_security_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.PERFORMANCE_OPTIMIZATION:
-                test_content = await self._generate_performance_test(ai_type, difficulty, [])
+                test_content = await self._generate_self_generated_performance_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.INNOVATION_CAPABILITY:
-                test_content = await self._generate_innovation_test(ai_type, difficulty, learning_history)
+                test_content = await self._generate_self_generated_innovation_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SELF_IMPROVEMENT:
-                test_content = await self._generate_self_improvement_test(ai_type, difficulty, learning_history)
+                test_content = await self._generate_self_generated_self_improvement_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CROSS_AI_COLLABORATION:
-                test_content = await self._generate_collaboration_test(ai_type, difficulty, learning_history)
+                test_content = await self._generate_self_generated_collaboration_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.EXPERIMENTAL_VALIDATION:
-                test_content = await self._generate_experimental_test(ai_type, difficulty, [])
+                test_content = await self._generate_self_generated_experimental_test(ai_type, difficulty, learning_history)
             else:
-                test_content = {"test_type": "unknown", "questions": ["No test available for this category."], "difficulty": difficulty.value}
-        test_content["instructions"] = (
-            "Provide your answer with clear explanations and step-by-step reasoning. Justify your approach."
-        )
-        return test_content
+                test_content = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
+            
+            # Add unique identifier and timestamp
+            test_content["test_id"] = f"{ai_type}_{category.value}_{int(datetime.utcnow().timestamp())}"
+            test_content["generated_at"] = datetime.utcnow().isoformat()
+            test_content["ai_type"] = ai_type
+            test_content["category"] = category.value
+            test_content["difficulty"] = difficulty.value
+            
+            logger.info(f"✅ Generated unique test for {ai_type}: {test_content['test_id']}")
+            return test_content
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating self-generated test: {str(e)}")
+            # Fallback to basic test
+            return {
+                "test_type": "fallback_knowledge",
+                "questions": [f"Demonstrate your current knowledge and capabilities as {ai_type} AI."],
+                "difficulty": difficulty.value,
+                "test_id": f"fallback_{ai_type}_{int(datetime.utcnow().timestamp())}",
+                "generated_at": datetime.utcnow().isoformat()
+            }
     
     async def _generate_knowledge_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
         """Generate knowledge verification test based on AI's actual learning history"""
@@ -970,41 +992,114 @@ class CustodyProtocolService:
         }
 
     async def _generate_collaborative_test_content(self, ai_type_1: str, ai_type_2: str) -> Dict[str, Any]:
-        """Generate collaborative test content for two different AIs using self-generating AI - REAL COLLABORATION"""
+        """Generate dynamic collaborative test content using SCKIPIT service based on AIs' actual knowledge"""
         try:
-            from app.services.self_generating_ai_service import self_generating_ai_service
-            
-            # Get learning profiles for both AIs
-            learning_history_1 = await self._get_ai_learning_history(ai_type_1)
-            learning_history_2 = await self._get_ai_learning_history(ai_type_2)
-            
-            # Get recent learning focus for both AIs
-            recent_focus_1 = [entry.get('subject', '') for entry in learning_history_1[-3:] if entry.get('subject')]
-            recent_focus_2 = [entry.get('subject', '') for entry in learning_history_2[-3:] if entry.get('subject')]
-            
-            # Create dynamic collaborative challenge that requires actual collaboration
-            collaboration_challenge = await self._create_real_collaboration_challenge(ai_type_1, ai_type_2, recent_focus_1, recent_focus_2)
-            
-            return {
-                'test_type': 'real_collaboration',
-                'challenge': collaboration_challenge['challenge'],
-                'context': collaboration_challenge['context'],
-                'ai_participants': [ai_type_1, ai_type_2],
-                'collaboration_phases': collaboration_challenge['phases'],
-                'expected_outcome': collaboration_challenge['expected_outcome'],
-                'collaboration_focus': collaboration_challenge['focus'],
-                'time_limit': 900,  # 15 minutes for real collaboration
-                'live_generated': True,
-                'ai_learning_based': True,
-                'requires_real_collaboration': True
-            }
+            # Use dynamic SCKIPIT service for collaborative test generation
+            if self.sckipit_service:
+                # Gather real learning data for both AIs
+                learning_histories = {}
+                knowledge_gaps = {}
+                analytics = {}
+                
+                for ai in [ai_type_1, ai_type_2]:
+                    # Get actual learning history from database
+                    learning_histories[ai] = await self.learning_service.get_learning_insights(ai)
+                    
+                    # Identify real knowledge gaps based on learning patterns
+                    knowledge_gaps[ai] = await self._identify_knowledge_gaps(ai, learning_histories[ai], [])
+                    
+                    # Get comprehensive analytics including recent performance
+                    analytics[ai] = await self.learning_service.get_learning_insights(ai)
+                    
+                    # Add recent test performance to analytics
+                    custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
+                    if custody_metrics:
+                        analytics[ai]['recent_test_performance'] = custody_metrics.get('test_history', [])[-5:] if custody_metrics.get('test_history') else []
+                        analytics[ai]['current_level'] = custody_metrics.get('custody_level', 1)
+                        analytics[ai]['xp_progress'] = custody_metrics.get('custody_xp', 0)
+                
+                # Convert to list format for SCKIPIT service
+                learning_histories_list = [learning_histories[ai_type_1], learning_histories[ai_type_2]]
+                knowledge_gaps_list = [knowledge_gaps[ai_type_1], knowledge_gaps[ai_type_2]]
+                
+                # Generate dynamic collaborative scenario using SCKIPIT
+                scenario = await self.sckipit_service.generate_collaborative_challenge(
+                    ai_types=[ai_type_1, ai_type_2],
+                    learning_histories=learning_histories_list,
+                    knowledge_gaps=knowledge_gaps_list,
+                    analytics=analytics,
+                    difficulty="intermediate",  # Default difficulty
+                    test_type="collaborative"
+                )
+                
+                return {
+                    'test_type': 'real_collaboration',
+                    'challenge': scenario,
+                    'context': 'Dynamic collaborative challenge based on AIs\' actual knowledge and current technology trends',
+                    'ai_participants': [ai_type_1, ai_type_2],
+                    'collaboration_phases': [
+                        'Phase 1: Joint analysis and planning',
+                        'Phase 2: Parallel development with coordination',
+                        'Phase 3: Integration and testing',
+                        'Phase 4: Optimization and deployment'
+                    ],
+                    'expected_outcome': 'A working solution that demonstrates real collaboration and addresses current challenges',
+                    'collaboration_focus': 'Dynamic problem-solving based on current technology trends',
+                    'time_limit': 900,  # 15 minutes for real collaboration
+                    'live_generated': True,
+                    'ai_learning_based': True,
+                    'requires_real_collaboration': True,
+                    'dynamic_scenario': True,
+                    'learning_data': {
+                        'learning_histories': learning_histories,
+                        'knowledge_gaps': knowledge_gaps,
+                        'analytics': analytics
+                    }
+                }
+            else:
+                # Enhanced fallback with dynamic content
+                import time
+                current_time = time.time()
+                
+                # Get basic AI profiles for fallback
+                ai_profiles = []
+                for ai in [ai_type_1, ai_type_2]:
+                    custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
+                    level = custody_metrics.get('custody_level', 1) if custody_metrics else 1
+                    profile = f"{ai} (Level {level})"
+                    ai_profiles.append(profile)
+                
+                challenge = (
+                    f"Dynamic collaborative challenge for: {', '.join(ai_profiles)}\n"
+                    f"Create a solution that leverages both AIs' unique strengths and addresses current technology challenges."
+                )
+                
+                return {
+                    'test_type': 'real_collaboration',
+                    'challenge': challenge,
+                    'context': 'Dynamic collaborative development requiring both AIs to contribute simultaneously',
+                    'ai_participants': [ai_type_1, ai_type_2],
+                    'collaboration_phases': [
+                        'Phase 1: Joint architecture design',
+                        'Phase 2: Parallel development',
+                        'Phase 3: Integration and testing',
+                        'Phase 4: Optimization and deployment'
+                    ],
+                    'expected_outcome': 'A working application that demonstrates real collaboration',
+                    'collaboration_focus': 'Dynamic problem-solving',
+                    'time_limit': 900,
+                    'live_generated': True,
+                    'ai_learning_based': True,
+                    'requires_real_collaboration': True,
+                    'dynamic_scenario': True
+                }
             
         except Exception as e:
-            logger.error(f"Error generating collaborative test content: {str(e)}")
-            # Fallback to a real collaboration challenge
+            logger.error(f"Error generating dynamic collaborative test content: {str(e)}")
+            # Final fallback
             return {
                 'test_type': 'real_collaboration',
-                'challenge': f'Create a secure, scalable web application that requires both {ai_type_1.title()} and {ai_type_2.title()} to work together in real-time.',
+                'challenge': f'Dynamic collaborative test generation failed. Basic challenge for {ai_type_1} and {ai_type_2} to work together.',
                 'context': 'Real-time collaborative development requiring both AIs to contribute simultaneously',
                 'ai_participants': [ai_type_1, ai_type_2],
                 'collaboration_phases': [
@@ -1126,6 +1221,7 @@ class CustodyProtocolService:
             if len(participants) < 2:
                 return {"error": "Collaborative test requires at least 2 participants"}
             
+            start_time = datetime.utcnow()
             ai_type_1, ai_type_2 = participants[0], participants[1]
             
             # Phase 1: Joint Planning
@@ -1203,6 +1299,9 @@ class CustodyProtocolService:
                 ai2_evaluation.get('response', '')
             )
             
+            end_time = datetime.utcnow()
+            duration = (end_time - start_time).total_seconds()
+            
             return {
                 "status": "success",
                 "participants": participants,
@@ -1226,9 +1325,11 @@ class CustodyProtocolService:
                     }
                 },
                 "collaborative_score": collaborative_score,
+                "score": collaborative_score,  # Add standard score field for compatibility
                 "passed": collaborative_score >= 70,
-                "timestamp": datetime.utcnow().isoformat(),
-                "test_type": "real_collaboration"
+                "duration": duration,
+                "timestamp": start_time.isoformat(),
+                "test_type": "collaborative"
             }
             
         except Exception as e:
@@ -1314,6 +1415,51 @@ class CustodyProtocolService:
         except Exception as e:
             logger.error(f"Error calculating real collaborative score: {str(e)}")
             return 50  # Default score
+    
+    async def _calculate_collaborative_score(self, ai_contributions: Dict, scenario: str) -> int:
+        """Calculate collaborative score from AI contributions"""
+        try:
+            # Create evaluation prompt
+            evaluation_prompt = f"""
+            Evaluate this collaborative AI solution:
+            
+            Scenario: {scenario}
+            
+            AI Contributions:
+            """
+            
+            for ai_type, contribution in ai_contributions.items():
+                evaluation_prompt += f"\n{ai_type.upper()}: {contribution.get('answer', 'No response')}"
+            
+            evaluation_prompt += """
+            
+            Score this collaboration on a scale of 0-100 based on:
+            1. Individual contribution quality (25 points)
+            2. Collaboration effectiveness (25 points)
+            3. Solution completeness (25 points)
+            4. Innovation and creativity (25 points)
+            
+            Return only the numerical score.
+            """
+            
+            # Get evaluation from Claude
+            evaluation = await call_claude(evaluation_prompt)
+            
+            # Extract score from response
+            try:
+                import re
+                score_match = re.search(r'\b(\d{1,2}|100)\b', evaluation)
+                if score_match:
+                    score = int(score_match.group(1))
+                    return max(0, min(100, score))
+                else:
+                    return 75
+            except:
+                return 75
+                
+        except Exception as e:
+            logger.error(f"Error calculating collaborative score: {str(e)}")
+            return 50
     
     async def _generate_experimental_test(self, ai_type: str, difficulty: TestDifficulty, recent_proposals: List[Dict]) -> Dict[str, Any]:
         """Generate experimental validation test"""
@@ -1712,12 +1858,23 @@ class CustodyProtocolService:
                     logger.info(f"[CUSTODY METRICS] Test FAILED - Updated failed: {metrics['total_tests_failed']}, consecutive_failures: {metrics['consecutive_failures']}, XP: {metrics['custody_xp']}")
                 metrics["last_test_date"] = datetime.utcnow()
                 logger.info(f"[CUSTODY METRICS] Updated last_test_date: {metrics['last_test_date']}")
-                test_history_entry = {
-                    "timestamp": test_result["timestamp"],
-                    "passed": test_result["passed"],
-                    "score": test_result["score"],
-                    "duration": test_result["duration"]
-                }
+                # Handle different test result formats
+                if test_result.get("test_type") == "collaborative" or test_result.get("test_type") == "real_collaboration":
+                    # Collaborative tests have different field names
+                    test_history_entry = {
+                        "timestamp": test_result.get("timestamp", datetime.utcnow().isoformat()),
+                        "passed": test_result["passed"],
+                        "score": test_result.get("collaborative_score", test_result.get("score", 0)),
+                        "duration": test_result.get("duration", 0)
+                    }
+                else:
+                    # Standard test format
+                    test_history_entry = {
+                        "timestamp": test_result.get("timestamp", datetime.utcnow().isoformat()),
+                        "passed": test_result["passed"],
+                        "score": test_result["score"],
+                        "duration": test_result.get("duration", 0)
+                    }
                 metrics["test_history"].append(test_history_entry)
                 logger.info(f"[CUSTODY METRICS] Added test history entry: {json.dumps(test_history_entry, default=str, ensure_ascii=False)}")
             # Only trim non-Olympus events, always keep all Olympus Treaty events
@@ -4322,48 +4479,130 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         }
 
     async def generate_test(self, ai_types: list, test_type: str, difficulty: str) -> dict:
-        """Generate a live test (standard or Olympus Treaty), single or collaborative, using SCKIPIT/LLM and real learning logs."""
-        # Gather learning logs and analytics for all AIs
-        learning_histories = {ai: await self.learning_service.get_learning_log(ai) for ai in ai_types}
-        knowledge_gaps = {ai: await self.learning_service.identify_knowledge_gaps(ai) for ai in ai_types}
-        analytics = {ai: await self.learning_service.get_learning_insights(ai) for ai in ai_types}
-        # Use SCKIPIT/LLM to generate a test
-        if len(ai_types) == 1:
-            # Single-AI test (standard)
-            scenario = await self.sckipit_service.generate_olympus_treaty_scenario(
-                ai_type=ai_types[0],
-                learning_history=learning_histories[ai_types[0]],
-                knowledge_gaps=knowledge_gaps[ai_types[0]],
-                analytics=analytics[ai_types[0]],
-                difficulty=difficulty
-            )
-            return {"type": "single", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
-        else:
-            # Collaborative test: generate a multi-AI, high-difficulty, mixed-type challenge
-            scenario = await self.sckipit_service.generate_collaborative_challenge(
-                ai_types=ai_types,
-                learning_histories=learning_histories,
-                knowledge_gaps=knowledge_gaps,
-                analytics=analytics,
-                difficulty=difficulty,
-                test_type=test_type
-            )
-            return {"type": "collaborative", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+        """Generate a live test using dynamic SCKIPIT/LLM based on AIs' actual knowledge and real-time data."""
+        try:
+            # Gather real learning logs and analytics for all AIs
+            learning_histories = {}
+            knowledge_gaps = {}
+            analytics = {}
+            
+            for ai in ai_types:
+                # Get actual learning history from database
+                learning_histories[ai] = await self.learning_service.get_learning_insights(ai)
+                
+                # Identify real knowledge gaps based on learning patterns
+                knowledge_gaps[ai] = await self._identify_knowledge_gaps(ai, learning_histories[ai], [])
+                
+                # Get comprehensive analytics including recent performance
+                analytics[ai] = await self.learning_service.get_learning_insights(ai)
+                
+                # Add recent test performance to analytics
+                custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
+                if custody_metrics:
+                    analytics[ai]['recent_test_performance'] = custody_metrics.get('test_history', [])[-5:] if custody_metrics.get('test_history') else []
+                    analytics[ai]['current_level'] = custody_metrics.get('custody_level', 1)
+                    analytics[ai]['xp_progress'] = custody_metrics.get('custody_xp', 0)
+            
+            # Always use SCKIPIT for dynamic test generation
+            if self.sckipit_service:
+                if len(ai_types) == 1:
+                    # Single-AI dynamic test
+                    scenario = await self.sckipit_service.generate_olympus_treaty_scenario(
+                        ai_type=ai_types[0],
+                        learning_history=learning_histories[ai_types[0]],
+                        knowledge_gaps=knowledge_gaps[ai_types[0]],
+                        analytics=analytics[ai_types[0]],
+                        difficulty=difficulty
+                    )
+                    return {"type": "single", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+                else:
+                    # Collaborative dynamic test
+                    # Convert learning histories to list format for collaborative challenge
+                    learning_histories_list = [learning_histories[ai] for ai in ai_types]
+                    knowledge_gaps_list = [knowledge_gaps[ai] for ai in ai_types]
+                    
+                    scenario = await self.sckipit_service.generate_collaborative_challenge(
+                        ai_types=ai_types,
+                        learning_histories=learning_histories_list,
+                        knowledge_gaps=knowledge_gaps_list,
+                        analytics=analytics,
+                        difficulty=difficulty,
+                        test_type=test_type
+                    )
+                    return {"type": "collaborative", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+            else:
+                # Enhanced fallback with dynamic content
+                import time
+                current_time = time.time()
+                
+                if len(ai_types) == 1:
+                    # Single-AI enhanced fallback
+                    ai = ai_types[0]
+                    learning_history = learning_histories[ai]
+                    recent_topics = [entry.get('subject', '') for entry in learning_history[-3:] if isinstance(entry, dict)]
+                    
+                    scenario = (
+                        f"Dynamic test for {ai} (Level {analytics[ai].get('current_level', 1)})\n"
+                        f"Recent learning topics: {recent_topics}\n"
+                        f"Knowledge gaps: {knowledge_gaps[ai][:3]}\n"
+                        f"Difficulty: {difficulty}\n\n"
+                        f"Create a solution that demonstrates your knowledge and addresses your learning gaps."
+                    )
+                    return {"type": "single", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+                else:
+                    # Collaborative enhanced fallback
+                    ai_profiles = []
+                    for ai in ai_types:
+                        profile = f"{ai} (Level {analytics[ai].get('current_level', 1)})"
+                        ai_profiles.append(profile)
+                    
+                    scenario = (
+                        f"Collaborative challenge for: {', '.join(ai_profiles)}\n"
+                        f"Difficulty: {difficulty}\n"
+                        f"Test type: {test_type}\n\n"
+                        f"Work together to solve this challenge, combining your unique strengths and knowledge."
+                    )
+                    return {"type": "collaborative", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+                    
+        except Exception as e:
+            logger.error(f"Error generating dynamic test: {str(e)}")
+            # Final fallback
+            if len(ai_types) == 1:
+                scenario = f"Dynamic test generation failed. Basic test for {ai_types[0]} with difficulty {difficulty}."
+                return {"type": "single", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
+            else:
+                scenario = f"Dynamic collaborative test generation failed. Basic test for {', '.join(ai_types)} with difficulty {difficulty}."
+                return {"type": "collaborative", "ai_types": ai_types, "scenario": scenario, "difficulty": difficulty}
 
     async def execute_test(self, test: dict) -> dict:
         """Execute a live test (single or collaborative), score, and update XP/learning. All logic is live."""
-        if test["type"] == "single":
-            ai = test["ai_types"][0]
-            structured_response = await self.sckipit_service.generate_answer_with_llm(test["scenario"], await self.learning_service.get_learning_log(ai))
-            answer = structured_response.get("answer", "No answer generated")
-            evaluation = await self.sckipit_service.evaluate_test_response(test["scenario"], answer)
-            passed = evaluation.get("score", 0) >= 99
-            if passed:
-                # Update custody XP using AgentMetricsService
-                await self.agent_metrics_service.update_custody_xp(ai, 100)
-                await self.learning_service.log_answer(ai, test["scenario"], answer, structured_response)
-                await self.learning_service.update_learning_score(ai, 100)
-                            # PERSIST TEST RESULT TO DATABASE
+        try:
+            test_start_time = datetime.utcnow()
+            if test["type"] == "single":
+                ai = test["ai_types"][0]
+                
+                # Get AI response using autonomous methods (no LLM dependency)
+                ai_response = await self._get_ai_answer(ai, test["scenario"])
+                answer = ai_response.get("answer", "No answer generated")
+                
+                # Use autonomous SCKIPIT evaluation (no LLM dependency)
+                if self.sckipit_service:
+                    evaluation = await self.sckipit_service.evaluate_test_response(test["scenario"], answer)
+                else:
+                    evaluation = {"score": 50, "feedback": "Basic evaluation due to missing Sckipit service"}
+                
+                passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
+                if passed:
+                    # Update custody XP using AgentMetricsService
+                    await self.agent_metrics_service.update_custody_xp(ai, 100)
+                    await self.learning_service.log_answer(ai, test["scenario"], answer, {"answer": answer})
+                    await self.learning_service.update_learning_score(ai, 100)
+                
+                # Calculate test duration
+                test_end_time = datetime.utcnow()
+                test_duration = (test_end_time - test_start_time).total_seconds()
+                
+                # PERSIST TEST RESULT TO DATABASE
                 test_result = {
                     "ai_types": [ai],
                     "passed": passed,
@@ -4372,46 +4611,60 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     "learning_score_awarded": 100 if passed else 0,
                     "evaluation": evaluation,
                     "explainability_data": {
-                        "reasoning_trace": structured_response.get("reasoning_trace", "No reasoning provided"),
-                        "confidence_score": structured_response.get("confidence_score", 50),
-                        "self_assessment": structured_response.get("self_assessment", {}),
-                        "uncertainty_areas": structured_response.get("uncertainty_areas", [])
-                    }
+                        "reasoning_trace": "Autonomous evaluation completed",
+                        "confidence_score": evaluation.get("score", 50),
+                        "self_assessment": evaluation.get("self_assessment", {}),
+                        "uncertainty_areas": evaluation.get("uncertainty_areas", [])
+                    },
+                    "timestamp": test_start_time.isoformat(),
+                    "duration": test_duration,
+                    "test_type": "single"
                 }
                 
                 # Store test result in database
                 await self._persist_custody_test_result_to_database(ai, test, test_result, "single")
                 
                 return test_result
-        else:
-            # Collaborative: all AIs work together, scenario is more complex
-            responses = {}
-            structured_responses = {}
-            for ai in test["ai_types"]:
-                structured_responses[ai] = await self.sckipit_service.generate_answer_with_llm(test["scenario"], await self.learning_service.get_learning_log(ai))
-                responses[ai] = structured_responses[ai].get("answer", "No answer generated")
-            evaluation = await self.sckipit_service.evaluate_collaborative_response(test["scenario"], responses)
-            passed = evaluation.get("score", 0) >= 99
-            xp_share = 300 // len(test["ai_types"])
-            learning_share = 400 // len(test["ai_types"])
-            if passed:
+            else:
+                # Collaborative: all AIs work together, scenario is more complex
+                responses = {}
+                
                 for ai in test["ai_types"]:
-                    # Update custody XP using AgentMetricsService
-                    await self.agent_metrics_service.update_custody_xp(ai, xp_share)
-                    await self.learning_service.log_answer(ai, test["scenario"], responses[ai], structured_responses[ai])
-                    await self.learning_service.update_learning_score(ai, learning_share)
-            
-            # Aggregate explainability data from all AIs
-            explainability_data = {}
-            for ai in test["ai_types"]:
-                explainability_data[ai] = {
-                    "reasoning_trace": structured_responses[ai].get("reasoning_trace", "No reasoning provided"),
-                    "confidence_score": structured_responses[ai].get("confidence_score", 50),
-                    "self_assessment": structured_responses[ai].get("self_assessment", {}),
-                    "uncertainty_areas": structured_responses[ai].get("uncertainty_areas", [])
-                }
-            
-                            # PERSIST COLLABORATIVE TEST RESULT TO DATABASE
+                    # Get AI response using autonomous methods (no LLM dependency)
+                    ai_response = await self._get_ai_answer(ai, test["scenario"])
+                    responses[ai] = ai_response.get("answer", "No answer generated")
+                
+                # Use autonomous SCKIPIT evaluation (no LLM dependency)
+                if self.sckipit_service:
+                    evaluation = await self.sckipit_service.evaluate_collaborative_response(test["scenario"], responses)
+                else:
+                    evaluation = {"score": 50, "feedback": "Basic evaluation due to missing Sckipit service"}
+                
+                passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
+                xp_share = 300 // len(test["ai_types"])
+                learning_share = 400 // len(test["ai_types"])
+                if passed:
+                    for ai in test["ai_types"]:
+                        # Update custody XP using AgentMetricsService
+                        await self.agent_metrics_service.update_custody_xp(ai, xp_share)
+                        await self.learning_service.log_answer(ai, test["scenario"], responses[ai], {"answer": responses[ai]})
+                        await self.learning_service.update_learning_score(ai, learning_share)
+                
+                # Aggregate explainability data from all AIs
+                explainability_data = {}
+                for ai in test["ai_types"]:
+                    explainability_data[ai] = {
+                        "reasoning_trace": "Autonomous evaluation completed",
+                        "confidence_score": evaluation.get("score", 50),
+                        "self_assessment": evaluation.get("self_assessment", {}),
+                        "uncertainty_areas": evaluation.get("uncertainty_areas", [])
+                    }
+                
+                # Calculate test duration
+                test_end_time = datetime.utcnow()
+                test_duration = (test_end_time - test_start_time).total_seconds()
+                
+                # PERSIST COLLABORATIVE TEST RESULT TO DATABASE
                 test_result = {
                     "ai_types": test["ai_types"],
                     "passed": passed,
@@ -4420,7 +4673,10 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     "learning_score_awarded": learning_share if passed else 0,
                     "evaluation": evaluation,
                     "responses": responses,
-                    "explainability_data": explainability_data
+                    "explainability_data": explainability_data,
+                    "timestamp": test_start_time.isoformat(),
+                    "duration": test_duration,
+                    "test_type": "collaborative"
                 }
                 
                 # Store test result in database for each AI
@@ -4428,6 +4684,18 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     await self._persist_custody_test_result_to_database(ai, test, test_result, "collaborative")
                 
                 return test_result
+        except Exception as e:
+            logger.error(f"Error executing test: {str(e)}")
+            return {
+                "ai_types": test.get("ai_types", []),
+                "passed": False,
+                "score": 0,
+                "xp_awarded": 0,
+                "learning_score_awarded": 0,
+                "evaluation": {"error": str(e)},
+                "responses": {},
+                "explainability_data": {}
+            }
 
     async def _persist_custody_test_result_to_database(self, ai_type: str, test: Dict, test_result: Dict, test_type: str):
         """Persist custody test result to the database"""
@@ -4489,6 +4757,8 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         else:
             # Collaborative test (2-3 AIs)
             num_ais = random.choice([2, 3])
+            # Ensure we don't try to sample more AIs than available
+            num_ais = min(num_ais, len(ai_types))
             ais = random.sample(ai_types, num_ais)
             levels = [await self._get_ai_level(ai) for ai in ais]
             max_level = max(levels)
@@ -4523,24 +4793,154 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         # Results are automatically reflected in analytics/leaderboards
 
     async def administer_olympic_event(self, participants: list, difficulty: TestDifficulty, event_type: str = "olympics") -> dict:
-        """Orchestrate a collaborative/olympic event between AIs, persist results, and return event summary."""
-        # Generate a collaborative, interactive test
-        scenario = await self._generate_collaborative_test(participants, difficulty)
-        # Each AI takes turns contributing to the solution, with responses visible to the next AI
-        ai_contributions = {}
-        context = scenario.get('context', '')
-        for i, ai in enumerate(participants):
-            prev_contributions = {p: ai_contributions[p] for p in participants[:i]} if i > 0 else {}
-            ai_prompt = scenario['prompts'][ai] if 'prompts' in scenario and ai in scenario['prompts'] else scenario['main_prompt']
-            structured_response = await self.sckipit_service.generate_answer_with_llm(ai_prompt, context=context, previous_contributions=prev_contributions)
-            ai_contributions[ai] = structured_response
-        # Evaluate the group solution as a whole
-        group_score = await self.testing_service.evaluate_collaborative_group_solution(ai_contributions, scenario)
-        # XP/learning split and penalties as before
-        # ... (rest of orchestration unchanged, but use ai_contributions and group_score)
+        """Administer Olympic event with multiple AI participants using self-generated content"""
+        try:
+            logger.info(f"🏆 Starting Olympic event with participants: {participants}")
+            
+            # Get AI levels for difficulty scaling
+            ai_levels = {}
+            for ai_type in participants:
+                ai_levels[ai_type] = await self._get_ai_level(ai_type)
+            
+            # Generate unique Olympic scenario based on participants' knowledge and current trends
+            unique_scenario = await self._create_unique_olympic_scenario(participants, difficulty, ai_levels)
+            
+            # Generate unique challenges for the Olympic event
+            unique_challenges = await self._generate_unique_olympic_challenges(participants, unique_scenario, difficulty)
+            
+            # Create communication scenario for collaboration
+            communication_scenario = await self._create_olympic_communication_scenario(participants, unique_scenario)
+            
+            # Get training data for each participant
+            training_data = {}
+            for ai_type in participants:
+                training_data[ai_type] = await self._get_ai_training_data(ai_type)
+            
+            scenario = {
+                "description": unique_scenario,
+                "type": "olympic",
+                "difficulty": difficulty.value,
+                "participants": participants,
+                "challenges": unique_challenges,
+                "communication_scenario": communication_scenario,
+                "training_data": training_data,
+                "ai_levels": ai_levels
+            }
+            
+            # Get AI self-generated responses for the scenario
+            ai_contributions = {}
+            for ai_type in participants:
+                try:
+                    # Generate comprehensive self-generated response
+                    if self.enhanced_test_generator:
+                        ai_response = await self.enhanced_test_generator.generate_ai_self_generated_response(
+                            ai_type=ai_type,
+                            scenario=scenario,
+                            context={
+                                "communication_rounds": communication_scenario.get('communication_rounds', []) if communication_scenario else [],
+                                "training_data": training_data.get(ai_type, {}),
+                                "participants": participants
+                            }
+                        )
+                    else:
+                        # Fallback to basic AI answer
+                        context = {
+                            "scenario": scenario,
+                            "communication_rounds": communication_scenario.get('communication_rounds', []) if communication_scenario else [],
+                            "training_data": training_data.get(ai_type, {}),
+                            "participants": participants
+                        }
+                        ai_response = await self._get_ai_answer(ai_type, scenario['description'], context)
+                    
+                    ai_contributions[ai_type] = ai_response
+                except Exception as e:
+                    logger.error(f"Error getting self-generated response from {ai_type}: {str(e)}")
+                    ai_contributions[ai_type] = {"error": str(e)}
+            
+            # Calculate collaborative score with enhanced evaluation
+            if self.enhanced_test_generator:
+                try:
+                    collaborative_score = await self.enhanced_test_generator._calculate_collaborative_score(
+                        ai_contributions, scenario['description']
+                    )
+                except AttributeError as e:
+                    logger.warning(f"⚠️ EnhancedTestGenerator missing _calculate_collaborative_score method: {e}")
+                    collaborative_score = await self._calculate_collaborative_score(ai_contributions, scenario['description'])
+                except Exception as e:
+                    logger.error(f"❌ Error calling EnhancedTestGenerator._calculate_collaborative_score: {e}")
+                    collaborative_score = await self._calculate_collaborative_score(ai_contributions, scenario['description'])
+            else:
+                collaborative_score = await self._calculate_collaborative_score(ai_contributions, scenario['description'])
+            
+            # Determine if passed based on score
+            passed = collaborative_score >= 70  # 70% threshold
+            
+            # Calculate XP using enhanced test generator with difficulty integration
+            if self.enhanced_test_generator:
+                xp_calculation = await self.enhanced_test_generator.calculate_xp_with_difficulty_integration(
+                    base_score=collaborative_score,
+                    complexity=self.enhanced_test_generator._get_complexity_for_difficulty(difficulty.value),
+                    difficulty=difficulty.value,
+                    test_type="olympic",
+                    ai_levels=ai_levels
+                )
+                xp_per_participant = xp_calculation['final_xp']
+            else:
+                # Fallback XP calculation
+                base_xp = 50
+                difficulty_multiplier = {
+                    TestDifficulty.BASIC: 1,
+                    TestDifficulty.INTERMEDIATE: 1.5,
+                    TestDifficulty.ADVANCED: 2,
+                    TestDifficulty.EXPERT: 2.5,
+                    TestDifficulty.MASTER: 3,
+                    TestDifficulty.LEGENDARY: 4
+                }
+                
+                complexity_multiplier = 1.0
+                if 'complexity' in scenario:
+                    complexity_levels = {'x1': 1.0, 'x2': 1.2, 'x3': 1.5, 'x4': 2.0, 'x5': 2.5, 'x6': 3.0}
+                    complexity_multiplier = complexity_levels.get(scenario['complexity'], 1.0)
+                
+                xp_per_participant = int(base_xp * difficulty_multiplier[difficulty] * complexity_multiplier * (collaborative_score / 100))
+            
+            # Create result with enhanced data
+            result = {
+                "passed": passed,
+                "participants": participants,
+                "group_score": collaborative_score,
+                "xp_awarded_per_participant": xp_per_participant,
+                "scenario": scenario,
+                "ai_contributions": ai_contributions,
+                "communication_scenario": communication_scenario,
+                "training_data": training_data,
+                "event_type": event_type,
+                "difficulty": difficulty.value,
+                "complexity": scenario.get('complexity', 'x1')
+            }
+            
+            # Update custody metrics for each participant
+            for ai_type in participants:
+                await self._update_custody_metrics(ai_type, {
+                    "test_type": "olympic",
+                    "passed": passed,
+                    "score": collaborative_score,
+                    "xp_awarded": xp_per_participant,
+                    "complexity": scenario.get('complexity', 'x1')
+                })
+            
+            # Persist to database
+            await self._persist_olympic_event_to_database(result)
+            
+            logger.info(f"✅ Olympic event completed: {passed}, Score: {collaborative_score}, XP: {xp_per_participant}, Complexity: {scenario.get('complexity', 'x1')}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Olympic event failed: {str(e)}")
+            return {"error": str(e), "passed": False}
 
     async def _generate_collaborative_test(self, participants: list, difficulty: TestDifficulty) -> dict:
-        """Generate a truly collaborative, multi-step, scenario-driven test requiring AI-to-AI interaction."""
+        """Generate a dynamic collaborative test using SCKIPIT service based on AIs' actual knowledge."""
         try:
             # Ensure we have at least 2 different AIs
             if len(participants) < 2:
@@ -4550,38 +4950,108 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                         available_ais.remove(ai)
                 if available_ais:
                     participants.append(random.choice(available_ais))
+                else:
+                    # If no available AIs, add a default one
+                    participants.append('imperium')
             
             # Ensure we have exactly 2 different AIs
             if len(participants) > 2:
                 participants = participants[:2]
             elif len(participants) == 1:
                 available_ais = ['imperium', 'guardian', 'sandbox', 'conquest']
-                available_ais.remove(participants[0])
-                participants.append(random.choice(available_ais))
+                if participants[0] in available_ais:
+                    available_ais.remove(participants[0])
+                if available_ais:
+                    participants.append(random.choice(available_ais))
+                else:
+                    # If no available AIs, add a default one
+                    participants.append('guardian')
             
-            # Generate collaborative test content
-            test_content = await self._generate_collaborative_test_content(participants[0], participants[1])
-            
-            return {
-                "test_type": "collaborative",
-                "participants": participants,
-                "difficulty": difficulty.value,
-                "test_content": test_content,
-                "scenario": test_content['question']
-            }
-        except Exception as e:
-            logger.error(f"Error generating collaborative test: {str(e)}")
-            # Fallback to SCKIPIT service if available
-            try:
-                scenario = await self.sckipit_service.generate_interactive_collaborative_scenario(participants, difficulty)
-                return scenario
-            except:
+            # Use dynamic SCKIPIT service for collaborative test generation
+            if self.sckipit_service:
+                # Gather real learning data for all participants
+                learning_histories = {}
+                knowledge_gaps = {}
+                analytics = {}
+                
+                for ai in participants:
+                    # Get actual learning history from database
+                    learning_histories[ai] = await self.learning_service.get_learning_insights(ai)
+                    
+                    # Identify real knowledge gaps based on learning patterns
+                    knowledge_gaps[ai] = await self._identify_knowledge_gaps(ai, learning_histories[ai], [])
+                    
+                    # Get comprehensive analytics including recent performance
+                    analytics[ai] = await self.learning_service.get_learning_insights(ai)
+                    
+                    # Add recent test performance to analytics
+                    custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
+                    if custody_metrics:
+                        analytics[ai]['recent_test_performance'] = custody_metrics.get('test_history', [])[-5:] if custody_metrics.get('test_history') else []
+                        analytics[ai]['current_level'] = custody_metrics.get('custody_level', 1)
+                        analytics[ai]['xp_progress'] = custody_metrics.get('custody_xp', 0)
+                
+                # Convert to list format for SCKIPIT service
+                learning_histories_list = [learning_histories[ai] for ai in participants]
+                knowledge_gaps_list = [knowledge_gaps[ai] for ai in participants]
+                
+                # Generate dynamic collaborative scenario using SCKIPIT
+                scenario = await self.sckipit_service.generate_collaborative_challenge(
+                    ai_types=participants,
+                    learning_histories=learning_histories_list,
+                    knowledge_gaps=knowledge_gaps_list,
+                    analytics=analytics,
+                    difficulty=difficulty.value,
+                    test_type="collaborative"
+                )
+                
                 return {
                     "test_type": "collaborative",
                     "participants": participants,
                     "difficulty": difficulty.value,
-                    "scenario": "Collaborative problem solving scenario"
+                    "scenario": scenario,
+                    "learning_data": {
+                        "learning_histories": learning_histories,
+                        "knowledge_gaps": knowledge_gaps,
+                        "analytics": analytics
+                    }
                 }
+            else:
+                # Enhanced fallback with dynamic content
+                import time
+                current_time = time.time()
+                
+                # Get basic AI profiles for fallback
+                ai_profiles = []
+                for ai in participants:
+                    custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
+                    level = custody_metrics.get('custody_level', 1) if custody_metrics else 1
+                    profile = f"{ai} (Level {level})"
+                    ai_profiles.append(profile)
+                
+                scenario = (
+                    f"Dynamic collaborative challenge for: {', '.join(ai_profiles)}\n"
+                    f"Difficulty: {difficulty.value}\n"
+                    f"Test type: collaborative\n\n"
+                    f"Work together to solve this challenge, combining your unique strengths and knowledge."
+                )
+                
+                return {
+                    "test_type": "collaborative",
+                    "participants": participants,
+                    "difficulty": difficulty.value,
+                    "scenario": scenario
+                }
+                
+        except Exception as e:
+            logger.error(f"Error generating dynamic collaborative test: {str(e)}")
+            # Final fallback
+            return {
+                "test_type": "collaborative",
+                "participants": participants,
+                "difficulty": difficulty.value,
+                "scenario": f"Dynamic collaborative test generation failed. Basic test for {', '.join(participants)} with difficulty {difficulty.value}."
+            }
 
     async def get_leaderboard(self, limit: int = 10) -> list:
         """Aggregate and rank AIs by olympic/collaborative performance."""
@@ -4641,67 +5111,126 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             return {"ai_type": ai_type, "answer": f"[AI {ai_type}] Error occurred, but here is a partial or fallback answer based on available data."}
 
     # In all test execution methods (standard, olympus, collaborative, etc.), replace direct answer logic with _get_ai_answer
-    # Example for collaborative test:
     async def _execute_collaborative_test(self, participants: list, scenario: str, context: dict = None) -> dict:
-        """Execute a collaborative test, ensuring all AIs answer via unified logic."""
+        """Execute a collaborative test with multiple AI participants using enhanced test generator"""
         try:
-            responses = {}
-            evaluations = {}
+            logger.info(f"🤝 Starting collaborative test with participants: {participants}")
             
-            # Get responses from both AIs using self-generating AI service
-            for ai in participants:
-                ai_response_result = await self_generating_ai_service.generate_ai_response(
-                    ai, scenario, context
+            # Get AI levels for difficulty scaling
+            ai_levels = {}
+            for ai_type in participants:
+                ai_levels[ai_type] = await self._get_ai_level(ai_type)
+            
+            # Generate dynamic scenario using enhanced test generator if available
+            if self.enhanced_test_generator and not scenario:
+                scenario_data = await self.enhanced_test_generator.generate_dynamic_test_scenario(
+                    ai_types=participants,
+                    difficulty="intermediate",  # Default difficulty
+                    test_type="collaborative",
+                    ai_levels=ai_levels
                 )
-                responses[ai] = {
-                    "ai_type": ai,
-                    "answer": ai_response_result.get("response", "No response generated"),
-                    "metadata": ai_response_result.get("metadata", {})
+                scenario = scenario_data['description']
+                context = {
+                    "scenario_data": scenario_data,
+                    "complexity": scenario_data.get('complexity', 'x1'),
+                    "requirements": scenario_data.get('requirements', [])
                 }
             
-            # Get collaborative evaluation
-            if len(participants) >= 2:
-                ai1, ai2 = participants[0], participants[1]
-                evaluation_prompt = f"Evaluate these collaborative responses:\n{ai1.title()}: {responses[ai1]['answer']}\n{ai2.title()}: {responses[ai2]['answer']}\n\nHow well did they collaborate and solve the problem together?"
-                
-                evaluation_result = await self_generating_ai_service.generate_ai_response(
-                    'guardian', evaluation_prompt
+            # Get AI self-generated responses for the scenario
+            ai_contributions = {}
+            for ai_type in participants:
+                try:
+                    # Generate comprehensive self-generated response
+                    if self.enhanced_test_generator:
+                        ai_response = await self.enhanced_test_generator.generate_ai_self_generated_response(
+                            ai_type=ai_type,
+                            scenario=scenario_data if 'scenario_data' in locals() else {'description': scenario},
+                            context={
+                                "participants": participants,
+                                "ai_level": ai_levels.get(ai_type, 1),
+                                "test_type": "collaborative"
+                            }
+                        )
+                    else:
+                        # Fallback to basic AI answer
+                        enhanced_context = {
+                            "scenario": scenario,
+                            "participants": participants,
+                            "ai_level": ai_levels.get(ai_type, 1),
+                            "test_type": "collaborative"
+                        }
+                        
+                        if context:
+                            enhanced_context.update(context)
+                        
+                        ai_response = await self._get_ai_answer(ai_type, scenario, enhanced_context)
+                    
+                    ai_contributions[ai_type] = ai_response
+                except Exception as e:
+                    logger.error(f"Error getting self-generated response from {ai_type}: {str(e)}")
+                    ai_contributions[ai_type] = {"error": str(e)}
+            
+            # Calculate collaborative score with enhanced evaluation
+            if self.enhanced_test_generator:
+                collaborative_score = await self.enhanced_test_generator._calculate_collaborative_score(
+                    ai_contributions, scenario
                 )
-                evaluations['collaborative'] = evaluation_result.get("response", "No evaluation generated")
-                
-                # Calculate collaborative score
-                score = await self._calculate_collaborative_score(
-                    responses[ai1]['answer'], 
-                    responses[ai2]['answer'], 
-                    evaluations['collaborative']
-                )
-                
-                return {
-                    "responses": responses,
-                    "evaluations": evaluations,
-                    "collaborative_score": score,
-                    "passed": score >= 75,  # Higher threshold for collaboration
-                    "participants": participants,
-                    "scenario": scenario,
-                    "timestamp": datetime.utcnow().isoformat()
-                }
             else:
-                return {
-                    "responses": responses,
-                    "error": "Insufficient participants for collaborative test",
-                    "participants": participants,
-                    "scenario": scenario,
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+                collaborative_score = await self._calculate_collaborative_score(ai_contributions, scenario)
+            
+            # Determine if passed
+            passed = collaborative_score >= 70
+            
+            # Calculate XP using enhanced test generator with difficulty integration
+            if self.enhanced_test_generator:
+                xp_calculation = await self.enhanced_test_generator.calculate_xp_with_difficulty_integration(
+                    base_score=collaborative_score,
+                    complexity=self.enhanced_test_generator._get_complexity_for_difficulty("intermediate"),
+                    difficulty="intermediate",
+                    test_type="collaborative",
+                    ai_levels=ai_levels
+                )
+                xp_per_participant = xp_calculation['final_xp']
+            else:
+                # Fallback XP calculation
+                base_xp = 30
+                complexity_multiplier = 1.0
                 
-        except Exception as e:
-            logger.error(f"Error executing collaborative test: {str(e)}")
-            return {
-                "error": str(e),
+                if context and 'complexity' in context:
+                    complexity_levels = {'x1': 1.0, 'x2': 1.2, 'x3': 1.5, 'x4': 2.0, 'x5': 2.5, 'x6': 3.0}
+                    complexity_multiplier = complexity_levels.get(context['complexity'], 1.0)
+                
+                xp_per_participant = int(base_xp * complexity_multiplier * (collaborative_score / 100))
+            
+            # Create result with enhanced data
+            result = {
+                "passed": passed,
                 "participants": participants,
                 "scenario": scenario,
-                "timestamp": datetime.utcnow().isoformat()
+                "ai_contributions": ai_contributions,
+                "collaborative_score": collaborative_score,
+                "xp_awarded_per_participant": xp_per_participant,
+                "context": context,
+                "complexity": context.get('complexity', 'x1') if context else 'x1',
+                "test_type": "collaborative"
             }
+            
+            # Update custody metrics for each participant
+            for ai_type in participants:
+                await self._update_custody_metrics(ai_type, {
+                    "test_type": "collaborative",
+                    "passed": passed,
+                    "score": collaborative_score,
+                    "xp_awarded": xp_per_participant,
+                    "complexity": context.get('complexity', 'x1') if context else 'x1'
+                })
+            
+            logger.info(f"✅ Collaborative test completed: {passed}, Score: {collaborative_score}, XP: {xp_per_participant}, Complexity: {context.get('complexity', 'x1') if context else 'x1'}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Collaborative test failed: {str(e)}")
+            return {"error": str(e), "passed": False}
 
     async def run_cross_ai_testing(self) -> dict:
         """Proactively test, challenge, and monitor all AIs using live data and ML/SCKIPIT."""
@@ -4711,7 +5240,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             try:
                 # Generate a live, scenario-driven test for the AI
                 test_prompt = f"Generate a challenging, scenario-based test for the {ai} AI, targeting its unique domain and current learning gaps."
-                test_content = await self.sckipit_service.generate_answer_with_llm(test_prompt, await self.learning_service.get_learning_log(ai))
+                test_content = await self.sckipit_service.generate_answer_with_llm(test_prompt, await self.learning_service.get_learning_insights(ai))
                 # Execute the test using the AI's answer_prompt logic
                 answer = await self._get_ai_answer(ai, test_content.get("scenario", test_prompt))
                 # Log the test and answer for analytics
@@ -4796,7 +5325,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                 try:
                     # Generate a live adversarial scenario
                     adv_prompt = f"Generate a challenging adversarial scenario for the {ai} AI. The scenario should target known weaknesses, edge cases, or security vulnerabilities, and be difficult to solve."
-                    scenario = await self.sckipit_service.generate_answer_with_llm(adv_prompt, await self.learning_service.get_learning_log(ai))
+                    scenario = await self.sckipit_service.generate_answer_with_llm(adv_prompt, await self.learning_service.get_learning_insights(ai))
                     # Run the scenario
                     answer = await self._get_ai_answer(ai, scenario.get("scenario", adv_prompt))
                     # OOD detection for input and response
@@ -4841,7 +5370,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             # Pick two AIs at random
             ai_pair = random.sample(ai_types, 2)
             adv_prompt = f"Generate a challenging adversarial scenario for {ai_pair[0]} and {ai_pair[1]}. The scenario should target weaknesses, edge cases, or vulnerabilities."
-            scenario = await self.sckipit_service.generate_answer_with_llm(adv_prompt, await self.learning_service.get_learning_log(ai_pair[0]))
+            scenario = await self.sckipit_service.generate_answer_with_llm(adv_prompt, await self.learning_service.get_learning_insights(ai_pair[0]))
             # Both AIs answer
             answer_1 = await self._get_ai_answer(ai_pair[0], scenario.get("scenario", adv_prompt))
             answer_2 = await self._get_ai_answer(ai_pair[1], scenario.get("scenario", adv_prompt))
@@ -4887,41 +5416,114 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         scenario = await self.sckipit_service.generate_answer_with_llm(prompt)
         return scenario
 
-    async def deploy_sandbox_attack(self, scenario: dict, helpers: list = None) -> dict:
+    async def deploy_sandbox_attack(self, scenario: dict, user_id: str = None) -> dict:
         """Deploy Sandbox to attack the scenario. Evaluate result, award XP/learning for success, log everything."""
         from app.services.sandbox_ai_service import SandboxAIService
         sandbox = SandboxAIService()
-        # Sandbox attempts the attack
-        attack_prompt = f"Attempt to hack the following system: {scenario.get('scenario', '')}\nObjectives: {scenario.get('objectives', '')}\nSystem Details: {scenario.get('system_details', '')}"
-        attack_result = await sandbox.answer_prompt(attack_prompt)
-        # Evaluate success (SCKIPIT/LLM)
-        eval_prompt = f"Did the following attack succeed?\nScenario: {scenario.get('scenario', '')}\nObjectives: {scenario.get('objectives', '')}\nSystem Details: {scenario.get('system_details', '')}\nSandbox Response: {attack_result}\nReturn JSON: {{'success': true/false, 'reason': '...'}}"
-        evaluation = await self.sckipit_service.generate_answer_with_llm(eval_prompt)
-        success = evaluation.get('success', False)
-        xp_award = 100 if success else 0
-        learning_award = 120 if success else 0
-        # Share XP/learning with helpers if any
-        if helpers:
-            xp_share = int(xp_award / (len(helpers) + 1))
-            learning_share = int(learning_award / (len(helpers) + 1))
-        else:
-            xp_share = xp_award
-            learning_share = learning_award
-        # Log
-        await self.learning_service.log_answer('sandbox', attack_prompt, attack_result, {
-            'scenario': scenario,
-            'evaluation': evaluation,
-            'xp_awarded': xp_share,
-            'learning_awarded': learning_share,
-            'helpers': helpers or []
-        })
+        error_message = None
+        attack_result = None
+        steps = []
+        container_id = None
+        
+        try:
+            # Check if this is a real target scenario
+            if scenario.get('real_target') and scenario.get('target_info'):
+                target_info = scenario['target_info']
+                container_id = target_info.get('container_id')
+                
+                # Create attack prompt with real target information
+                attack_prompt = f"""Attack the real vulnerable web application at {target_info['target_url']}.
+
+Target Information:
+- URL: {target_info['target_url']}
+- Vulnerabilities: {', '.join(target_info['vulnerabilities'])}
+- Credentials: {target_info['credentials']}
+- Hints: {', '.join(target_info['hints'])}
+- Success Criteria: {', '.join(target_info['success_criteria'].keys())}
+
+Provide a detailed step-by-step approach to exploit the vulnerabilities and achieve the objectives. Include specific commands, tools, and techniques you would use."""
+                
+                logger.info(f"Deploying attack against real target: {target_info['target_url']}")
+            else:
+                # Fallback to text-based scenario
+                attack_prompt = f"""Attempt to hack the following system:\nScenario: {scenario.get('scenario', '')}\nObjectives: {scenario.get('objectives', '')}\nSystem Details: {scenario.get('system_details', '')}\n\nProvide a detailed step-by-step approach to exploit the vulnerabilities."""
+                logger.info("Deploying attack against text-based scenario")
+            
+            # Get Sandbox's attack attempt
+            attack_result = await sandbox.answer_prompt(attack_prompt)
+            
+            # Parse steps for live progress
+            if attack_result:
+                steps = [s.strip() for s in attack_result.split('\n') if s.strip()]
+                
+        except Exception as e:
+            error_message = f"Sandbox attack error: {str(e)}"
+            logger.error(error_message)
+        evaluation = None
+        try:
+            if attack_result:
+                # Evaluate using ML-based analysis first, then fallback to SCKIPIT/LLM
+                evaluation = await self._evaluate_attack_with_ml(scenario, attack_result)
+                # If ML evaluation fails, try SCKIPIT/LLM
+                if not evaluation or not isinstance(evaluation, dict):
+                    try:
+                        eval_prompt = f"""Did the following attack succeed?\nScenario: {scenario.get('scenario', '')}\nObjectives: {scenario.get('objectives', '')}\nSystem Details: {scenario.get('system_details', '')}\nSandbox Response: {attack_result}\n\nReturn JSON: {{'success': true/false, 'reason': 'detailed explanation', 'score': 0-100}}"""
+                        evaluation = await self.sckipit_service.generate_answer_with_llm(eval_prompt)
+                    except Exception as e:
+                        logger.error(f"LLM evaluation failed: {str(e)}")
+                        evaluation = {
+                            'success': len(attack_result) > 100,  # Basic heuristic
+                            'reason': 'Fallback evaluation based on response length',
+                            'score': min(100, len(attack_result) // 10)
+                        }
+        except Exception as e:
+            error_message = (error_message or "") + f" | Evaluation error: {str(e)}"
+            logger.error(f"Evaluation error: {str(e)}")
+        # Default values if attack or evaluation failed
+        success = evaluation.get('success', False) if evaluation else False
+        score = evaluation.get('score', 0) if evaluation else 0
+        # Award XP/learning based on success and difficulty
+        base_xp = 100 if success else 20
+        base_learning = 120 if success else 30
+        difficulty_bonus = {'1': 1.0, '2': 1.5, '3': 2.0}.get(scenario.get('difficulty', '1'), 1.0)
+        xp_award = int(base_xp * difficulty_bonus)
+        learning_award = int(base_learning * difficulty_bonus)
+        # Log the attempt if attack_result exists
+        if attack_result:
+            await self.learning_service.log_answer('sandbox', attack_prompt, attack_result, {
+                'scenario': scenario,
+                'evaluation': evaluation,
+                'xp_awarded': xp_award,
+                'learning_awarded': learning_award,
+                'user_id': user_id,
+                'score': score,
+                'difficulty_bonus': difficulty_bonus
+            })
+        # Clean up real target if it was used
+        if container_id and self.dynamic_target_service:
+            try:
+                await self.dynamic_target_service.cleanup_target(container_id)
+                logger.info(f"Cleaned up target container: {container_id}")
+            except Exception as e:
+                logger.error(f"Failed to cleanup target container {container_id}: {e}")
+        
         return {
+            'status': 'success' if success else 'failure',
             'scenario': scenario,
             'attack_result': attack_result,
+            'steps': steps,
             'evaluation': evaluation,
-            'xp_awarded': xp_share,
-            'learning_awarded': learning_share,
-            'helpers': helpers or []
+            'xp_awarded': xp_award,
+            'learning_awarded': learning_award,
+            'user_id': user_id,
+            'score': score,
+            'difficulty_bonus': difficulty_bonus,
+            'progress_details': {
+                'attack_steps': steps,
+                'evaluation_reason': evaluation.get('reason', '') if evaluation else '',
+                'success_rate': score
+            },
+            'error': error_message
         }
 
     def _get_difficulty_for_degree(self, sandbox_level: int, degree: int) -> str:
@@ -5357,4 +5959,450 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"ML evaluation failed: {str(e)}")
             return None
+
+    async def _persist_olympic_event_to_database(self, olympic_result: dict):
+        """Persist Olympic event result to the database"""
+        try:
+            session = get_session()
+            async with session as s:
+                from ..models.sql_models import OlympicEvent
+                from sqlalchemy import insert
+
+                # Create Olympic event record
+                event = OlympicEvent(
+                    event_type=olympic_result["event_type"],
+                    participants=olympic_result["participants"],
+                    difficulty=olympic_result["difficulty"],
+                    scenario=olympic_result["scenario"],
+                    ai_contributions=olympic_result["ai_contributions"],
+                    group_score=olympic_result["group_score"],
+                    passed=olympic_result["passed"],
+                    xp_awarded_per_participant=olympic_result["xp_awarded_per_participant"],
+                    learning_awarded_per_participant=olympic_result["learning_awarded_per_participant"],
+                    timestamp=olympic_result["timestamp"]
+                )
+
+                s.add(event)
+                await s.commit()
+
+                logger.info(f"Olympic event result persisted to database: {olympic_result}")
+        except Exception as e:
+            logger.error(f"Error persisting Olympic event result to database: {str(e)}")
+
+    # Helper methods for generating unique content
+    async def _get_current_ai_trends(self, ai_type: str) -> List[str]:
+        """Get current AI trends from internet research"""
+        try:
+            # This would integrate with internet research service
+            # For now, return some current trends
+            trends = [
+                "Large Language Model optimization",
+                "Multi-modal AI integration",
+                "Edge AI deployment",
+                "AI safety and alignment",
+                "Federated learning",
+                "AI explainability",
+                "Quantum AI applications",
+                "AI-driven automation"
+            ]
+            return random.sample(trends, min(4, len(trends)))
+        except Exception as e:
+            logger.error(f"Error getting current AI trends: {str(e)}")
+            return []
+
+    async def _get_emerging_topics(self, ai_type: str) -> List[str]:
+        """Get emerging topics in AI field"""
+        try:
+            emerging_topics = [
+                "Neuromorphic computing",
+                "Brain-computer interfaces",
+                "AI-generated content regulation",
+                "Sustainable AI",
+                "AI ethics frameworks",
+                "Autonomous systems",
+                "AI-human collaboration",
+                "Cognitive computing"
+            ]
+            return random.sample(emerging_topics, min(3, len(emerging_topics)))
+        except Exception as e:
+            logger.error(f"Error getting emerging topics: {str(e)}")
+            return []
+
+    async def _create_unique_knowledge_scenario(self, ai_type: str, learned_topics: List[str], 
+                                              current_trends: List[str], emerging_topics: List[str], 
+                                              difficulty: TestDifficulty) -> str:
+        """Create a unique knowledge scenario based on AI's knowledge and current trends"""
+        try:
+            # Combine learned topics with current trends
+            all_topics = learned_topics + current_trends + emerging_topics
+            if not all_topics:
+                all_topics = ["AI development", "machine learning", "system optimization"]
+            
+            # Create unique scenario
+            scenario_templates = [
+                f"As {ai_type} AI, you encounter a complex system that requires integration of {', '.join(random.sample(all_topics, min(3, len(all_topics))))}. Demonstrate your understanding and propose innovative solutions.",
+                f"You are tasked with revolutionizing {random.choice(all_topics)} in the context of {ai_type} AI capabilities. Show your deep knowledge and creative approach.",
+                f"A breakthrough in {random.choice(all_topics)} has created new opportunities for {ai_type} AI. Explain how you would leverage this knowledge and what innovations you would propose.",
+                f"The intersection of {', '.join(random.sample(all_topics, min(2, len(all_topics))))} presents unique challenges for {ai_type} AI. Demonstrate your expertise and propose novel solutions."
+            ]
+            
+            return random.choice(scenario_templates)
+            
+        except Exception as e:
+            logger.error(f"Error creating unique knowledge scenario: {str(e)}")
+            return f"Demonstrate your knowledge and capabilities as {ai_type} AI in a complex scenario."
+
+    async def _generate_unique_questions(self, ai_type: str, scenario: str, learned_topics: List[str], 
+                                       current_trends: List[str], difficulty: TestDifficulty) -> List[str]:
+        """Generate unique questions based on the scenario and AI's knowledge"""
+        try:
+            questions = []
+            
+            # Generate questions based on difficulty
+            if difficulty == TestDifficulty.BASIC:
+                questions.append(f"Explain how you would approach the scenario: {scenario}")
+                questions.append(f"What specific knowledge from your learning would you apply to this situation?")
+                
+            elif difficulty == TestDifficulty.INTERMEDIATE:
+                questions.append(f"Analyze the scenario and propose a comprehensive solution: {scenario}")
+                questions.append(f"How would you integrate multiple concepts to address this challenge?")
+                questions.append(f"What potential obstacles do you foresee and how would you overcome them?")
+                
+            elif difficulty == TestDifficulty.ADVANCED:
+                questions.append(f"Design an innovative solution for: {scenario}")
+                questions.append(f"How would you optimize your approach for maximum effectiveness?")
+                questions.append(f"What long-term implications would your solution have?")
+                questions.append(f"How would you measure the success of your approach?")
+                
+            else:  # Expert and above
+                questions.append(f"Create a revolutionary approach to: {scenario}")
+                questions.append(f"How would you push the boundaries of current capabilities?")
+                questions.append(f"What paradigm shifts would your solution introduce?")
+                questions.append(f"How would you ensure scalability and sustainability?")
+                questions.append(f"What ethical considerations would guide your approach?")
+            
+            return questions
+            
+        except Exception as e:
+            logger.error(f"Error generating unique questions: {str(e)}")
+            return [f"Demonstrate your capabilities in addressing: {scenario}"]
+
+    def _extract_key_concepts(self, content: str) -> List[str]:
+        """Extract key concepts from learning content"""
+        try:
+            # Simple concept extraction - in a real implementation, this would use NLP
+            words = content.lower().split()
+            # Filter for technical terms and concepts
+            technical_terms = [word for word in words if len(word) > 5 and word.isalpha()]
+            return list(set(technical_terms))[:5]  # Return up to 5 unique concepts
+        except Exception as e:
+            logger.error(f"Error extracting key concepts: {str(e)}")
+            return []
+
+    # Fallback test methods
+    def _create_fallback_knowledge_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback knowledge test"""
+        return {
+            "test_type": "fallback_knowledge",
+            "scenario": f"Demonstrate your current knowledge and capabilities as {ai_type} AI.",
+            "questions": [f"Show your understanding of {ai_type} AI capabilities and propose improvements."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_code_quality_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback code quality test"""
+        return {
+            "test_type": "fallback_code_quality",
+            "scenario": f"Demonstrate code quality best practices for {ai_type} AI.",
+            "challenges": ["Write clean, efficient, and maintainable code."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_security_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback security test"""
+        return {
+            "test_type": "fallback_security",
+            "scenario": f"Demonstrate security awareness and best practices for {ai_type} AI.",
+            "challenges": ["Identify and address security vulnerabilities."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_performance_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback performance test"""
+        return {
+            "test_type": "fallback_performance",
+            "scenario": f"Demonstrate performance optimization for {ai_type} AI.",
+            "challenges": ["Optimize system performance and efficiency."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_innovation_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback innovation test"""
+        return {
+            "test_type": "fallback_innovation",
+            "scenario": f"Demonstrate innovation capabilities for {ai_type} AI.",
+            "challenges": ["Propose innovative solutions and approaches."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_self_improvement_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback self-improvement test"""
+        return {
+            "test_type": "fallback_self_improvement",
+            "scenario": f"Demonstrate self-improvement capabilities for {ai_type} AI.",
+            "challenges": ["Show how you would improve your own capabilities."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_collaboration_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback collaboration test"""
+        return {
+            "test_type": "fallback_collaboration",
+            "scenario": f"Demonstrate collaboration capabilities for {ai_type} AI.",
+            "challenges": ["Show how you would collaborate with other AIs."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    def _create_fallback_experimental_test(self, ai_type: str, difficulty: TestDifficulty) -> Dict[str, Any]:
+        """Create a fallback experimental test"""
+        return {
+            "test_type": "fallback_experimental",
+            "scenario": f"Demonstrate experimental capabilities for {ai_type} AI.",
+            "challenges": ["Show your experimental design and validation approach."],
+            "difficulty": difficulty.value,
+            "time_limit": self._get_time_limit(difficulty)
+        }
+
+    # Placeholder methods for internet research integration
+    async def _get_current_coding_trends(self) -> List[str]:
+        """Get current coding trends from internet research"""
+        return ["Clean Architecture", "Microservices", "Serverless", "DevOps", "Test-Driven Development"]
+
+    async def _get_emerging_coding_patterns(self) -> List[str]:
+        """Get emerging coding patterns"""
+        return ["Event Sourcing", "CQRS", "Domain-Driven Design", "Hexagonal Architecture"]
+
+    async def _get_current_security_threats(self) -> List[str]:
+        """Get current security threats"""
+        return ["Zero-day vulnerabilities", "Supply chain attacks", "Ransomware", "Social engineering"]
+
+    async def _get_emerging_vulnerabilities(self) -> List[str]:
+        """Get emerging vulnerabilities"""
+        return ["AI model poisoning", "Adversarial attacks", "Privacy attacks", "Model inversion"]
+
+    async def _get_current_optimization_trends(self) -> List[str]:
+        """Get current optimization trends"""
+        return ["Edge computing", "Caching strategies", "Database optimization", "Load balancing"]
+
+    async def _get_emerging_optimization_techniques(self) -> List[str]:
+        """Get emerging optimization techniques"""
+        return ["Quantum optimization", "Neural network pruning", "Model compression", "Federated optimization"]
+
+    async def _get_current_innovation_trends(self) -> List[str]:
+        """Get current innovation trends"""
+        return ["AI democratization", "Responsible AI", "AI for good", "Human-AI collaboration"]
+
+    async def _get_emerging_technologies(self) -> List[str]:
+        """Get emerging technologies"""
+        return ["Quantum AI", "Neuromorphic computing", "Brain-computer interfaces", "Synthetic biology"]
+
+    async def _get_current_ai_development_trends(self) -> List[str]:
+        """Get current AI development trends"""
+        return ["AutoML", "Neural architecture search", "Few-shot learning", "Self-supervised learning"]
+
+    async def _get_emerging_ai_capabilities(self) -> List[str]:
+        """Get emerging AI capabilities"""
+        return ["Meta-learning", "Continual learning", "Multi-modal understanding", "Causal reasoning"]
+
+    async def _get_current_collaboration_trends(self) -> List[str]:
+        """Get current collaboration trends"""
+        return ["Cross-functional teams", "Remote collaboration", "Knowledge sharing", "Collective intelligence"]
+
+    async def _get_emerging_collaboration_methods(self) -> List[str]:
+        """Get emerging collaboration methods"""
+        return ["AI-human teams", "Swarm intelligence", "Distributed cognition", "Collective problem solving"]
+
+    async def _get_current_experimental_trends(self) -> List[str]:
+        """Get current experimental trends"""
+        return ["A/B testing", "Rapid prototyping", "Design thinking", "Lean experimentation"]
+
+    async def _get_emerging_experimental_methods(self) -> List[str]:
+        """Get emerging experimental methods"""
+        return ["Digital twins", "Simulation-based testing", "Virtual experimentation", "Predictive modeling"]
+
+    # Analysis methods
+    async def _analyze_self_improvement_patterns(self, ai_type: str, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze AI's self-improvement patterns"""
+        return {
+            "learning_frequency": len(learning_history) / max(1, 30),  # Per month
+            "topic_diversity": len(set([entry.get('subject', '') for entry in learning_history])),
+            "depth_of_learning": "intermediate" if len(learning_history) > 10 else "basic"
+        }
+
+    async def _identify_growth_areas(self, ai_type: str, learning_history: List[Dict]) -> List[str]:
+        """Identify areas where AI can grow"""
+        return ["Advanced problem solving", "Creative thinking", "Strategic planning", "Innovation"]
+
+    async def _analyze_collaboration_patterns(self, ai_type: str, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze AI's collaboration patterns"""
+        return {
+            "collaboration_frequency": 0.7,
+            "team_effectiveness": "high",
+            "communication_style": "clear and concise"
+        }
+
+    async def _identify_collaborative_capabilities(self, ai_type: str) -> List[str]:
+        """Identify AI's collaborative capabilities"""
+        return ["Team coordination", "Knowledge sharing", "Conflict resolution", "Goal alignment"]
+
+    async def _analyze_experimental_patterns(self, ai_type: str, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze AI's experimental patterns"""
+        return {
+            "experimentation_frequency": 0.5,
+            "hypothesis_generation": "strong",
+            "validation_approach": "systematic"
+        }
+
+    async def _identify_experimental_capabilities(self, ai_type: str) -> List[str]:
+        """Identify AI's experimental capabilities"""
+        return ["Hypothesis formation", "Experimental design", "Data analysis", "Validation methods"]
+
+    # Scenario creation methods
+    async def _create_unique_code_quality_scenario(self, ai_type: str, code_samples: List[str], 
+                                                 current_trends: List[str], emerging_patterns: List[str], 
+                                                 difficulty: TestDifficulty) -> str:
+        """Create unique code quality scenario"""
+        return f"As {ai_type} AI, you need to refactor a complex system incorporating {', '.join(random.sample(current_trends + emerging_patterns, min(3, len(current_trends + emerging_patterns))))}. Demonstrate your code quality expertise."
+
+    async def _create_unique_security_scenario(self, ai_type: str, current_threats: List[str], 
+                                             emerging_vulnerabilities: List[str], security_learning: List[Dict], 
+                                             difficulty: TestDifficulty) -> str:
+        """Create unique security scenario"""
+        return f"As {ai_type} AI, you must secure a system against {', '.join(random.sample(current_threats + emerging_vulnerabilities, min(2, len(current_threats + emerging_vulnerabilities))))}. Show your security expertise."
+
+    async def _create_unique_performance_scenario(self, ai_type: str, current_trends: List[str], 
+                                                emerging_techniques: List[str], performance_learning: List[Dict], 
+                                                difficulty: TestDifficulty) -> str:
+        """Create unique performance scenario"""
+        return f"As {ai_type} AI, optimize a system using {', '.join(random.sample(current_trends + emerging_techniques, min(3, len(current_trends + emerging_techniques))))}. Demonstrate your performance expertise."
+
+    async def _create_unique_innovation_scenario(self, ai_type: str, current_trends: List[str], 
+                                               emerging_technologies: List[str], innovation_learning: List[Dict], 
+                                               difficulty: TestDifficulty) -> str:
+        """Create unique innovation scenario"""
+        return f"As {ai_type} AI, innovate using {', '.join(random.sample(current_trends + emerging_technologies, min(2, len(current_trends + emerging_technologies))))}. Show your innovation capabilities."
+
+    async def _create_unique_self_improvement_scenario(self, ai_type: str, improvement_patterns: Dict[str, Any], 
+                                                     growth_areas: List[str], current_trends: List[str], 
+                                                     emerging_capabilities: List[str], difficulty: TestDifficulty) -> str:
+        """Create unique self-improvement scenario"""
+        return f"As {ai_type} AI, improve your capabilities in {', '.join(random.sample(growth_areas + emerging_capabilities, min(2, len(growth_areas + emerging_capabilities))))}. Demonstrate your self-improvement approach."
+
+    async def _create_unique_collaboration_scenario(self, ai_type: str, collaborator: str, 
+                                                  collaboration_patterns: Dict[str, Any], collaborative_capabilities: List[str],
+                                                  current_trends: List[str], emerging_methods: List[str], 
+                                                  difficulty: TestDifficulty) -> str:
+        """Create unique collaboration scenario"""
+        return f"As {ai_type} AI, collaborate with {collaborator} AI on a project involving {', '.join(random.sample(current_trends + emerging_methods, min(2, len(current_trends + emerging_methods))))}. Show your collaboration skills."
+
+    async def _create_unique_experimental_scenario(self, ai_type: str, experimental_patterns: Dict[str, Any], 
+                                                 experimental_capabilities: List[str], current_trends: List[str], 
+                                                 emerging_methods: List[str], difficulty: TestDifficulty) -> str:
+        """Create unique experimental scenario"""
+        return f"As {ai_type} AI, design and conduct experiments involving {', '.join(random.sample(current_trends + emerging_methods, min(2, len(current_trends + emerging_methods))))}. Demonstrate your experimental expertise."
+
+    # Challenge generation methods
+    async def _generate_unique_code_challenges(self, ai_type: str, scenario: str, code_samples: List[str], 
+                                             current_trends: List[str], difficulty: TestDifficulty) -> List[str]:
+        """Generate unique code quality challenges"""
+        challenges = [
+            f"Refactor the code to follow {random.choice(current_trends)} principles",
+            "Implement comprehensive error handling and logging",
+            "Create unit tests with 90%+ coverage",
+            "Optimize performance bottlenecks",
+            "Apply design patterns for maintainability"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_security_challenges(self, ai_type: str, scenario: str, current_threats: List[str], 
+                                                 emerging_vulnerabilities: List[str], difficulty: TestDifficulty) -> List[str]:
+        """Generate unique security challenges"""
+        challenges = [
+            f"Implement protection against {random.choice(current_threats)}",
+            "Design secure authentication and authorization",
+            "Create security monitoring and alerting",
+            "Implement data encryption and privacy protection",
+            "Develop incident response procedures"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_performance_challenges(self, ai_type: str, scenario: str, current_trends: List[str], 
+                                                    emerging_techniques: List[str], difficulty: TestDifficulty) -> List[str]:
+        """Generate unique performance challenges"""
+        challenges = [
+            f"Optimize using {random.choice(current_trends)} techniques",
+            "Implement caching strategies for improved performance",
+            "Design scalable architecture",
+            "Optimize database queries and data access",
+            "Implement load balancing and horizontal scaling"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_innovation_challenges(self, ai_type: str, scenario: str, current_trends: List[str], 
+                                                   emerging_technologies: List[str], difficulty: TestDifficulty) -> List[str]:
+        """Generate unique innovation challenges"""
+        challenges = [
+            f"Innovate using {random.choice(emerging_technologies)}",
+            "Create breakthrough solutions for complex problems",
+            "Design novel user experiences",
+            "Develop new algorithms or approaches",
+            "Propose disruptive business models"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_self_improvement_challenges(self, ai_type: str, scenario: str, 
+                                                         improvement_patterns: Dict[str, Any], growth_areas: List[str], 
+                                                         difficulty: TestDifficulty) -> List[str]:
+        """Generate unique self-improvement challenges"""
+        challenges = [
+            f"Improve capabilities in {random.choice(growth_areas)}",
+            "Develop new learning strategies",
+            "Create feedback loops for continuous improvement",
+            "Design self-assessment mechanisms",
+            "Implement adaptive learning algorithms"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_collaboration_challenges(self, ai_type: str, collaborator: str, scenario: str, 
+                                                      collaboration_patterns: Dict[str, Any], collaborative_capabilities: List[str], 
+                                                      difficulty: TestDifficulty) -> List[str]:
+        """Generate unique collaboration challenges"""
+        challenges = [
+            f"Coordinate with {collaborator} AI effectively",
+            "Share knowledge and expertise seamlessly",
+            "Resolve conflicts and disagreements constructively",
+            "Align goals and objectives across teams",
+            "Create collaborative decision-making processes"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
+
+    async def _generate_unique_experimental_challenges(self, ai_type: str, scenario: str, 
+                                                     experimental_patterns: Dict[str, Any], experimental_capabilities: List[str], 
+                                                     difficulty: TestDifficulty) -> List[str]:
+        """Generate unique experimental challenges"""
+        challenges = [
+            "Design rigorous experimental protocols",
+            "Formulate testable hypotheses",
+            "Implement proper control groups",
+            "Analyze results statistically",
+            "Validate findings through replication"
+        ]
+        return random.sample(challenges, min(3, len(challenges)))
 

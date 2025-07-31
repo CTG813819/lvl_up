@@ -81,6 +81,14 @@ class TokenUsageService:
     async def _setup_monthly_tracking(self):
         """Setup monthly tracking for all AI types"""
         try:
+            # Initialize database if not already initialized
+            try:
+                from ..core.database import init_database
+                await init_database()
+            except Exception as e:
+                logger.error(f"Error setting up monthly tracking: {str(e)}")
+                return
+            
             current_month = datetime.utcnow().strftime("%Y-%m")
             
             # Define AI types manually since we can't access enum values
@@ -116,7 +124,7 @@ class TokenUsageService:
                         continue
                         
         except Exception as e:
-            logger.error("Error setting up monthly tracking", error_message=str(e))
+            logger.error(f"Error setting up monthly tracking: {str(e)}")
             # Don't fail initialization if tables don't exist yet
     
     async def _get_daily_usage(self, current_date: str) -> int:
@@ -134,7 +142,7 @@ class TokenUsageService:
                 daily_usage = result.scalar() or 0
                 return daily_usage
         except Exception as e:
-            logger.error("Error getting daily usage", error_message=str(e))
+            logger.error(f"Error getting daily usage: {str(e)}")
             return 0
     
     async def _get_hourly_usage(self, current_hour: str) -> int:
@@ -152,7 +160,7 @@ class TokenUsageService:
                 hourly_usage = result.scalar() or 0
                 return hourly_usage
         except Exception as e:
-            logger.error("Error getting hourly usage", error_message=str(e))
+            logger.error(f"Error getting hourly usage: {str(e)}")
             return 0
     
     async def _check_rate_limits(self, ai_type: str, estimated_tokens: int, provider: str = "anthropic") -> Tuple[bool, Dict[str, Any]]:
@@ -227,7 +235,7 @@ class TokenUsageService:
             }
             
         except Exception as e:
-            logger.error("Error checking rate limits", error_message=str(e))
+            logger.error(f"Error checking rate limits: {str(e)}")
             return False, {"error": str(e)}
     
     async def record_token_usage(
@@ -323,7 +331,7 @@ class TokenUsageService:
                 return True
                 
         except Exception as e:
-            logger.error("Error recording token usage", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error recording token usage: {str(e)} ai_type={ai_type}")
             return False
     
     async def get_monthly_usage(self, ai_type: str, month_year: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -360,7 +368,7 @@ class TokenUsageService:
                 return None
                 
         except Exception as e:
-            logger.error("Error getting monthly usage", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error getting monthly usage: {str(e)} ai_type={ai_type}")
             return None
     
     async def get_all_monthly_usage(self, month_year: Optional[str] = None) -> Dict[str, Any]:
@@ -403,7 +411,7 @@ class TokenUsageService:
                 }
                 
         except Exception as e:
-            logger.error("Error getting all monthly usage", error_message=str(e))
+            logger.error(f"Error getting all monthly usage: {str(e)}")
             return {"month_year": month_year, "ai_usage": {}, "summary": {}}
     
     async def get_usage_alerts(self) -> List[Dict[str, Any]]:
@@ -437,7 +445,7 @@ class TokenUsageService:
                 return alerts
                 
         except Exception as e:
-            logger.error("Error getting usage alerts", error_message=str(e))
+            logger.error(f"Error getting usage alerts: {str(e)}")
             return []
     
     async def reset_monthly_usage(self, ai_type: str, month_year: Optional[str] = None) -> bool:
@@ -473,7 +481,7 @@ class TokenUsageService:
                     return False
                     
         except Exception as e:
-            logger.error("Error resetting monthly usage", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error resetting monthly usage: {str(e)} ai_type={ai_type}")
             return False
     
     async def get_usage_history(self, ai_type: str, months: int = 6) -> List[Dict[str, Any]]:
@@ -509,7 +517,7 @@ class TokenUsageService:
                 return history
                 
         except Exception as e:
-            logger.error("Error getting usage history", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error getting usage history: {str(e)} ai_type={ai_type}")
             return []
     
     async def check_usage_limit(self, ai_type: str) -> Tuple[bool, Dict[str, Any]]:
@@ -568,7 +576,7 @@ class TokenUsageService:
                     }
                 }
         except Exception as e:
-            logger.error("Error checking usage limit", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error checking usage limit: {str(e)} ai_type={ai_type}")
             # If tables don't exist, allow requests but log the issue
             if "relation \"token_usage\" does not exist" in str(e):
                 logger.warning("Token usage tables not found - allowing requests", ai_type=ai_type)
@@ -591,9 +599,7 @@ class TokenUsageService:
             
             if not rate_limit_ok:
                 logger.warning(
-                    f"Rate limit exceeded - blocking request for {ai_type}",
-                    error_message=rate_limit_info.get("error"),
-                    estimated_tokens=estimated_tokens
+                    f"Rate limit exceeded - blocking request for {ai_type} - {rate_limit_info.get('error')} - estimated_tokens={estimated_tokens}"
                 )
                 return False, rate_limit_info
             
@@ -602,32 +608,26 @@ class TokenUsageService:
             
             if not can_make_request:
                 logger.warning(
-                    f"Token limit reached - blocking request for {ai_type}",
-                    usage_percentage=usage_info.get("usage_percentage", 0),
-                    estimated_tokens=estimated_tokens
+                    f"Token limit reached - blocking request for {ai_type} - usage_percentage={usage_info.get('usage_percentage', 0)} - estimated_tokens={estimated_tokens}"
                 )
                 return False, usage_info
             
             # Check if this specific request would exceed limits
             if estimated_tokens > REQUEST_LIMIT:
                 logger.warning(
-                    f"Request token limit exceeded - blocking request for {ai_type}",
-                    estimated_tokens=estimated_tokens,
-                    request_limit=REQUEST_LIMIT
+                    f"Request too large - blocking request for {ai_type} - estimated_tokens={estimated_tokens} - limit={REQUEST_LIMIT}"
                 )
                 return False, {
-                    **usage_info,
-                    "error": f"Request exceeds token limit: {estimated_tokens} > {REQUEST_LIMIT}"
+                    "error": f"Request too large ({estimated_tokens} tokens > {REQUEST_LIMIT} limit)",
+                    "estimated_tokens": estimated_tokens,
+                    "request_limit": REQUEST_LIMIT
                 }
             
             # Check if this request would push us over the limit
             current_tokens = usage_info.get("global_total_tokens", 0)
             if current_tokens + estimated_tokens > ENFORCED_GLOBAL_LIMIT:
                 logger.warning(
-                    f"Request would exceed monthly limit - blocking request for {ai_type}",
-                    current_tokens=current_tokens,
-                    estimated_tokens=estimated_tokens,
-                    limit=ENFORCED_GLOBAL_LIMIT
+                    f"Request would exceed monthly limit - blocking request for {ai_type} current_tokens={current_tokens} estimated_tokens={estimated_tokens} limit={ENFORCED_GLOBAL_LIMIT}"
                 )
                 return False, {
                     **usage_info,
@@ -643,7 +643,7 @@ class TokenUsageService:
             return True, combined_info
             
         except Exception as e:
-            logger.error("Error enforcing strict limits", error_message=str(e), ai_type=ai_type)
+            logger.error(f"Error enforcing strict limits: {str(e)} ai_type={ai_type}")
             return False, {"error": str(e)}
 
     async def get_emergency_status(self) -> Dict[str, Any]:
@@ -672,7 +672,7 @@ class TokenUsageService:
                 }
                 
         except Exception as e:
-            logger.error("Error getting emergency status", error_message=str(e))
+            logger.error(f"Error getting emergency status: {str(e)}")
             return {
                 "error": str(e),
                 "status": "unknown"
@@ -757,7 +757,7 @@ class TokenUsageService:
             }
             
         except Exception as e:
-            logger.error("Error getting provider recommendation", error_message=str(e), ai_name=ai_name)
+            logger.error(f"Error getting provider recommendation: {str(e)} ai_name={ai_name}")
             return {
                 "recommendation": "anthropic",  # Default to Anthropic on error
                 "reason": "error_fallback",
@@ -797,7 +797,7 @@ class TokenUsageService:
                 return False, {"error": f"Unknown provider: {provider}"}
                 
         except Exception as e:
-            logger.error("Error checking provider availability", error_message=str(e), ai_name=ai_name, provider=provider)
+            logger.error(f"Error checking provider availability: {str(e)} ai_name={ai_name} provider={provider}")
             return False, {"error": str(e)}
     
     async def get_usage_distribution_stats(self) -> Dict[str, Any]:
@@ -890,7 +890,7 @@ class TokenUsageService:
                 }
                 
         except Exception as e:
-            logger.error("Error getting usage distribution stats", error_message=str(e))
+            logger.error(f"Error getting usage distribution stats: {str(e)}")
             return {
                 "error": str(e),
                 "monthly_distribution": {},

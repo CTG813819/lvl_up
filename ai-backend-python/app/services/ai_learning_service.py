@@ -61,7 +61,7 @@ class AILearningService:
     def __init__(self):
         if not self._initialized:
             self.ml_service = MLService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.enhanced_ml_service = EnhancedMLLearningService()
             self._initialized = True
             self._initialize_enhanced_ml_models()
@@ -90,6 +90,14 @@ class AILearningService:
     async def initialize(cls):
         """Initialize the AI Learning service"""
         instance = cls()
+        # Initialize SckipitService
+        try:
+            from .sckipit_service import SckipitService
+            instance.sckipit_service = await SckipitService.initialize()
+            logger.info("SckipitService initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize SckipitService: {e}")
+            instance.sckipit_service = None
         logger.info("AI Learning Service initialized with ENHANCED ML capabilities")
         return instance
     
@@ -1855,7 +1863,7 @@ class AILearningService:
                 }
                 
         except Exception as e:
-            logger.error("Error applying learning to proposal", error=str(e))
+            logger.error(f"Error applying learning to proposal: {str(e)}")
             return {
                 "original_confidence": proposal_data.get("confidence", 0.5),
                 "new_confidence": proposal_data.get("confidence", 0.5),
@@ -2074,7 +2082,7 @@ class AILearningService:
                     ai_results["search_results"].extend(search_results)
                     ai_results["insights_gained"].append(ai_response.get("insights", ""))
                 except Exception as e:
-                    logger.error(f"Error learning topic {topic} for {ai_type}", error=str(e))
+                    logger.error(f"Error learning topic {topic} for {ai_type}: {str(e)}")
             # Calculate average learning score for this AI
             if ai_results["topics_learned"]:
                 ai_results["learning_score"] = ai_results["learning_score"] / len(ai_results["topics_learned"])
@@ -2503,7 +2511,7 @@ class AILearningService:
             return True
             
         except Exception as e:
-            logger.error(f"Error storing internet learning for {ai_type}", error=str(e))
+            logger.error(f"Error storing internet learning for {ai_type}: {str(e)}")
             return False
     
     async def store_internet_insight(self, ai_type: str, topic: str, source: str, insights: List[str], timestamp: datetime) -> bool:
@@ -2525,7 +2533,7 @@ class AILearningService:
             return True
             
         except Exception as e:
-            logger.error(f"Error storing internet insight for {ai_type}", error=str(e))
+            logger.error(f"Error storing internet insight for {ai_type}: {str(e)}")
             return False
     
     async def get_internet_insights(self, ai_type: str, improvement_type: str = None) -> List[Dict]:
@@ -2565,7 +2573,7 @@ class AILearningService:
             return recent_insights
             
         except Exception as e:
-            logger.error(f"Error getting internet insights for {ai_type}", error=str(e))
+            logger.error(f"Error getting internet insights for {ai_type}: {str(e)}")
             return []
     
     async def get_internet_learning_progress(self, ai_type: str) -> float:
@@ -2607,7 +2615,7 @@ class AILearningService:
             return min(total_progress, 100.0)
             
         except Exception as e:
-            logger.error(f"Error getting internet learning progress for {ai_type}", error=str(e))
+            logger.error(f"Error getting internet learning progress for {ai_type}: {str(e)}")
             return 0.0
     
     def get_ai_level(self, ai_type: str) -> int:
@@ -2647,7 +2655,7 @@ class AILearningService:
                 return 10
                 
         except Exception as e:
-            logger.error(f"Error getting AI level for {ai_type}", error=str(e))
+            logger.error(f"Error getting AI level for {ai_type}: {str(e)}")
             return 1  # Default to level 1
 
     async def trigger_internet_learning(self, ai_type: str, topics: List[str] = None) -> bool:
@@ -2693,7 +2701,7 @@ class AILearningService:
             return True
             
         except Exception as e:
-            logger.error(f"Error triggering internet learning for {ai_type}", error=str(e))
+            logger.error(f"Error triggering internet learning for {ai_type}: {str(e)}")
             return False 
 
     def _get_level_thresholds(self, learning_score: float, ai_type: str) -> dict:

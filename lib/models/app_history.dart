@@ -66,7 +66,7 @@ class AppHistoryEntry {
     Map<String, dynamic>? metadata,
   }) {
     return AppHistoryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       title: title,
       description: description,
       timestamp: DateTime.now(),
@@ -86,7 +86,7 @@ class AppHistoryEntry {
     Map<String, dynamic>? metadata,
   }) {
     return AppHistoryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       title: title,
       description: description,
       timestamp: DateTime.now(),
@@ -102,7 +102,7 @@ class AppHistoryEntry {
     Map<String, dynamic>? metadata,
   }) {
     return AppHistoryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       title: title,
       description: description,
       timestamp: DateTime.now(),
@@ -118,7 +118,7 @@ class AppHistoryEntry {
     Map<String, dynamic>? metadata,
   }) {
     return AppHistoryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       title: title,
       description: description,
       timestamp: DateTime.now(),

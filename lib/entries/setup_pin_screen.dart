@@ -3,7 +3,7 @@ import 'package:pinput/pinput.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SetupPinScreen extends StatefulWidget {
-  const SetupPinScreen({Key? key}) : super(key: key);
+  const SetupPinScreen({super.key});
 
   @override
   _SetupPinScreenState createState() => _SetupPinScreenState();
@@ -51,7 +51,9 @@ class _SetupPinScreenState extends State<SetupPinScreen> {
       });
       if (enteredPin == confirmPin) {
         _savePin(confirmPin).then((_) {
-          Navigator.of(context).pop(true); // Return success
+          if (mounted) {
+            Navigator.of(context).pop(true); // Return success
+          }
         });
       } else {
         setState(() {
@@ -69,16 +71,16 @@ class _SetupPinScreenState extends State<SetupPinScreen> {
   Widget build(BuildContext context) {
     final focusedPinTheme = defaultPinTheme.copyWith(
       decoration: BoxDecoration(
-        color: Colors.green,
-        border: Border.all(color: Colors.green),
+        color: Colors.purple,
+        border: Border.all(color: Colors.purple),
         borderRadius: BorderRadius.circular(8),
       ),
     );
 
     final submittedPinTheme = defaultPinTheme.copyWith(
       decoration: BoxDecoration(
-        color: Colors.green,
-        border: Border.all(color: Colors.green),
+        color: Colors.purple,
+        border: Border.all(color: Colors.purple),
         borderRadius: BorderRadius.circular(8),
       ),
     );
@@ -93,70 +95,79 @@ class _SetupPinScreenState extends State<SetupPinScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                isConfirming ? 'Confirm PIN' : 'Set Up PIN',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isConfirming
-                    ? 'Please enter the PIN again to confirm'
-                    : 'Enter a 6-digit PIN to secure your entries',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              Pinput(
-                controller: pinController,
-                length: 6,
-                defaultPinTheme: defaultPinTheme,
-                focusedPinTheme: focusedPinTheme,
-                submittedPinTheme: submittedPinTheme,
-                errorPinTheme: errorMessage.isNotEmpty ? errorPinTheme : null,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
-                    errorMessage = '';
-                  });
-                },
-                onCompleted: _handlePinComplete,
-              ),
-              if (errorMessage.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  errorMessage,
-                  style: const TextStyle(color: Colors.red, fontSize: 16),
-                ),
-              ],
-              const SizedBox(height: 32),
-              if (!isConfirming)
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(false); // Return cancelled
-                  },
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white70),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isConfirming ? 'Confirm PIN' : 'Set Up PIN',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-            ],
+                  const SizedBox(height: 16),
+                  Text(
+                    isConfirming
+                        ? 'Please enter the PIN again to confirm'
+                        : 'Enter a 6-digit PIN to secure your entries',
+                    style: const TextStyle(fontSize: 16, color: Colors.purple),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 80, // Fixed height for Pinput
+                    child: Pinput(
+                      controller: pinController,
+                      length: 6,
+                      defaultPinTheme: defaultPinTheme,
+                      focusedPinTheme: focusedPinTheme,
+                      submittedPinTheme: submittedPinTheme,
+                      errorPinTheme:
+                          errorMessage.isNotEmpty ? errorPinTheme : null,
+                      obscureText: true,
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        setState(() {
+                          errorMessage = '';
+                        });
+                      },
+                      onCompleted: _handlePinComplete,
+                    ),
+                  ),
+                  if (errorMessage.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  if (!isConfirming)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(false); // Return cancelled
+                      },
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.purple, fontSize: 16),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
-} 
+}

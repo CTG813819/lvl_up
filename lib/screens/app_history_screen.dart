@@ -476,7 +476,7 @@ class _AppHistoryScreenState extends State<AppHistoryScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return '${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _showClearHistoryDialog(AppHistoryProvider provider) async {

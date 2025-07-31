@@ -63,7 +63,7 @@ class GuardianAIService:
     def __init__(self):
         if not self._initialized:
             self.ml_service = MLService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.learning_service = AILearningService()
             self.custody_service = CustodyProtocolService()
             self._initialized = True

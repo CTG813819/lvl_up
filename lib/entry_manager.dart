@@ -27,7 +27,7 @@ class EntryManager {
 
   final _box = Hive.box<Entry>('entries');
   final _imageBox = Hive.box<String>('images');
-  int _currentImageIndex = 0;  // Add counter for sequential access
+  int _currentImageIndex = 0; // Add counter for sequential access
 
   // Default images that come with the app
   final List<String> _defaultImages = [
@@ -201,7 +201,7 @@ class EntryManager {
       // Read the image file
       final File imageFile = File(imagePath);
       final bytes = await imageFile.readAsBytes();
-      
+
       // Decode the image
       final image = img.decodeImage(bytes);
       if (image == null) {
@@ -728,7 +728,7 @@ class NotificationGrouper {
     final notificationDetails = NotificationDetails(android: androidDetails);
 
     return NotificationRequest(
-      id: DateTime.now().millisecondsSinceEpoch.hashCode,
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).hashCode,
       title: 'Mission Summary',
       body: 'You have $completedCount out of $totalCount missions completed',
       details: notificationDetails,
@@ -754,7 +754,7 @@ class BackgroundTaskManager {
     final backgroundTask = _BackgroundTask(
       task: task,
       priority: priority,
-      id: taskId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: taskId ?? (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       timeout: timeout ?? _taskTimeout,
     );
 

@@ -2,8 +2,9 @@ import os
 import json
 import asyncio
 from typing import Optional, Dict, Any
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import torch
+# Temporarily disabled for deployment
+# from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+# import torch
 from app.services.anthropic_service import anthropic_rate_limited_call
 
 class AdvancedCodeGenerator:
@@ -20,12 +21,13 @@ class AdvancedCodeGenerator:
         try:
             model_path = os.getenv('LOCAL_MODEL_PATH', './models/code_generator')
             if os.path.exists(model_path):
-                self.local_model = pipeline(
-                    "text-generation",
-                    model=model_path,
-                    device=0 if torch.cuda.is_available() else -1
-                )
-                print(f"✅ Local model loaded from {model_path}")
+                # Temporarily disabled for deployment
+                # self.local_model = pipeline(
+                #     "text-generation",
+                #     model=model_path,
+                #     device=0 if torch.cuda.is_available() else -1
+                # )
+                print(f"✅ Local model found at {model_path} but disabled for deployment")
             else:
                 print("⚠️ Local model not found, using template generation")
         except Exception as e:
@@ -51,7 +53,7 @@ class AdvancedCodeGenerator:
         except Exception as e:
             print(f"Anthropic code generation failed: {e}")
 
-        # 2. Try local model
+        # 2. Try local model (temporarily disabled)
         if self.local_model:
             try:
                 code = await self._generate_with_local_model(description, complexity)
@@ -79,8 +81,10 @@ class AdvancedCodeGenerator:
     async def _generate_with_local_model(self, description: str, complexity: str) -> str:
         prompt = self._build_prompt(description, complexity, "local")
         try:
-            result = self.local_model(prompt, max_length=512, temperature=0.7)
-            return result[0]['generated_text']
+            # Temporarily disabled for deployment
+            # result = self.local_model(prompt, max_length=512, temperature=0.7)
+            # return result[0]['generated_text']
+            return await self._generate_with_template(description, complexity)
         except Exception as e:
             print(f"Local model generation failed: {e}")
             return await self._generate_with_template(description, complexity)

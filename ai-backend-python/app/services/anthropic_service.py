@@ -63,7 +63,7 @@ async def anthropic_rate_limited_call(prompt, ai_name, model="claude-3-5-sonnet-
     can_make_request, usage_info = await token_usage_service.enforce_strict_limits(ai_name, int(estimated_total_tokens), "anthropic")
     if not can_make_request:
         # Enhanced logging for which limit is hit
-        logger.warning(f"Anthropic request blocked for {ai_name}", error=usage_info.get('error'), details=usage_info)
+        logger.warning(f"Anthropic request blocked for {ai_name} - {usage_info.get('error', 'unknown')}")
         # Try OpenAI as fallback for ANY Anthropic block (hourly, daily, monthly, cooldown, etc.)
         try:
             from .openai_service import openai_service

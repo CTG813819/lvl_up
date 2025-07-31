@@ -1,71 +1,316 @@
 import 'package:flutter/material.dart';
+import 'utils/dynamic_colors.dart';
 
 class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    primaryColor: Colors.blueAccent,
     scaffoldBackgroundColor: Colors.black,
-    colorScheme: const ColorScheme.dark(
-      primary: Colors.blueAccent,
-      secondary: Colors.greenAccent,
-      surface: Color(0xFF1A1A1A),
-      onPrimary: Colors.white,
+    primaryColor: Colors.yellow[700],
+    colorScheme: ColorScheme.dark(
+      primary: Colors.yellow[700]!,
+      secondary: Colors.yellow[800]!,
+      background: Colors.black,
+      surface: Colors.grey[900]!,
+      onPrimary: Colors.black,
       onSecondary: Colors.black,
+      onBackground: Colors.white,
       onSurface: Colors.white,
     ),
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       displayLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.bold,
-        color: Color.fromARGB(255, 2, 0, 0),
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      displaySmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
       ),
       titleLarge: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
       ),
-      bodyMedium: TextStyle(fontSize: 16, color: Colors.white70),
+      titleMedium: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      titleSmall: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        color: DynamicColors.getSecondaryTextColor(Colors.black),
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+      ),
+      labelSmall: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getTertiaryTextColor(Colors.black),
+      ),
     ),
-    buttonTheme: const ButtonThemeData(
-      buttonColor: Colors.blueAccent,
-      textTheme: ButtonTextTheme.primary,
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.black,
+      foregroundColor: DynamicColors.getContrastingTextColor(Colors.black),
+      iconTheme: IconThemeData(
+        color: DynamicColors.getContrastingIconColor(Colors.black),
+      ),
+      titleTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.black),
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      elevation: 0,
+      centerTitle: true,
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.grey[900],
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        backgroundColor: Colors.yellow[700],
+        foregroundColor: DynamicColors.getContrastingTextColor(
+          Colors.yellow[700]!,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     ),
-    cardTheme: CardThemeData(
-      color: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: const Color(0xFF2A2A2A),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      labelStyle: const TextStyle(color: Colors.white70),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.blueAccent),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: Colors.yellow[700],
+      foregroundColor: DynamicColors.getContrastingTextColor(
+        Colors.yellow[700]!,
       ),
     ),
-    appBarTheme: const AppBarTheme(
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: Colors.black,
-      elevation: 0,
+      selectedItemColor: Colors.yellow[700],
+      unselectedItemColor: Colors.grey,
+    ),
+    listTileTheme: ListTileThemeData(
+      textColor: DynamicColors.getContrastingTextColor(Colors.grey[900]!),
+      iconColor: DynamicColors.getContrastingIconColor(Colors.grey[900]!),
       titleTextStyle: TextStyle(
-        color: Colors.white,
-        fontSize: 24,
+        color: DynamicColors.getContrastingTextColor(Colors.grey[900]!),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+      subtitleTextStyle: TextStyle(
+        color: DynamicColors.getSecondaryTextColor(Colors.grey[900]!),
+        fontSize: 14,
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.grey[900],
+      titleTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.grey[900]!),
+        fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      iconTheme: IconThemeData(color: Colors.white),
+      contentTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.grey[900]!),
+        fontSize: 16,
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: DynamicColors.getDividerColor(Colors.black),
+    ),
+  );
+
+  static final ThemeData lightTheme = ThemeData(
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: Colors.white,
+    primaryColor: Colors.blue[700],
+    colorScheme: ColorScheme.light(
+      primary: Colors.blue[700]!,
+      secondary: Colors.blue[600]!,
+      background: Colors.white,
+      surface: Colors.grey[50]!,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onBackground: Colors.black87,
+      onSurface: Colors.black87,
+    ),
+    textTheme: TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      displaySmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      titleLarge: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      titleMedium: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      titleSmall: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        color: DynamicColors.getSecondaryTextColor(Colors.white),
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+      ),
+      labelSmall: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: DynamicColors.getTertiaryTextColor(Colors.white),
+      ),
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.white,
+      foregroundColor: DynamicColors.getContrastingTextColor(Colors.white),
+      iconTheme: IconThemeData(
+        color: DynamicColors.getContrastingIconColor(Colors.white),
+      ),
+      titleTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      elevation: 2,
+      centerTitle: true,
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue[700],
+        foregroundColor: DynamicColors.getContrastingTextColor(
+          Colors.blue[700]!,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: Colors.blue[700],
+      foregroundColor: DynamicColors.getContrastingTextColor(Colors.blue[700]!),
+    ),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: Colors.white,
+      selectedItemColor: Colors.blue[700],
+      unselectedItemColor: Colors.grey,
+    ),
+    listTileTheme: ListTileThemeData(
+      textColor: DynamicColors.getContrastingTextColor(Colors.white),
+      iconColor: DynamicColors.getContrastingIconColor(Colors.white),
+      titleTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+      subtitleTextStyle: TextStyle(
+        color: DynamicColors.getSecondaryTextColor(Colors.white),
+        fontSize: 14,
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      titleTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+      contentTextStyle: TextStyle(
+        color: DynamicColors.getContrastingTextColor(Colors.white),
+        fontSize: 16,
+      ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: DynamicColors.getDividerColor(Colors.white),
     ),
   );
 }

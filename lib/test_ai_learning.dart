@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/ai_learning_provider.dart';
 import 'models/ai_proposal.dart';
 
-/// Test screen for AI learning functionality
+  // Test screen for AI learning functionality
 class TestAILearning extends StatefulWidget {
   const TestAILearning({Key? key}) : super(key: key);
 
@@ -36,27 +36,27 @@ class _TestAILearningState extends State<TestAILearning> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Test controls
+  // Test controls
                 _buildTestControls(learningProvider),
-                
+
                 const SizedBox(height: 24),
-                
-                // Learning summary
+
+  // Learning summary
                 _buildLearningSummary(learningProvider),
-                
+
                 const SizedBox(height: 24),
-                
-                // AI performance comparison
+
+  // AI performance comparison
                 _buildPerformanceComparison(learningProvider),
-                
+
                 const SizedBox(height: 24),
-                
-                // Debug output
+
+  // Debug output
                 _buildDebugOutput(learningProvider),
-                
+
                 const SizedBox(height: 24),
-                
-                // Test results
+
+  // Test results
                 _buildTestResults(learningProvider),
               ],
             ),
@@ -75,58 +75,60 @@ class _TestAILearningState extends State<TestAILearning> {
           children: [
             Text(
               '🧪 Test Controls',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
-            // AI Selection
+
+  // AI Selection
             DropdownButtonFormField<String>(
               value: _selectedAI,
               decoration: const InputDecoration(
                 labelText: 'Select AI',
                 border: OutlineInputBorder(),
               ),
-              items: ['Imperium', 'Sandbox', 'Guardian'].map((ai) {
-                return DropdownMenuItem(value: ai, child: Text(ai));
-              }).toList(),
+              items:
+                  ['Imperium', 'Sandbox', 'Guardian'].map((ai) {
+                    return DropdownMenuItem(value: ai, child: Text(ai));
+                  }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedAI = value!;
                 });
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Test Type Selection
+
+  // Test Type Selection
             DropdownButtonFormField<String>(
               value: _selectedTestType,
               decoration: const InputDecoration(
                 labelText: 'Test Type',
                 border: OutlineInputBorder(),
               ),
-              items: [
-                'compilation',
-                'dependency',
-                'null_safety',
-                'performance',
-                'security',
-                'integration',
-              ].map((type) {
-                return DropdownMenuItem(value: type, child: Text(type));
-              }).toList(),
+              items:
+                  [
+                    'compilation',
+                    'dependency',
+                    'null_safety',
+                    'performance',
+                    'security',
+                    'integration',
+                  ].map((type) {
+                    return DropdownMenuItem(value: type, child: Text(type));
+                  }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedTestType = value!;
                 });
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Feedback input
+
+  // Feedback input
             TextField(
               controller: _feedbackController,
               decoration: const InputDecoration(
@@ -136,10 +138,10 @@ class _TestAILearningState extends State<TestAILearning> {
               ),
               maxLines: 3,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Test buttons
+
+  // Test buttons
             Row(
               children: [
                 Expanded(
@@ -167,15 +169,16 @@ class _TestAILearningState extends State<TestAILearning> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Backend test simulation
+
+  // Backend test simulation
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _simulateBackendTestSuccess(learningProvider),
+                    onPressed:
+                        () => _simulateBackendTestSuccess(learningProvider),
                     icon: const Icon(Icons.cloud_done),
                     label: const Text('Backend Success'),
                     style: ElevatedButton.styleFrom(
@@ -187,7 +190,8 @@ class _TestAILearningState extends State<TestAILearning> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _simulateBackendTestFailure(learningProvider),
+                    onPressed:
+                        () => _simulateBackendTestFailure(learningProvider),
                     icon: const Icon(Icons.cloud_off),
                     label: const Text('Backend Failure'),
                     style: ElevatedButton.styleFrom(
@@ -198,15 +202,16 @@ class _TestAILearningState extends State<TestAILearning> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Proposal simulation
+
+  // Proposal simulation
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _simulateProposalApproval(learningProvider),
+                    onPressed:
+                        () => _simulateProposalApproval(learningProvider),
                     icon: const Icon(Icons.thumb_up),
                     label: const Text('Approve Proposal'),
                     style: ElevatedButton.styleFrom(
@@ -218,7 +223,8 @@ class _TestAILearningState extends State<TestAILearning> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _simulateProposalRejection(learningProvider),
+                    onPressed:
+                        () => _simulateProposalRejection(learningProvider),
                     icon: const Icon(Icons.thumb_down),
                     label: const Text('Reject Proposal'),
                     style: ElevatedButton.styleFrom(
@@ -229,10 +235,10 @@ class _TestAILearningState extends State<TestAILearning> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Utility buttons
+
+  // Utility buttons
             Row(
               children: [
                 Expanded(
@@ -268,7 +274,7 @@ class _TestAILearningState extends State<TestAILearning> {
 
   Widget _buildLearningSummary(AILearningProvider learningProvider) {
     final summary = learningProvider.getLearningSummary();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -277,27 +283,51 @@ class _TestAILearningState extends State<TestAILearning> {
           children: [
             Text(
               '📊 Learning Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
-                _buildSummaryItem('AIs', '${summary['totalAIs']}', Icons.psychology),
-                _buildSummaryItem('Lessons', '${summary['totalLessons']}', Icons.school),
-                _buildSummaryItem('Proposals', '${summary['totalProposals']}', Icons.assignment),
+                _buildSummaryItem(
+                  'AIs',
+                  '${summary['totalAIs']}',
+                  Icons.psychology,
+                ),
+                _buildSummaryItem(
+                  'Lessons',
+                  '${summary['totalLessons']}',
+                  Icons.school,
+                ),
+                _buildSummaryItem(
+                  'Proposals',
+                  '${summary['totalProposals']}',
+                  Icons.assignment,
+                ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             Row(
               children: [
-                _buildSummaryItem('Tests', '${summary['totalBackendTests']}', Icons.science),
-                _buildSummaryItem('Avg Score', '${summary['averageLearningScore']}%', Icons.trending_up),
-                _buildSummaryItem('Debug Logs', '${summary['totalDebugEntries']}', Icons.bug_report),
+                _buildSummaryItem(
+                  'Tests',
+                  '${summary['totalBackendTests']}',
+                  Icons.science,
+                ),
+                _buildSummaryItem(
+                  'Avg Score',
+                  '${summary['averageLearningScore']}%',
+                  Icons.trending_up,
+                ),
+                _buildSummaryItem(
+                  'Debug Logs',
+                  '${summary['totalDebugEntries']}',
+                  Icons.bug_report,
+                ),
               ],
             ),
           ],
@@ -320,14 +350,11 @@ class _TestAILearningState extends State<TestAILearning> {
             const SizedBox(height: 4),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
@@ -336,7 +363,7 @@ class _TestAILearningState extends State<TestAILearning> {
 
   Widget _buildPerformanceComparison(AILearningProvider learningProvider) {
     final comparison = learningProvider.getAIPerformanceComparison();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -345,16 +372,16 @@ class _TestAILearningState extends State<TestAILearning> {
           children: [
             Text(
               '🏆 AI Performance Comparison',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             ...comparison.entries.map((entry) {
               final aiType = entry.key;
               final metrics = entry.value as Map<String, dynamic>;
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
@@ -371,14 +398,18 @@ class _TestAILearningState extends State<TestAILearning> {
                       children: [
                         Text(
                           aiType,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: _getScoreColor(metrics['learningScore'] as int),
+                            color: _getScoreColor(
+                              metrics['learningScore'] as int,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -392,9 +423,18 @@ class _TestAILearningState extends State<TestAILearning> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildMetricRow('Success Rate', metrics['successRate'] as int),
-                    _buildMetricRow('Applied Learning', metrics['appliedLearning'] as int),
-                    _buildMetricRow('Test Success', metrics['backendTestSuccessRate'] as int),
+                    _buildMetricRow(
+                      'Success Rate',
+                      metrics['successRate'] as int,
+                    ),
+                    _buildMetricRow(
+                      'Applied Learning',
+                      metrics['appliedLearning'] as int,
+                    ),
+                    _buildMetricRow(
+                      'Test Success',
+                      metrics['backendTestSuccessRate'] as int,
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -428,18 +468,22 @@ class _TestAILearningState extends State<TestAILearning> {
               value: value / 100,
               backgroundColor: Colors.grey.withOpacity(0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
-                value >= 80 ? Colors.green : 
-                value >= 60 ? Colors.orange : 
-                value >= 40 ? Colors.yellow.shade700 : Colors.red,
+                value >= 80
+                    ? Colors.green
+                    : value >= 60
+                    ? Colors.orange
+                    : value >= 40
+                    ? Colors.yellow.shade700
+                    : Colors.red,
               ),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             '$value%',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -448,7 +492,7 @@ class _TestAILearningState extends State<TestAILearning> {
 
   Widget _buildDebugOutput(AILearningProvider learningProvider) {
     final debugLogs = learningProvider.debugLogs;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -460,19 +504,21 @@ class _TestAILearningState extends State<TestAILearning> {
               children: [
                 Text(
                   '🐛 Debug Output',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                Text('${debugLogs.values.fold(0, (sum, logs) => sum + logs.length)} entries'),
+                Text(
+                  '${debugLogs.values.fold(0, (sum, logs) => sum + logs.length)} entries',
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             ...debugLogs.entries.map((entry) {
               final aiType = entry.key;
               final logs = entry.value;
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Column(
@@ -489,7 +535,7 @@ class _TestAILearningState extends State<TestAILearning> {
                     ...logs.take(3).map((log) {
                       final timestamp = DateTime.parse(log['timestamp']);
                       final message = log['message'] as String;
-                      
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 4),
                         padding: const EdgeInsets.all(8),
@@ -502,9 +548,8 @@ class _TestAILearningState extends State<TestAILearning> {
                           children: [
                             Text(
                               _formatTimestamp(timestamp),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[600]),
                             ),
                             Text(
                               message,
@@ -526,7 +571,7 @@ class _TestAILearningState extends State<TestAILearning> {
 
   Widget _buildTestResults(AILearningProvider learningProvider) {
     final learningData = learningProvider.learningData;
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -535,18 +580,18 @@ class _TestAILearningState extends State<TestAILearning> {
           children: [
             Text(
               '🧪 Test Results',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             ...learningData.entries.map((entry) {
               final aiType = entry.key;
               final data = entry.value as Map<String, dynamic>;
               final testResults = data['testResults'] as List;
               final backendTests = data['backendTestResults'] as List;
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Column(
@@ -559,7 +604,7 @@ class _TestAILearningState extends State<TestAILearning> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     if (testResults.isNotEmpty) ...[
                       Text(
                         'Local Tests (${testResults.length})',
@@ -573,7 +618,7 @@ class _TestAILearningState extends State<TestAILearning> {
                       }).toList(),
                       const SizedBox(height: 8),
                     ],
-                    
+
                     if (backendTests.isNotEmpty) ...[
                       Text(
                         'Backend Tests (${backendTests.length})',
@@ -601,12 +646,15 @@ class _TestAILearningState extends State<TestAILearning> {
     final testType = test['testType'] as String;
     final details = test['details'] as String;
     final timestamp = DateTime.parse(test['timestamp']);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: result == 'pass' ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color:
+            result == 'pass'
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: result == 'pass' ? Colors.green : Colors.red,
@@ -627,12 +675,14 @@ class _TestAILearningState extends State<TestAILearning> {
               children: [
                 Text(
                   '$testType ($source)',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  details.length > 50 ? '${details.substring(0, 50)}...' : details,
+                  details.length > 50
+                      ? '${details.substring(0, 50)}...'
+                      : details,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -640,9 +690,9 @@ class _TestAILearningState extends State<TestAILearning> {
           ),
           Text(
             _formatTimestamp(timestamp),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 10,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 10),
           ),
         ],
       ),
@@ -651,28 +701,41 @@ class _TestAILearningState extends State<TestAILearning> {
 
   // Test simulation methods
   void _simulateTestSuccess(AILearningProvider learningProvider) {
-    final details = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Test passed successfully';
-    
-    learningProvider.learnFromTestResult(_selectedAI, _selectedTestType, 'pass', details);
+    final details =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Test passed successfully';
+
+    learningProvider.learnFromTestResult(
+      _selectedAI,
+      _selectedTestType,
+      'pass',
+      details,
+    );
     _showSnackBar('✅ Test success simulated for $_selectedAI');
   }
 
   void _simulateTestFailure(AILearningProvider learningProvider) {
-    final details = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Test failed with errors';
-    
-    learningProvider.learnFromTestResult(_selectedAI, _selectedTestType, 'fail', details);
+    final details =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Test failed with errors';
+
+    learningProvider.learnFromTestResult(
+      _selectedAI,
+      _selectedTestType,
+      'fail',
+      details,
+    );
     _showSnackBar('❌ Test failure simulated for $_selectedAI');
   }
 
   void _simulateBackendTestSuccess(AILearningProvider learningProvider) {
-    final details = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Backend test passed successfully';
-    
+    final details =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Backend test passed successfully';
+
     learningProvider.learnFromBackendTestResult(_selectedAI, {
       'testType': _selectedTestType,
       'result': 'pass',
@@ -684,10 +747,11 @@ class _TestAILearningState extends State<TestAILearning> {
   }
 
   void _simulateBackendTestFailure(AILearningProvider learningProvider) {
-    final details = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Backend test failed with errors';
-    
+    final details =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Backend test failed with errors';
+
     learningProvider.learnFromBackendTestResult(_selectedAI, {
       'testType': _selectedTestType,
       'result': 'fail',
@@ -699,51 +763,50 @@ class _TestAILearningState extends State<TestAILearning> {
   }
 
   void _simulateProposalApproval(AILearningProvider learningProvider) {
-    final feedback = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Good proposal, approved!';
-    
-    // Create a mock proposal
+    final feedback =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Good proposal, approved!';
+
+  // Create a mock proposal
     final proposal = AIProposal(
       id: 'test_${DateTime.now().millisecondsSinceEpoch}',
       aiType: _selectedAI,
       filePath: 'lib/test_file.dart',
-      oldCode: '// old code',
-      newCode: '// new code',
+      oldCode: '/ old code',
+      newCode: '/ new code',
       timestamp: DateTime.now(),
       status: ProposalStatus.pending,
     );
-    
+
     learningProvider.learnFromProposal(proposal, 'approved', feedback);
     _showSnackBar('👍 Proposal approval simulated for $_selectedAI');
   }
 
   void _simulateProposalRejection(AILearningProvider learningProvider) {
-    final feedback = _feedbackController.text.isNotEmpty 
-        ? _feedbackController.text 
-        : 'Proposal rejected due to issues';
-    
-    // Create a mock proposal
+    final feedback =
+        _feedbackController.text.isNotEmpty
+            ? _feedbackController.text
+            : 'Proposal rejected due to issues';
+
+  // Create a mock proposal
     final proposal = AIProposal(
       id: 'test_${DateTime.now().millisecondsSinceEpoch}',
       aiType: _selectedAI,
       filePath: 'lib/test_file.dart',
-      oldCode: '// old code',
-      newCode: '// new code',
+      oldCode: '/ old code',
+      newCode: '/ new code',
       timestamp: DateTime.now(),
       status: ProposalStatus.pending,
     );
-    
+
     learningProvider.learnFromProposal(proposal, 'rejected', feedback);
     _showSnackBar('👎 Proposal rejection simulated for $_selectedAI');
   }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -757,7 +820,7 @@ class _TestAILearningState extends State<TestAILearning> {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
@@ -768,4 +831,4 @@ class _TestAILearningState extends State<TestAILearning> {
       return '${difference.inDays}d ago';
     }
   }
-} 
+}

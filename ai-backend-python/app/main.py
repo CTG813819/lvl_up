@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
-from app.routers import imperium_learning, notifications, missions, imperium, guardian, conquest, sandbox, learning, growth, proposals, notify, oath_papers, codex, agents, analytics, github_webhook, code, approval, experiments, plugin, enhanced_learning, terra_extensions, training_data, anthropic_test, optimized_services, token_usage, weekly_notifications, custody_protocol, black_library, imperium_extensions, enhanced_ai_router, system_status, ai, agent_metrics, scheduling, enhanced_adversarial_testing
+from app.routers import imperium_learning, notifications, missions, imperium, guardian, conquest, sandbox, learning, growth, proposals, notify, oath_papers, codex, agents, analytics, github_webhook, code, approval, experiments, plugin, enhanced_learning, terra_extensions, training_data, anthropic_test, optimized_services, token_usage, weekly_notifications, custody_protocol, black_library, imperium_extensions, enhanced_ai_router, system_status, ai, agent_metrics, scheduling, enhanced_adversarial_testing, project_berserk, universal_hub, offline_chaos_router
 from app.core.database import init_database, create_tables, create_indexes
 from dotenv import load_dotenv
 import asyncio
@@ -23,14 +23,20 @@ from app.routers.plugin import router as plugin_router
 from app.routers.optimized_services import router as optimized_router
 from app.services.background_service import BackgroundService
 from app.services.proposal_cycle_service import ProposalCycleService
+from app.services.token_usage_service import TokenUsageService
+from app.services.scheduled_notification_service import ScheduledNotificationService
 from sqlalchemy import text
 import logging
+import structlog
 from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
 from app.core.watchdog import start_watchdog
 from app.routers.ai import router as ai_router
 from app.routers.weapons import router as weapons
 from app.services.custody_protocol_service import CustodyProtocolService
 from app.routers.scheduling import router as scheduling_router
+from app.routers.project_berserk import router as project_berserk_router
+
+logger = structlog.get_logger()
 
 app = FastAPI()
 
@@ -83,43 +89,33 @@ async def startup_event():
         # Create database indexes
         await create_indexes()
         
-        # Only start background jobs if RUN_BACKGROUND_JOBS=1
-        if os.getenv("RUN_BACKGROUND_JOBS", "0") == "1":
-            # Initialize background service
-            background_service = await BackgroundService.initialize()
-            
-            # Initialize proposal cycle service
-            proposal_cycle_service = await ProposalCycleService.initialize()
-            
-            # Initialize token usage service
-            from app.services.token_usage_service import TokenUsageService
-            token_usage_service = await TokenUsageService.initialize()
-            
-            # Initialize scheduled notification service
-            from app.services.scheduled_notification_service import ScheduledNotificationService
-            scheduled_notification_service = await ScheduledNotificationService.initialize()
-            
-            # Start background services
-            asyncio.create_task(background_service.start_autonomous_cycle())
-            
-            # Start weekly notification scheduler
-            asyncio.create_task(scheduled_notification_service.start_weekly_scheduler())
-            
-            # Start Enhanced Autonomous Learning Service (Custodes Protocol)
-            enhanced_learning_service = EnhancedAutonomousLearningService()
-            asyncio.create_task(enhanced_learning_service.start_enhanced_autonomous_learning())
-            
-            # Start the watchdog
-            start_watchdog()
-            
-            print("✅ Background jobs started")
-        else:
-            print("⚠️ Background jobs NOT started (RUN_BACKGROUND_JOBS != 1)")
+        # Initialize Custody Protocol Service (required for custody tests, Olympic events, and collaborative tests)
+        from app.services.custody_protocol_service import CustodyProtocolService
+        custody_service = await CustodyProtocolService.initialize()
+        logger.info("✅ Custody Protocol Service initialized")
         
-        print("✅ Application startup complete")
+        # Initialize background service (always start)
+        background_service = await BackgroundService.initialize()
         
+        # Initialize proposal cycle service
+        proposal_cycle_service = await ProposalCycleService.initialize()
+        
+        # Initialize token usage service
+        token_usage_service = await TokenUsageService.initialize()
+        
+        # Initialize scheduled notification service
+        scheduled_notification_service = await ScheduledNotificationService.initialize()
+        
+        # Start background services
+        await background_service.start_autonomous_cycle()
+        # Note: Proposal cycle is handled by periodic_proposal_generation() in proposals router
+        # Note: Token tracking is handled internally by TokenUsageService
+        await scheduled_notification_service.start_weekly_scheduler()
+        
+        logger.info("✅ All background services started")
+            
     except Exception as e:
-        print(f"❌ Error during startup: {e}")
+        logger.error(f"❌ Error during startup: {str(e)}")
         raise
 
 @app.on_event("shutdown")
@@ -172,6 +168,9 @@ app.include_router(weapons)
 app.include_router(agent_metrics.router, prefix="/api/agent-metrics", tags=["agent-metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
 app.include_router(enhanced_adversarial_testing.router, prefix="/api", tags=["Enhanced Adversarial Testing"])
+app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
+app.include_router(universal_hub.router, prefix="/api/project-warmaster/universal-hub", tags=["Universal Hub"])
+app.include_router(offline_chaos_router.router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
 @app.websocket("/ws/imperium/learning-analytics")
 async def ws_learning_analytics(websocket: WebSocket):
@@ -200,6 +199,15 @@ async def global_exception_handler(request: Request, exc: Exception):
             "timestamp": datetime.utcnow().isoformat()
         }
     )
+
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint for Railway"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "ai-backend-python"
+    }
 
 @app.get("/api/health")
 async def health_check_proxy(request: Request):
@@ -333,3 +341,13 @@ async def proposals_status(data: dict, db: AsyncSession = Depends(get_session)):
     if not proposal:
         return JSONResponse(status_code=404, content={"error": "Proposal not found"})
     return {"id": proposal_id, "status": proposal.status} 
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8003,  # HORUS Project Berserk on port 8003
+        reload=True,
+        log_level="info"
+    ) 

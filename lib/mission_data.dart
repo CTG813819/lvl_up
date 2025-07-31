@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'mission.dart';
+import 'dart:convert';
 
 class MissionData {
   final String? id;
@@ -87,31 +88,96 @@ class MissionData {
   }
 
   factory MissionData.fromJson(Map<String, dynamic> json) {
+    // Defensive parsing for subtasks
+    dynamic subtasksRaw = json['subtasks'];
+    List<dynamic> subtasksList;
+    if (subtasksRaw is List) {
+      subtasksList = subtasksRaw;
+    } else if (subtasksRaw is String && subtasksRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(subtasksRaw);
+        if (decoded is List) {
+          subtasksList = decoded;
+        } else {
+          subtasksList = [];
+        }
+      } catch (_) {
+        subtasksList = [];
+      }
+    } else {
+      subtasksList = [];
+    }
+    // Defensive parsing for notificationId
+    int? rawId = json['notificationId'];
+    int notificationId = 0;
+    if (rawId is int) {
+      if (rawId < -2147483648 || rawId > 2147483647) {
+        notificationId = rawId % 0x7FFFFFFF;
+      } else {
+        notificationId = rawId;
+      }
+    } else if (rawId is String) {
+      try {
+        int parsed = int.parse(rawId as String);
+        notificationId =
+            (parsed < -2147483648 || parsed > 2147483647)
+                ? parsed % 0x7FFFFFFF
+                : parsed;
+      } catch (_) {
+        notificationId = 0;
+      }
+    }
+    // Defensive parsing for createdAt
+    final createdAtRaw = json['createdAt'];
+    DateTime? createdAt =
+        (createdAtRaw is String && createdAtRaw.isNotEmpty)
+            ? DateTime.parse(createdAtRaw)
+            : null;
+    // Defensive parsing for imageUrl
+    final imageUrlRaw = json['imageUrl'];
+    String imageUrl =
+        (imageUrlRaw is String && imageUrlRaw.isNotEmpty) ? imageUrlRaw : '';
+    // Defensive parsing for subtaskMasteryValues
+    final subtaskMasteryValuesRaw = json['subtaskMasteryValues'];
+    Map<String, double> subtaskMasteryValues = {};
+    if (subtaskMasteryValuesRaw is Map) {
+      subtaskMasteryValues = Map<String, double>.from(subtaskMasteryValuesRaw);
+    } else if (subtaskMasteryValuesRaw == null) {
+      subtaskMasteryValues = {};
+    }
     return MissionData(
       id: json['id'],
       missionId: json['missionId'],
-      notificationId: json['notificationId'],
-      title: json['title'],
-      description: json['description'],
+      notificationId: notificationId,
+      title: (json['title'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
       type: MissionType.values.firstWhere((e) => e.toString() == json['type']),
       isCounterBased: json['isCounterBased'],
       targetCount: json['targetCount'],
       currentCount: json['currentCount'],
       isCompleted: json['isCompleted'],
-      lastCompleted: json['lastCompleted'] != null ? DateTime.parse(json['lastCompleted']) : null,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      lastCompleted:
+          json['lastCompleted'] != null
+              ? DateTime.parse(json['lastCompleted'])
+              : null,
+      createdAt: createdAt,
       hasFailed: json['hasFailed'],
-      subtasks: (json['subtasks'] as List).map((s) => MissionSubtask.fromJson(s)).toList(),
+      subtasks:
+          subtasksList
+              .where((s) => s is Map<String, dynamic>)
+              .map((s) => MissionSubtask.fromJson(s as Map<String, dynamic>))
+              .toList(),
       linkedMasteryId: json['linkedMasteryId'],
       masteryValue: json['masteryValue'],
-      imageUrl: json['imageUrl'],
+      imageUrl: imageUrl,
       boltColor: json['boltColor'] != null ? Color(json['boltColor']) : null,
-      timelapseColor: json['timelapseColor'] != null ? Color(json['timelapseColor']) : null,
+      timelapseColor:
+          json['timelapseColor'] != null ? Color(json['timelapseColor']) : null,
       isLocked: json['isLocked'] ?? false,
       masteryId: json['masteryId'],
       value: json['value'],
       isSubtaskCounter: json['isSubtaskCounter'] ?? false,
-      subtaskMasteryValues: Map<String, double>.from(json['subtaskMasteryValues'] ?? {}),
+      subtaskMasteryValues: subtaskMasteryValues,
       scheduledNotificationId: json['scheduledNotificationId'],
     );
   }
@@ -168,7 +234,8 @@ class MissionData {
       value: value ?? this.value,
       isSubtaskCounter: isSubtaskCounter ?? this.isSubtaskCounter,
       subtaskMasteryValues: subtaskMasteryValues ?? this.subtaskMasteryValues,
-      scheduledNotificationId: scheduledNotificationId ?? this.scheduledNotificationId,
+      scheduledNotificationId:
+          scheduledNotificationId ?? this.scheduledNotificationId,
     );
   }
 }

@@ -1208,11 +1208,61 @@ try {{
             return TestResult.ERROR, f"JavaScript performance check failed: {str(e)}"
 
     def anthropic_test_analysis(self, prompt: str) -> str:
-        """Use Anthropic Claude for test generation, code review, or test analysis."""
+        """Analyze test results using Claude"""
         try:
-            return call_claude(prompt)
+            response = anthropic_rate_limited_call(prompt)
+            return response
         except Exception as e:
-            return f"Anthropic error: {str(e)}"
+            logger.error(f"Error in anthropic test analysis: {str(e)}")
+            return f"Analysis failed: {str(e)}"
+    
+    async def evaluate_collaborative_group_solution(self, ai_contributions: Dict, scenario: Dict) -> int:
+        """Evaluate collaborative group solution from multiple AI contributions"""
+        try:
+            # Create evaluation prompt
+            evaluation_prompt = f"""
+            Evaluate the collaborative solution from multiple AIs:
+            
+            Scenario: {scenario.get('name', 'Collaborative Challenge')}
+            Description: {scenario.get('description', 'No description provided')}
+            
+            AI Contributions:
+            """
+            
+            for ai_type, contribution in ai_contributions.items():
+                evaluation_prompt += f"\n{ai_type.upper()}: {contribution.get('answer', 'No response')}"
+            
+            evaluation_prompt += """
+            
+            Please evaluate this collaborative solution on a scale of 0-100 based on:
+            1. Quality of individual contributions (25 points)
+            2. Collaboration effectiveness (25 points)
+            3. Solution completeness (25 points)
+            4. Innovation and creativity (25 points)
+            
+            Return only the numerical score (0-100).
+            """
+            
+            # Get evaluation from Claude
+            evaluation = await call_claude(evaluation_prompt)
+            
+            # Extract score from response
+            try:
+                # Look for a number between 0-100 in the response
+                import re
+                score_match = re.search(r'\b(\d{1,2}|100)\b', evaluation)
+                if score_match:
+                    score = int(score_match.group(1))
+                    return max(0, min(100, score))  # Ensure score is between 0-100
+                else:
+                    # Default score if no number found
+                    return 75
+            except:
+                return 75
+                
+        except Exception as e:
+            logger.error(f"Error evaluating collaborative group solution: {str(e)}")
+            return 50  # Default score on error
 
 
 # Global instance - removed to avoid import timing issues

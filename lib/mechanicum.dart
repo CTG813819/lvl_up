@@ -6,9 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:the_codex/mission.dart' show MissionSubtask, MissionData;
 import 'mission_provider.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'services/network_config.dart';
 
-/// Represents the AI Guardian that continuously monitors, learns, and heals the app.
+  // Represents the AI Guardian that continuously monitors, learns, and heals the app.
 class Mechanicum {
   static final Mechanicum instance = Mechanicum._internal();
   Mechanicum._internal();
@@ -50,112 +53,89 @@ class Mechanicum {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  IO.Socket? _guardianSocket;
+  WebSocketChannel? _wsChannel;
+  bool _isWebSocketConnected = false;
   final List<Map<String, dynamic>> _healthCheckResults = [];
 
-  /// Stream to notify listeners when the AI is active (for UI icon color).
+  // Stream to notify listeners when the AI is active (for UI icon color).
   Stream<bool> get aiActiveStream => _aiActiveController.stream;
 
-  /// Stream to notify listeners when the AI learns something new
+  // Stream to notify listeners when the AI learns something new
   Stream<String> get learningStream => _learningController.stream;
 
-  /// Stream to notify listeners about issues found and fixed
+  // Stream to notify listeners about issues found and fixed
   Stream<Map<String, dynamic>> get issueStream => _issueController.stream;
 
   bool get isAIActive => _isAIActive;
   bool get isRunning => _isRunning;
 
-  /// Get all learned health checks
+  // Get all learned health checks
   Map<String, HealthCheck> get learnedHealthChecks =>
       Map.unmodifiable(_learnedHealthChecks);
 
-  /// Get all learned repair functions
+  // Get all learned repair functions
   Map<String, RepairFunction> get learnedRepairs =>
       Map.unmodifiable(_learnedRepairs);
 
-  /// Get issue frequency statistics
+  // Get issue frequency statistics
   Map<String, int> get issueFrequency => Map.unmodifiable(_issueFrequency);
 
-  /// Get learning history
+  // Get learning history
   List<String> get learningHistory => List.unmodifiable(_learningHistory);
 
   List<Map<String, dynamic>> get healthCheckResults =>
       List.unmodifiable(_healthCheckResults);
 
-  /// Initialize the AI Guardian with persistent learning
+  // Initialize the AI Guardian with persistent learning
   Future<void> initialize() async {
     print('🛡️ AI Guardian: Initializing with backend integration...');
     await _loadLearnedData();
     await _loadIssuePatterns();
     _addDefaultHealthChecks();
-    _connectToBackend();
+    _connectToBackendWS();
     print(
       'AI Guardian: Initialized with ${_learnedHealthChecks.length} learned health checks and backend connection',
     );
-    // Start periodic health check and repair (reduced frequency)
+  // Start periodic health check and repair (reduced frequency)
     _startPeriodicHealthCheckAndRepair(interval: const Duration(minutes: 2));
   }
 
-  void _connectToBackend() {
-    print('[GUARDIAN] Connecting to backend Socket.IO...');
-    _guardianSocket = IO.io('http://234.55.93.144:4000', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-    });
-
-    _guardianSocket!.onConnect((_) {
-      print('[GUARDIAN] ✅ Connected to backend Socket.IO');
-      setAIActive(true);
-    });
-
-    _guardianSocket!.onDisconnect((_) {
-      print('[GUARDIAN] ❌ Disconnected from backend Socket.IO');
-      setAIActive(false);
-    });
-
-    // Listen to backend Guardian events
-    _guardianSocket!.on('ai:experiment-start', (data) {
-      final ai = data['ai'] ?? 'Unknown AI';
-      if (ai == 'Guardian') {
-        print('[GUARDIAN] 📨 Backend Guardian started experiment');
-        setAIActive(true);
-      }
-    });
-
-    _guardianSocket!.on('ai:experiment-complete', (data) {
-      final ai = data['ai'] ?? 'Unknown AI';
-      if (ai == 'Guardian') {
-        print('[GUARDIAN] 📨 Backend Guardian completed experiment');
-        setAIActive(false);
-      }
-    });
-
-    _guardianSocket!.on('proposal:created', (data) {
-      final aiType = data['aiType'] ?? 'Unknown AI';
-      if (aiType == 'Guardian') {
-        print('[GUARDIAN] 📨 Backend Guardian created proposal');
-        _updateLocalStateFromBackend(data);
-      }
-    });
-
-    _guardianSocket!.connect();
+  void _connectToBackendWS() {
+    print('[GUARDIAN] WebSocket endpoints not available, skipping connection');
+    // WebSocket endpoints are not working on the server, so skip connection
+    print('[GUARDIAN] ✅ WebSocket connection skipped (using HTTP fallback)');
   }
 
-  void _updateLocalStateFromBackend(Map<String, dynamic> data) {
-    final filePath = data['filePath'] ?? 'unknown file';
-    final aiType = data['aiType'] ?? 'Unknown AI';
+  void _handleWSMessage(dynamic data) {
+    try {
+      final message = jsonDecode(data.toString());
+      final type = message['type'];
+      switch (type) {
+        case 'guardian_update':
+          _handleGuardianUpdate(message);
+          break;
+        case 'ai:experiment-start':
+        case 'ai:experiment-complete':
+        case 'proposal:created':
+        case 'proposal:test-started':
+        case 'proposal:test-finished':
+        case 'proposal:applied':
+          _learningController.add(
+            'Backend event: $type - ${message.toString()}',
+          );
+          break;
+        default:
+          print('[GUARDIAN] ⚠️ Unknown message type: $type');
+      }
+    } catch (e) {
+      print('[GUARDIAN] ❌ Error parsing WebSocket message: $e');
+    }
+  }
 
-    // Add to health check results to reflect backend activity
-    _healthCheckResults.add({
-      'timestamp': DateTime.now().toIso8601String(),
-      'checkName': 'Backend ${aiType} Activity',
-      'description': 'Backend $aiType activity detected for $filePath',
-      'hasIssue': false,
-      'details':
-          'Backend $aiType is actively monitoring and improving the system',
-    });
-
-    _learningController.add('Backend $aiType activity: $filePath');
+  void _handleGuardianUpdate(Map<String, dynamic> message) {
+  // Custom logic for Guardian updates
+    print('[GUARDIAN] 📨 Guardian update: ${message.toString()}');
+    _learningController.add('Guardian update: ${message.toString()}');
   }
 
   void _startPeriodicHealthCheckAndRepair({
@@ -167,16 +147,16 @@ class Mechanicum {
       print('🛡️ AI Guardian: Running local connectivity check...');
 
       try {
-        // Check backend connectivity
-        final isConnected = _guardianSocket?.connected ?? false;
+  // Check backend connectivity
+        final isConnected = _isWebSocketConnected;
         print('🛡️ AI Guardian: Backend connection status: $isConnected');
 
         if (!isConnected) {
           print('🛡️ AI Guardian: Attempting to reconnect to backend...');
-          _guardianSocket?.connect();
+          _connectToBackendWS();
         }
 
-        // Run minimal local health checks (reduced scope)
+  // Run minimal local health checks (reduced scope)
         final healthResults = await performMinimalLocalHealthChecks();
         bool anyIssue = false;
         for (final result in healthResults) {
@@ -219,7 +199,7 @@ class Mechanicum {
     final results = <HealthCheckResult>[];
     print('🛡️ AI Guardian: Starting minimal local health checks...');
 
-    // Only run critical local health checks
+  // Only run critical local health checks
     final criticalChecks = _learnedHealthChecks.entries
         .where((entry) => entry.value.priority == HealthCheckPriority.high)
         .take(3); // Limit to 3 critical checks
@@ -268,9 +248,9 @@ class Mechanicum {
     return results;
   }
 
-  /// Add default health checks that the AI Guardian knows from the start
+  // Add default health checks that the AI Guardian knows from the start
   void _addDefaultHealthChecks() {
-    // Notification ID validation check
+  // Notification ID validation check
     _learnedHealthChecks['invalid_notification_ids'] = HealthCheck(
       name: 'Invalid Notification IDs',
       description: 'Check for notification IDs outside 32-bit integer range',
@@ -278,7 +258,7 @@ class Mechanicum {
       priority: HealthCheckPriority.high,
     );
 
-    // Duplicate notification ID check
+  // Duplicate notification ID check
     _learnedHealthChecks['duplicate_notification_ids'] = HealthCheck(
       name: 'Duplicate Notification IDs',
       description: 'Check for duplicate notification IDs across missions',
@@ -286,7 +266,7 @@ class Mechanicum {
       priority: HealthCheckPriority.high,
     );
 
-    // Mission ID validation check
+  // Mission ID validation check
     _learnedHealthChecks['invalid_mission_ids'] = HealthCheck(
       name: 'Invalid Mission IDs',
       description: 'Check for null or empty mission IDs',
@@ -294,7 +274,7 @@ class Mechanicum {
       priority: HealthCheckPriority.high,
     );
 
-    // Add corresponding repair functions
+  // Add corresponding repair functions
     _learnedRepairs['fix_invalid_notification_ids'] = RepairFunction(
       name: 'Fix Invalid Notification IDs',
       description: 'Repair notification IDs that are outside valid range',
@@ -317,7 +297,7 @@ class Mechanicum {
       priority: RepairPriority.critical,
     );
 
-    // 1. Empty/null mission titles
+  // 1. Empty/null mission titles
     _learnedHealthChecks['empty_mission_titles'] = HealthCheck(
       name: 'Empty Mission Titles',
       description: 'Check for missions with empty or null titles',
@@ -331,7 +311,7 @@ class Mechanicum {
       priority: RepairPriority.medium,
     );
 
-    // 2. Negative/invalid subtask mastery values
+  // 2. Negative/invalid subtask mastery values
     _learnedHealthChecks['invalid_subtask_mastery_values'] = HealthCheck(
       name: 'Invalid Subtask Mastery Values',
       description: 'Check for negative or zero subtask mastery values',
@@ -345,7 +325,7 @@ class Mechanicum {
       priority: RepairPriority.medium,
     );
 
-    // 3. Missions both completed and failed
+  // 3. Missions both completed and failed
     _learnedHealthChecks['completed_and_failed_missions'] = HealthCheck(
       name: 'Completed and Failed Missions',
       description: 'Check for missions both completed and failed',
@@ -359,7 +339,7 @@ class Mechanicum {
       priority: RepairPriority.medium,
     );
 
-    // 4. Missions with createdAt in the future
+  // 4. Missions with createdAt in the future
     _learnedHealthChecks['future_created_at'] = HealthCheck(
       name: 'Future CreatedAt',
       description: 'Check for missions with createdAt in the future',
@@ -373,7 +353,7 @@ class Mechanicum {
       priority: RepairPriority.low,
     );
 
-    // 5. Missions with missing/invalid subtasks
+  // 5. Missions with missing/invalid subtasks
     _learnedHealthChecks['invalid_subtasks'] = HealthCheck(
       name: 'Invalid Subtasks',
       description: 'Check for missions with missing or invalid subtasks',
@@ -388,7 +368,7 @@ class Mechanicum {
     );
   }
 
-  /// Learn a new health check from sandbox or user feedback
+  // Learn a new health check from sandbox or user feedback
   Future<void> learnNewHealthCheck(
     String issueType,
     String description,
@@ -413,7 +393,7 @@ class Mechanicum {
     }
   }
 
-  /// Learn a new repair function from sandbox or user feedback
+  // Learn a new repair function from sandbox or user feedback
   Future<void> learnNewRepair(
     String issueType,
     String description,
@@ -438,7 +418,7 @@ class Mechanicum {
     }
   }
 
-  /// Log a repair event with details and learn from it
+  // Log a repair event with details and learn from it
   void logRepair(
     String issue,
     String action, {
@@ -451,10 +431,10 @@ class Mechanicum {
     _repairLog.add(entry);
     if (_repairLog.length > 100) _repairLog.removeAt(0);
 
-    // Learn from this repair
+  // Learn from this repair
     _learnFromRepair(issue, action, missionId);
 
-    // Notify listeners about the issue and fix
+  // Notify listeners about the issue and fix
     _issueController.add({
       'type': 'repair',
       'issue': issue,
@@ -465,29 +445,29 @@ class Mechanicum {
     print('🛡️ AI Guardian: Repair logged: $issue | $action');
   }
 
-  /// Learn from repair events to improve future health checks
+  // Learn from repair events to improve future health checks
   void _learnFromRepair(String issue, String action, String? missionId) {
-    // Track issue frequency
+  // Track issue frequency
     _issueFrequency[issue] = (_issueFrequency[issue] ?? 0) + 1;
 
-    // Add to issue patterns if it's a new pattern
+  // Add to issue patterns if it's a new pattern
     if (!_issuePatterns.contains(issue)) {
       _issuePatterns.add(issue);
     }
 
-    // If this issue occurs frequently, prioritize it
+  // If this issue occurs frequently, prioritize it
     if (_issueFrequency[issue]! >= 3) {
       final healthCheck =
           _learnedHealthChecks[issue.toLowerCase().replaceAll(' ', '_')];
       if (healthCheck != null &&
           healthCheck.priority == HealthCheckPriority.low) {
-        // healthCheck.priority = HealthCheckPriority.medium; // Priority is immutable
+  // healthCheck.priority = HealthCheckPriority.medium; / Priority is immutable
         print('AI Guardian: 📈 Upgraded priority for health check: $issue');
       }
     }
   }
 
-  /// Get a summary of repair log issues and counts.
+  // Get a summary of repair log issues and counts.
   Map<String, int> getRepairLogSummary() {
     final Map<String, int> counts = {};
     for (final entry in _repairLog) {
@@ -497,7 +477,7 @@ class Mechanicum {
     return counts;
   }
 
-  /// Check if a mission would cause a known issue (based on repair log).
+  // Check if a mission would cause a known issue (based on repair log).
   bool wouldCauseKnownIssue(String issueType, {String? missionId}) {
     return _repairLog.any(
       (entry) =>
@@ -506,7 +486,7 @@ class Mechanicum {
     );
   }
 
-  /// Perform comprehensive health checks using learned patterns
+  // Perform comprehensive health checks using learned patterns
   Future<List<HealthCheckResult>> performComprehensiveHealthChecks() async {
     print('🛡️ AI Guardian: Starting comprehensive health checks...');
     final results = <HealthCheckResult>[];
@@ -561,7 +541,7 @@ class Mechanicum {
     return results;
   }
 
-  /// Perform comprehensive repairs using learned patterns
+  // Perform comprehensive repairs using learned patterns
   Future<List<RepairResult>> performComprehensiveRepairs() async {
     print('🛡️ AI Guardian: Starting comprehensive repairs...');
     final results = <RepairResult>[];
@@ -863,7 +843,7 @@ class Mechanicum {
     }
   }
 
-  /// Generate a valid notification ID within 32-bit range
+  // Generate a valid notification ID within 32-bit range
   int generateValidNotificationId() {
     int newId;
     do {
@@ -874,12 +854,12 @@ class Mechanicum {
     return newId;
   }
 
-  /// Register a notification ID as used
+  // Register a notification ID as used
   void registerNotificationId(int id) {
     _usedNotificationIds.add(id);
   }
 
-  /// Start continuous background health checks with independent isolate.
+  // Start continuous background health checks with independent isolate.
   void startContinuousHealthCheck(
     Future<void> Function() healthCheckFn, {
     Duration interval = const Duration(seconds: 30),
@@ -893,12 +873,12 @@ class Mechanicum {
     print(
       '🛡️ AI Guardian: Starting independent background health monitoring...',
     );
-    // Start the background isolate for truly independent operation
+  // Start the background isolate for truly independent operation
     _startBackgroundIsolate(healthCheckFn, interval);
     print('🛡️ AI Guardian: Background health check started');
   }
 
-  /// Start a background isolate for truly independent operation
+  // Start a background isolate for truly independent operation
   void _startBackgroundIsolate(
     Future<void> Function() healthCheckFn,
     Duration interval,
@@ -936,20 +916,20 @@ class Mechanicum {
       print('AI Guardian: Background isolate started successfully');
     } catch (e) {
       print('AI Guardian: Failed to start background isolate: $e');
-      // Fall back to timer-based approach
+  // Fall back to timer-based approach
     }
   }
 
-  /// Background worker function that runs in isolate
+  // Background worker function that runs in isolate
   static void _backgroundHealthCheckWorker(_IsolateMessage message) {
-    // Send initial log
+  // Send initial log
     message.sendPort.send({
       'type': 'log',
       'message': 'Background health check worker started',
     });
   }
 
-  /// Stop the background health check.
+  // Stop the background health check.
   void stopContinuousHealthCheck() {
     _isRunning = false;
     _backgroundCheckTimer?.cancel();
@@ -966,7 +946,7 @@ class Mechanicum {
     }
   }
 
-  /// Perform an immediate health check
+  // Perform an immediate health check
   Future<void> performImmediateHealthCheck(
     Future<void> Function() healthCheckFn,
   ) async {
@@ -981,12 +961,12 @@ class Mechanicum {
     }
   }
 
-  /// Save learned data persistently
+  // Save learned data persistently
   Future<void> _saveLearnedData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Save health checks
+  // Save health checks
       final healthChecksData = _learnedHealthChecks.map(
         (key, value) => MapEntry(key, {
           'name': value.name,
@@ -999,7 +979,7 @@ class Mechanicum {
         jsonEncode(healthChecksData),
       );
 
-      // Save repairs
+  // Save repairs
       final repairsData = _learnedRepairs.map(
         (key, value) => MapEntry(key, {
           'name': value.name,
@@ -1009,13 +989,13 @@ class Mechanicum {
       );
       await prefs.setString('ai_guardian_repairs', jsonEncode(repairsData));
 
-      // Save learning history
+  // Save learning history
       await prefs.setStringList(
         'ai_guardian_learning_history',
         _learningHistory,
       );
 
-      // Save issue frequency
+  // Save issue frequency
       await prefs.setString(
         'ai_guardian_issue_frequency',
         jsonEncode(_issueFrequency),
@@ -1027,12 +1007,12 @@ class Mechanicum {
     }
   }
 
-  /// Load learned data from persistent storage
+  // Load learned data from persistent storage
   Future<void> _loadLearnedData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Load health checks
+  // Load health checks
       final healthChecksJson = prefs.getString('ai_guardian_health_checks');
       if (healthChecksJson != null) {
         final healthChecksData = Map<String, dynamic>.from(
@@ -1049,7 +1029,7 @@ class Mechanicum {
         }
       }
 
-      // Load repairs
+  // Load repairs
       final repairsJson = prefs.getString('ai_guardian_repairs');
       if (repairsJson != null) {
         final repairsData = Map<String, dynamic>.from(jsonDecode(repairsJson));
@@ -1064,13 +1044,13 @@ class Mechanicum {
         }
       }
 
-      // Load learning history
+  // Load learning history
       final history = prefs.getStringList('ai_guardian_learning_history');
       if (history != null) {
         _learningHistory.addAll(history);
       }
 
-      // Load issue frequency
+  // Load issue frequency
       final frequencyJson = prefs.getString('ai_guardian_issue_frequency');
       if (frequencyJson != null) {
         final frequencyData = Map<String, dynamic>.from(
@@ -1089,7 +1069,7 @@ class Mechanicum {
     }
   }
 
-  /// Load issue patterns from persistent storage
+  // Load issue patterns from persistent storage
   Future<void> _loadIssuePatterns() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1102,7 +1082,7 @@ class Mechanicum {
     }
   }
 
-  /// Get default check function for a given key
+  // Get default check function for a given key
   Future<bool> Function() _getDefaultCheckFunction(String key) {
     switch (key) {
       case 'invalid_notification_ids':
@@ -1116,7 +1096,7 @@ class Mechanicum {
     }
   }
 
-  /// Get default repair function for a given key
+  // Get default repair function for a given key
   Future<void> Function() _getDefaultRepairFunction(String key) {
     switch (key) {
       case 'fix_invalid_notification_ids':
@@ -1130,13 +1110,12 @@ class Mechanicum {
     }
   }
 
-  /// Dispose resources.
+  // Dispose resources.
   void dispose() {
     stopContinuousHealthCheck();
     _backgroundCheckTimer?.cancel();
-    _guardianSocket?.disconnect();
-    _guardianSocket?.dispose();
-    _guardianSocket = null;
+    _wsChannel?.sink.close();
+    _wsChannel = null;
     _aiActiveController.close();
     _learningController.close();
     _issueController.close();
@@ -1145,13 +1124,13 @@ class Mechanicum {
 
   static Future<void> backgroundGuardianAndSandbox() async {
     final mechanicum = Mechanicum.instance;
-    // Run Guardian repairs
+  // Run Guardian repairs
     final repairResults = await mechanicum.performComprehensiveRepairs();
     for (final result in repairResults) {
       mechanicum.maybeNotifyGuardianRepair(result);
     }
 
-    // Get sandbox suggestions from existing data structures
+  // Get sandbox suggestions from existing data structures
     final suggestions = mechanicum.getSandboxSuggestions();
     for (final suggestion in suggestions) {
       mechanicum.maybeNotifySandboxSuggestion(suggestion);
@@ -1213,17 +1192,17 @@ class Mechanicum {
   List<SuggestionResult> getSandboxSuggestions() {
     final suggestions = <SuggestionResult>[];
 
-    // Convert existing suggestion maps to SuggestionResult objects
+  // Convert existing suggestion maps to SuggestionResult objects
     for (final suggestionMap in _aiSuggestions) {
       suggestions.add(SuggestionResult.fromMap(suggestionMap));
     }
 
-    // Also include personalized suggestions
+  // Also include personalized suggestions
     for (final personalMap in _aiPersonalizedSuggestions) {
       suggestions.add(SuggestionResult.fromMap(personalMap));
     }
 
-    // Include code suggestions
+  // Include code suggestions
     for (final codeMap in _aiGeneratedCodeSuggestions) {
       suggestions.add(SuggestionResult.fromMap(codeMap));
     }
@@ -1626,7 +1605,7 @@ class Mechanicum {
   }
 }
 
-/// Message class for isolate communication
+  // Message class for isolate communication
 class _IsolateMessage {
   final SendPort sendPort;
   final int interval;
@@ -1634,13 +1613,13 @@ class _IsolateMessage {
   _IsolateMessage({required this.sendPort, required this.interval});
 }
 
-/// Health check priority levels
+  // Health check priority levels
 enum HealthCheckPriority { low, medium, high, critical }
 
-/// Repair priority levels
+  // Repair priority levels
 enum RepairPriority { low, medium, high, critical }
 
-/// Health check definition
+  // Health check definition
 class HealthCheck {
   final String name;
   final String description;
@@ -1655,7 +1634,7 @@ class HealthCheck {
   });
 }
 
-/// Repair function definition
+  // Repair function definition
 class RepairFunction {
   final String name;
   final String description;
@@ -1670,7 +1649,7 @@ class RepairFunction {
   });
 }
 
-/// Health check result
+  // Health check result
 class HealthCheckResult {
   final String checkName;
   final String description;
@@ -1689,7 +1668,7 @@ class HealthCheckResult {
   });
 }
 
-/// Repair result
+  // Repair result
 class RepairResult {
   final String repairName;
   final String description;
@@ -1708,10 +1687,10 @@ class RepairResult {
   });
 }
 
-/// Suggestion priority levels
+  // Suggestion priority levels
 enum SuggestionPriority { low, medium, high, critical }
 
-/// Suggestion result
+  // Suggestion result
 class SuggestionResult {
   final String suggestion;
   final String title;

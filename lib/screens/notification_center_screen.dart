@@ -17,14 +17,20 @@ class NotificationCenterScreen extends StatelessWidget {
             icon: const Icon(Icons.done_all),
             tooltip: 'Mark all as read',
             onPressed: () {
-              Provider.of<NotificationProvider>(context, listen: false).markAllAsRead();
+              Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              ).markAllAsRead();
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep),
             tooltip: 'Clear all',
             onPressed: () {
-              Provider.of<NotificationProvider>(context, listen: false).clearAll();
+              Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              ).clearAll();
             },
           ),
         ],
@@ -51,7 +57,11 @@ class NotificationCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationTile(BuildContext context, AINotification notification, NotificationProvider provider) {
+  Widget _buildNotificationTile(
+    BuildContext context,
+    AINotification notification,
+    NotificationProvider provider,
+  ) {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: notification.iconColor.withOpacity(0.2),
@@ -59,7 +69,9 @@ class NotificationCenterScreen extends StatelessWidget {
       ),
       title: Text(
         notification.title,
-        style: TextStyle(fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold),
+        style: TextStyle(
+          fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+        ),
       ),
       subtitle: Text(notification.body),
       trailing: Text(
@@ -75,4 +87,4 @@ class NotificationCenterScreen extends StatelessWidget {
       tileColor: notification.isRead ? null : Colors.blue.withOpacity(0.05),
     );
   }
-} 
+}

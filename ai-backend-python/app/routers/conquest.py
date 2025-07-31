@@ -763,7 +763,7 @@ async def analyze_code_complexity(request: Dict[str, Any]):
     try:
         from app.services.sckipit_service import SckipitService
         
-        sckipit = SckipitService()
+        sckipit = await SckipitService.initialize()
         description = request.get('description', '')
         
         # Use the complexity determination logic

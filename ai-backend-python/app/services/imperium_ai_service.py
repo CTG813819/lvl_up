@@ -59,7 +59,7 @@ class ImperiumAIService:
     def __init__(self):
         if not self._initialized:
             self.ml_service = MLService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.learning_service = AILearningService()
             self.custody_service = None # Initialize to None, will be set in methods
             self.extension_service = ImperiumExtensionService()

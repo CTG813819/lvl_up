@@ -27,7 +27,10 @@ from .sckipit_service import SckipitService
 from .custody_protocol_service import CustodyProtocolService
 from .advanced_code_generator import AdvancedCodeGenerator
 from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
-from scripts.retrieve_from_learning_log import retrieve_answer
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../scripts'))
+from retrieve_from_learning_log import retrieve_answer
 
 logger = structlog.get_logger()
 
@@ -47,7 +50,7 @@ class ConquestAIService:
         if not ConquestAIService._initialized:
             self.github_service = GitHubService()
             self.learning_service = AILearningService()
-            self.sckipit_service = SckipitService()
+            self.sckipit_service = None  # Will be initialized properly in initialize()
             self.custody_service = CustodyProtocolService()
             self.code_generator = AdvancedCodeGenerator()
             
@@ -700,7 +703,7 @@ class ConquestAIService:
                         return f"https://github.com/conquest-ai/{app_name.lower().replace(' ', '-')}"
                         
         except Exception as e:
-            logger.error("Error creating GitHub repository", error=str(e))
+            logger.error(f"Error creating GitHub repository: {str(e)}")
             # Try to create under the configured organization/user
             try:
                 if settings.github_username:
@@ -1274,7 +1277,7 @@ class AppProvider with ChangeNotifier {{
             return f"{repo_url}/releases/latest/download/{app_name.lower().replace(' ', '-')}.apk"
             
         except Exception as e:
-            logger.error("Error building APK", error=str(e))
+            logger.error(f"Error building APK: {str(e)}")
             return f"{repo_url}/releases"
     
     def _generate_apk_workflow(self, app_name: str) -> str:
@@ -1389,7 +1392,7 @@ jobs:
                         return False
                         
         except Exception as e:
-            logger.error("Error pushing workflow file", error=str(e))
+            logger.error(f"Error pushing workflow file: {str(e)}")
             return False
     
     async def _create_deployment_record(self, app_id: str, app_name: str, repo_url: str, apk_url: str, app_data: Dict[str, Any], validation_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -1423,7 +1426,7 @@ jobs:
                 return deployment_data
                 
         except Exception as e:
-            logger.error("Error creating deployment record", error=str(e))
+            logger.error(f"Error creating deployment record: {str(e)}")
             return {
                 "id": app_id,
                 "app_name": app_name,
@@ -1462,7 +1465,7 @@ jobs:
                     return {"status": "error", "message": "Deployment not found"}
                 
         except Exception as e:
-            logger.error("Error getting deployment status", error=str(e))
+            logger.error(f"Error getting deployment status: {str(e)}")
             return {"status": "error", "message": str(e)}
     
     async def list_deployments(self) -> Dict[str, Any]:
@@ -1492,7 +1495,7 @@ jobs:
                 }
                 
         except Exception as e:
-            logger.error("Error listing deployments", error=str(e))
+            logger.error(f"Error listing deployments: {str(e)}")
             return {"status": "error", "message": str(e)} 
     
     async def update_deployment_status(
@@ -1541,7 +1544,7 @@ jobs:
                 }
                 
         except Exception as e:
-            logger.error("Error updating deployment status", error=str(e))
+            logger.error(f"Error updating deployment status: {str(e)}")
             return {"status": "error", "message": str(e)}
 
     async def get_progress_logs(self) -> List[Dict[str, Any]]:
@@ -1582,7 +1585,7 @@ jobs:
                 return logs
                 
         except Exception as e:
-            logger.error("Error getting progress logs", error=str(e))
+            logger.error(f"Error getting progress logs: {str(e)}")
             return []
 
     async def get_error_learnings(self) -> List[Dict[str, Any]]:
@@ -1620,7 +1623,7 @@ jobs:
                 return learnings
                 
         except Exception as e:
-            logger.error("Error getting error learnings", error=str(e))
+            logger.error(f"Error getting error learnings: {str(e)}")
             return []
 
     def _generate_error_recommendation(self, error_message: Optional[str]) -> str:
@@ -2047,7 +2050,7 @@ jobs:
             }
             
         except Exception as e:
-            logger.error("Error getting enhanced statistics", error=str(e))
+            logger.error(f"Error getting enhanced statistics: {str(e)}")
             return {"status": "error", "message": str(e)}
     
     def _calculate_trend(self, successful: int, total: int) -> str:
@@ -2141,7 +2144,7 @@ jobs:
     async def logRollback(self, app_id: str, restored_code: dict):
         """Log a rollback event for audit/history purposes."""
         # For demo: print/log to console. In production, append to DB or file.
-        logger.info(f"[ROLLBACK] App {app_id} rolled back to previous snapshot.", restored_code=restored_code)
+        logger.info(f"[ROLLBACK] App {app_id} rolled back to previous snapshot. Data: {restored_code}")
         # TODO: Persist this log to a database or audit file for full traceability.
 
     async def answer_prompt(self, prompt: str) -> str:

@@ -31,10 +31,7 @@ class NotificationBell extends StatelessWidget {
                     ),
                     child: Text(
                       '${provider.unreadCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -46,9 +43,11 @@ class NotificationBell extends StatelessWidget {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const NotificationCenterScreen()),
+          MaterialPageRoute(
+            builder: (context) => const NotificationCenterScreen(),
+          ),
         );
       },
     );
   }
-} 
+}

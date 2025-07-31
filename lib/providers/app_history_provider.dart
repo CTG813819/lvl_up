@@ -26,9 +26,10 @@ class AppHistoryProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final historyJson = prefs.getStringList(_historyKey) ?? [];
-      _history = historyJson
-          .map((e) => AppHistoryEntry.fromJson(json.decode(e)))
-          .toList();
+      _history =
+          historyJson
+              .map((e) => AppHistoryEntry.fromJson(json.decode(e)))
+              .toList();
       developer.log('Loaded ${_history.length} history entries');
       notifyListeners();
     } catch (e, stackTrace) {
@@ -99,12 +100,12 @@ class AppHistoryProvider extends ChangeNotifier {
   Future<void> addEntry(AppHistoryEntry entry) async {
     try {
       _history.insert(0, entry);
-      
+
       // Maintain maximum history size
       if (_history.length > _maxHistoryEntries) {
         _history = _history.sublist(0, _maxHistoryEntries);
       }
-      
+
       await _saveHistory();
       notifyListeners();
       developer.log('Added new history entry: ${entry.title}');
@@ -206,34 +207,44 @@ class AppHistoryProvider extends ChangeNotifier {
 
   List<AppHistoryEntry> getEntriesByCategory(HistoryCategory category) {
     final entries = _history.where((e) => e.category == category).toList();
-    developer.log('Retrieved ${entries.length} entries for category: $category');
+    developer.log(
+      'Retrieved ${entries.length} entries for category: $category',
+    );
     return entries;
   }
 
   List<AppHistoryEntry> searchHistory(String query) {
     final lower = query.toLowerCase();
-    final results = _history.where((e) =>
-      e.title.toLowerCase().contains(lower) ||
-      e.description.toLowerCase().contains(lower) ||
-      (e.errorCode?.toLowerCase().contains(lower) ?? false) ||
-      (e.errorType?.toLowerCase().contains(lower) ?? false)
-    ).toList();
+    final results =
+        _history
+            .where(
+              (e) =>
+                  e.title.toLowerCase().contains(lower) ||
+                  e.description.toLowerCase().contains(lower) ||
+                  (e.errorCode?.toLowerCase().contains(lower) ?? false) ||
+                  (e.errorType?.toLowerCase().contains(lower) ?? false),
+            )
+            .toList();
     developer.log('Search found ${results.length} entries for query: $query');
     return results;
   }
 
   List<AppHistoryEntry> getErrorsByCode(String errorCode) {
-    return _history.where((e) => 
-      e.category == HistoryCategory.error && 
-      e.errorCode == errorCode
-    ).toList();
+    return _history
+        .where(
+          (e) =>
+              e.category == HistoryCategory.error && e.errorCode == errorCode,
+        )
+        .toList();
   }
 
   List<AppHistoryEntry> getErrorsByType(String errorType) {
-    return _history.where((e) => 
-      e.category == HistoryCategory.error && 
-      e.errorType == errorType
-    ).toList();
+    return _history
+        .where(
+          (e) =>
+              e.category == HistoryCategory.error && e.errorType == errorType,
+        )
+        .toList();
   }
 
   Future<void> loadHistory() async {
@@ -247,7 +258,7 @@ class AppHistoryProvider extends ChangeNotifier {
   }) async {
     try {
       final entry = AppHistoryEntry(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
         title: title,
         description: description,
         timestamp: DateTime.now(),
@@ -319,4 +330,4 @@ class AppHistoryProvider extends ChangeNotifier {
       print('Error logging state change: $e');
     }
   }
-} 
+}

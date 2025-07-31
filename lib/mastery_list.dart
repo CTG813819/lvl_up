@@ -9,13 +9,14 @@ class MasteryEntry {
   final String id;
   String title;
   final double targetValue;
-  final List<MasteryProgress> progress;
+  final List<MasteryProgress> progress = [];
   final String imageUrl;
   int currentLevel;
   double nextLevelTarget;
 
-  // Add maxLevel getter
+  /// Add maxLevel getter
   int get maxLevel => 100; // Maximum level is 100
+  double get maxLevelTarget => 5000000.0;
 
   MasteryEntry({
     required this.id,
@@ -24,15 +25,19 @@ class MasteryEntry {
     List<MasteryProgress>? progress,
     required this.imageUrl,
     this.currentLevel = 0,
-    this.nextLevelTarget = 100.0,
-  }) : progress = progress ?? [];
+    double? nextLevelTarget,
+  }) : nextLevelTarget = (nextLevelTarget ?? 5000.0) {
+    if (progress != null) {
+      this.progress.addAll(progress);
+    }
+  }
 
-  // Convert minutes to hours for leveling calculations
+  /// Convert minutes to hours for leveling calculations
   double _convertToHours(double minutes) {
     return minutes / 60.0;
   }
 
-  // Format minutes into HH:MM format
+  /// Format minutes into HH:MM format
   String formatTime(double minutes) {
     final hours = (minutes / 60).floor();
     final remainingMinutes = (minutes % 60).round();
@@ -67,27 +72,28 @@ class MasteryEntry {
   }
 
   void updateLevel(double totalProgress) {
-    // Convert total progress from minutes to hours for leveling
+    /// Convert total progress from minutes to hours for leveling
     final totalHours = _convertToHours(totalProgress);
-    while (totalHours >= nextLevelTarget && currentLevel < 100) {
+    while (totalHours >= nextLevelTarget && nextLevelTarget < 5000000.0) {
       currentLevel++;
-      nextLevelTarget *= 2;
+      nextLevelTarget = (nextLevelTarget * 2).clamp(0, 5000000.0);
     }
   }
 
   String getLevelDescription() {
-    if (currentLevel == 0) return 'Level 1 (0-6000 minutes)';
-    if (currentLevel == 1) return 'Level 2 (6000-12000 minutes)';
-    if (currentLevel == 2) return 'Level 3 (12000-24000 minutes)';
-    if (currentLevel >= 3 && currentLevel < 100) {
-      final currentTarget = 6000 * (1 << (currentLevel - 1));
-      final nextTarget = currentTarget * 2;
-      return 'Level ${currentLevel + 1} ($currentTarget-$nextTarget minutes)';
+    if (currentLevel == 0) return 'Level 1 (0-5000 minutes)';
+    double currentTarget = 5000.0;
+    for (int i = 1; i < currentLevel; i++) {
+      currentTarget = (currentTarget * 2).clamp(0, maxLevelTarget);
     }
-    return 'Master Level (600,000 minutes)';
+    double nextTarget = (currentTarget * 2).clamp(0, maxLevelTarget);
+    if (currentLevel < maxLevel && nextTarget < maxLevelTarget) {
+      return 'Level ${currentLevel + 1} (${currentTarget.toInt()}-${nextTarget.toInt()} minutes)';
+    }
+    return 'Master Level (5,000,000 minutes)';
   }
 
-  // Get total progress in hours
+  /// Get total progress in hours
   double getTotalProgressHours() {
     final totalMinutes = progress.fold<double>(
       0.0,
@@ -96,7 +102,7 @@ class MasteryEntry {
     return _convertToHours(totalMinutes);
   }
 
-  // Get total progress in minutes
+  /// Get total progress in minutes
   double getTotalProgressMinutes() {
     return progress.fold<double>(0.0, (sum, progress) => sum + progress.value);
   }
@@ -134,7 +140,7 @@ class MasteryProvider extends ChangeNotifier {
   final List<MasteryEntry> _entries = [];
   final EntryManager _entryManager = EntryManager();
   static const String _storageKey = 'mastery_entries';
-  // Track the last progress entry for each mission/subtask to prevent duplicates
+  /// Track the last progress entry for each mission/subtask to prevent duplicates
   final Map<String, DateTime> _lastProgressTime = {};
 
   List<MasteryEntry> get entries => _entries;
@@ -150,33 +156,33 @@ class MasteryProvider extends ChangeNotifier {
     _entries.addAll(
       entriesJson.map((json) => MasteryEntry.fromJson(jsonDecode(json))),
     );
-    // Recalculate all progress after loading
+    /// Recalculate all progress after loading
     for (var entry in _entries) {
       _recalculateProgress(entry);
     }
     notifyListeners();
   }
 
-  // Public method to load entries
+  /// Public method to load entries
   Future<void> loadEntries() async {
     await _loadEntries();
   }
 
   void _recalculateProgress(MasteryEntry entry) {
-    // Calculate total progress in minutes
+    /// Calculate total progress in minutes
     final totalProgress = entry.progress.fold<double>(
       0.0,
       (sum, progress) => sum + progress.value,
     );
 
-    // Update level based on total progress (converted to hours)
+    /// Update level based on total progress (converted to hours)
     entry.currentLevel = 0;
-    entry.nextLevelTarget = 100.0;
+    entry.nextLevelTarget = 5000.0;
 
     while (entry._convertToHours(totalProgress) >= entry.nextLevelTarget &&
-        entry.currentLevel < 100) {
+        entry.nextLevelTarget < 5000000.0) {
       entry.currentLevel++;
-      entry.nextLevelTarget *= 2;
+      entry.nextLevelTarget = (entry.nextLevelTarget * 2).clamp(0, 5000000.0);
     }
   }
 
@@ -195,7 +201,7 @@ class MasteryProvider extends ChangeNotifier {
 
   Future<void> addEntry(String title) async {
     final entry = MasteryEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: (DateTime.now().millisecondsSinceEpoch % 100000).toString(),
       title: title,
       imageUrl: getRandomImage(),
     );
@@ -207,17 +213,17 @@ class MasteryProvider extends ChangeNotifier {
   Future<void> addProgress(String entryId, String subject, double value) async {
     final entry = _entries.firstWhere((e) => e.id == entryId);
 
-    // Ensure value is positive
+    /// Ensure value is positive
     if (value <= 0) {
       print('Warning: Attempted to add non-positive mastery value: $value');
       return;
     }
 
-    // Create a unique key for this progress entry
+    /// Create a unique key for this progress entry
     final progressKey = '$entryId:$subject';
     final now = DateTime.now();
 
-    // Check if we've added progress for this entry/subject recently (within 1 second)
+    /// Check if we've added progress for this entry/subject recently (within 1 second)
     if (_lastProgressTime.containsKey(progressKey)) {
       final lastTime = _lastProgressTime[progressKey]!;
       if (now.difference(lastTime).inSeconds < 1) {
@@ -226,7 +232,7 @@ class MasteryProvider extends ChangeNotifier {
       }
     }
 
-    // Add the new progress entry (value is in minutes)
+    /// Add the new progress entry (value is in minutes)
     entry.progress.add(
       MasteryProgress(
         subject: subject,
@@ -235,13 +241,13 @@ class MasteryProvider extends ChangeNotifier {
       ),
     );
 
-    // Update the last progress time
+    /// Update the last progress time
     _lastProgressTime[progressKey] = now;
 
-    // Recalculate progress and level
+    /// Recalculate progress and level
     _recalculateProgress(entry);
 
-    // Save changes and notify listeners immediately
+    /// Save changes and notify listeners immediately
     await _saveEntries();
     notifyListeners();
   }
@@ -251,7 +257,7 @@ class MasteryProvider extends ChangeNotifier {
     return entry.getTotalProgressMinutes(); // Return minutes
   }
 
-  // Get recent progress entries for a mastery
+  /// Get recent progress entries for a mastery
   List<MasteryProgress> getRecentProgress(String entryId, {int limit = 5}) {
     final entry = _entries.firstWhere((e) => e.id == entryId);
     final sortedProgress = List<MasteryProgress>.from(entry.progress)
@@ -259,7 +265,7 @@ class MasteryProvider extends ChangeNotifier {
     return sortedProgress.take(limit).toList();
   }
 
-  // Get progress for a specific time period
+  /// Get progress for a specific time period
   double getProgressForPeriod(String entryId, DateTime start, DateTime end) {
     final entry = _entries.firstWhere((e) => e.id == entryId);
     return entry.progress
@@ -267,51 +273,51 @@ class MasteryProvider extends ChangeNotifier {
         .fold<double>(0.0, (sum, progress) => sum + progress.value);
   }
 
-  // Get today's progress
+  /// Get today's progress
   double getTodayProgress(String entryId) {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
     return getProgressForPeriod(entryId, startOfDay, now);
   }
 
-  // Get this week's progress
+  /// Get this week's progress
   double getWeekProgress(String entryId) {
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     return getProgressForPeriod(entryId, startOfWeek, now);
   }
 
-  // Get this month's progress
+  /// Get this month's progress
   double getMonthProgress(String entryId) {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     return getProgressForPeriod(entryId, startOfMonth, now);
   }
 
-  // Get monthly progress data for all months since creation
+  /// Get monthly progress data for all months since creation
   Map<DateTime, double> getMonthlyProgress(String entryId) {
     final entry = _entries.firstWhere((e) => e.id == entryId);
     if (entry.progress.isEmpty) return {};
 
-    // Get the earliest progress entry
+    /// Get the earliest progress entry
     final earliestProgress = entry.progress.reduce(
       (a, b) => a.timestamp.isBefore(b.timestamp) ? a : b,
     );
 
-    // Start from the beginning of the month when the first progress was recorded
+    /// Start from the beginning of the month when the first progress was recorded
     final startDate = DateTime(
       earliestProgress.timestamp.year,
       earliestProgress.timestamp.month,
       1,
     );
 
-    // End at the current month
+    /// End at the current month
     final endDate = DateTime.now();
 
-    // Create a map to store monthly progress
+    /// Create a map to store monthly progress
     final monthlyProgress = <DateTime, double>{};
 
-    // Initialize all months with 0 progress
+    /// Initialize all months with 0 progress
     var currentDate = startDate;
     while (currentDate.isBefore(endDate) ||
         (currentDate.year == endDate.year &&
@@ -320,7 +326,7 @@ class MasteryProvider extends ChangeNotifier {
       currentDate = DateTime(currentDate.year, currentDate.month + 1, 1);
     }
 
-    // Calculate progress for each month
+    /// Calculate progress for each month
     for (final progress in entry.progress) {
       final monthKey = DateTime(
         progress.timestamp.year,
@@ -344,7 +350,7 @@ class MasteryProvider extends ChangeNotifier {
     return entry.nextLevelTarget;
   }
 
-  // Get progress percentage towards next level
+  /// Get progress percentage towards next level
   double getProgressPercentage(String entryId) {
     final entry = _entries.firstWhere((e) => e.id == entryId);
     final totalProgress = getTotalProgress(entryId);
@@ -365,14 +371,14 @@ class MasteryProvider extends ChangeNotifier {
 
   Future<void> resetHours(String entryId) async {
     final entry = _entries.firstWhere((e) => e.id == entryId);
-    // Clear all progress entries
+    /// Clear all progress entries
     entry.progress.clear();
-    // Reset level and target
+    /// Reset level and target
     entry.currentLevel = 0;
-    entry.nextLevelTarget = 100.0;
-    // Clear any tracked progress times for this entry
+    entry.nextLevelTarget = 100.0 * 5;
+    /// Clear any tracked progress times for this entry
     _lastProgressTime.removeWhere((key, _) => key.startsWith('$entryId:'));
-    // Save changes
+    /// Save changes
     await _saveEntries();
     notifyListeners();
   }
@@ -381,19 +387,19 @@ class MasteryProvider extends ChangeNotifier {
     final entry = _entries.firstWhere((e) => e.id == entryId);
     if (entry.progress.isEmpty) return;
 
-    // Convert hours to minutes
+    /// Convert hours to minutes
     final minutesToSubtract = hoursToSubtract * 60;
     double remainingMinutes = minutesToSubtract;
 
-    // Remove progress entries until we've subtracted enough minutes
+    /// Remove progress entries until we've subtracted enough minutes
     while (remainingMinutes > 0 && entry.progress.isNotEmpty) {
       final lastProgress = entry.progress.last;
       if (lastProgress.value <= remainingMinutes) {
-        // Remove entire entry
+        /// Remove entire entry
         remainingMinutes -= lastProgress.value;
         entry.progress.removeLast();
       } else {
-        // Partially reduce the last entry
+        /// Partially reduce the last entry
         entry.progress[entry.progress.length - 1] = MasteryProgress(
           subject: lastProgress.subject,
           value: lastProgress.value - remainingMinutes,
@@ -403,10 +409,10 @@ class MasteryProvider extends ChangeNotifier {
       }
     }
 
-    // Recalculate progress and level
+    /// Recalculate progress and level
     _recalculateProgress(entry);
 
-    // Save changes
+    /// Save changes
     await _saveEntries();
     notifyListeners();
   }
@@ -429,11 +435,11 @@ class MasteryProvider extends ChangeNotifier {
     while (remainingMinutes > 0 && entry.progress.isNotEmpty) {
       final lastProgress = entry.progress.last;
       if (lastProgress.value <= remainingMinutes) {
-        // Remove entire entry
+        /// Remove entire entry
         remainingMinutes -= lastProgress.value;
         entry.progress.removeLast();
       } else {
-        // Partially reduce the last entry
+        /// Partially reduce the last entry
         entry.progress[entry.progress.length - 1] = MasteryProgress(
           subject: lastProgress.subject,
           value: lastProgress.value - remainingMinutes,
@@ -443,10 +449,10 @@ class MasteryProvider extends ChangeNotifier {
       }
     }
 
-    // Recalculate progress and level
+    /// Recalculate progress and level
     _recalculateProgress(entry);
 
-    // Save changes
+    /// Save changes
     await _saveEntries();
     notifyListeners();
   }
@@ -580,7 +586,7 @@ class MasteryList extends StatelessWidget {
                           double subtractValue =
                               double.tryParse(subtractController.text) ?? 0;
                           if (subtractValue > 0) {
-                            // Convert to minutes if hours selected
+                            /// Convert to minutes if hours selected
                             if (selectedUnit == 'hours') {
                               subtractValue *= 60;
                             }
@@ -735,6 +741,7 @@ class MasteryList extends StatelessWidget {
                       },
                     ),
             floatingActionButton: FloatingActionButton(
+              heroTag: 'mastery_add_button',
               onPressed: () => _showAddEntryDialog(context),
               backgroundColor: Colors.black,
               child: const Icon(Icons.add, color: Colors.white),

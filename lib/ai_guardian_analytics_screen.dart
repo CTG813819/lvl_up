@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_codex/ai_brain.dart';
 import 'mission.dart' show MissionProvider;
+import 'providers/ai_growth_analytics_provider.dart';
+import 'widgets/ai_growth_analytics_dashboard.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -76,7 +78,7 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
           backgroundColor: Colors.black,
           appBar: AppBar(
             title: const Text(
-              'Mechanicum Analytics',
+              'Terra',
               style: TextStyle(color: Colors.white),
             ),
             backgroundColor: Colors.black,
@@ -91,41 +93,6 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isSandboxWorking == true)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.redAccent.withValues(alpha: 0.1),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.build,
-                          color: Colors.redAccent,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'AI Sandbox is running experiments...',
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.redAccent,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 if (lastTested != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -156,23 +123,26 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                               style: TextStyle(color: Colors.white70),
                             )
                             : SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                              children: [
-                                ...aiSuggestions.map((s) {
-                                  final accepted = s['accepted'] == true;
-                                  final ignored = s['ignored'] == true;
-                                  Color? borderColor;
-                                  if (accepted) {
-                                    borderColor = Colors.greenAccent;
-                                  } else if (ignored) {
-                                    borderColor = Colors.redAccent;
-                                  } else {
-                                    borderColor = Colors.amber;
-                                  }
-                                      return Container(
-                                        width: 320,
-                                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  ...aiSuggestions.map<Widget>((s) {
+                                    final accepted = s['accepted'] == true;
+                                    final ignored = s['ignored'] == true;
+                                    Color? borderColor;
+                                    if (accepted) {
+                                      borderColor = Colors.greenAccent;
+                                    } else if (ignored) {
+                                      borderColor = Colors.redAccent;
+                                    } else {
+                                      borderColor = Colors.amber;
+                                    }
+                                    return Container(
+                                      width: 320,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         border: Border(
                                           left: BorderSide(
@@ -184,7 +154,8 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                         color: Colors.grey[850],
                                       ),
                                       child: ListTile(
-                                          contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                               vertical: 8,
                                               horizontal: 12,
                                             ),
@@ -206,10 +177,13 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                           ),
                                         ),
                                         subtitle: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             if (s['explanation'] != null &&
-                                                  s['explanation'].toString().isNotEmpty)
+                                                s['explanation']
+                                                    .toString()
+                                                    .isNotEmpty)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 4,
@@ -223,7 +197,9 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                                 ),
                                               ),
                                             if (s['changes'] != null &&
-                                                  ((s['changes'] as List?)?.isNotEmpty ?? false))
+                                                ((s['changes'] as List?)
+                                                        ?.isNotEmpty ??
+                                                    false))
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 4,
@@ -231,21 +207,31 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                                 child: Wrap(
                                                   spacing: 6,
                                                   runSpacing: 2,
-                                                    children: (s['changes'] as List?)?.map<Widget>(
+                                                  children:
+                                                      (s['changes'] as List?)
+                                                          ?.map<Widget>(
                                                             (c) => Chip(
                                                               label: Text(
                                                                 c,
                                                                 style: const TextStyle(
-                                                                color: Colors.white70,
+                                                                  color:
+                                                                      Colors
+                                                                          .white70,
                                                                 ),
                                                               ),
-                                                            backgroundColor: Colors.grey[800],
+                                                              backgroundColor:
+                                                                  Colors
+                                                                      .grey[800],
                                                             ),
-                                                        ).toList() ?? [],
+                                                          )
+                                                          .toList() ??
+                                                      [],
                                                 ),
                                               ),
                                             if (s['testResults'] != null &&
-                                                  ((s['testResults'] as List?)?.isNotEmpty ?? false))
+                                                ((s['testResults'] as List?)
+                                                        ?.isNotEmpty ??
+                                                    false))
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 4,
@@ -253,75 +239,69 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                                 child: Wrap(
                                                   spacing: 6,
                                                   runSpacing: 2,
-                                                    children: (s['testResults'] as List?)?.map<Widget>(
+                                                  children:
+                                                      (s['testResults']
+                                                              as List?)
+                                                          ?.map<Widget>(
                                                             (t) => Chip(
                                                               label: Text(
                                                                 t,
                                                                 style: const TextStyle(
-                                                                color: Colors.white70,
+                                                                  color:
+                                                                      Colors
+                                                                          .white70,
                                                                 ),
                                                               ),
-                                                            backgroundColor: Colors.blueGrey[800],
+                                                              backgroundColor:
+                                                                  Colors
+                                                                      .blueGrey[800],
                                                             ),
-                                                        ).toList() ?? [],
+                                                          )
+                                                          .toList() ??
+                                                      [],
                                                 ),
                                               ),
-                                              if (accepted && s['acceptedAt'] != null)
+                                            if (accepted &&
+                                                s['acceptedAt'] != null)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 4,
                                                 ),
                                                 child: Text(
-                                                    'Accepted at: \\${s['acceptedAt']}',
+                                                  'Accepted at: \\${s['acceptedAt']}',
                                                   style: const TextStyle(
                                                     color: Colors.greenAccent,
                                                     fontSize: 12,
                                                   ),
                                                 ),
                                               ),
-                                              if (ignored && s['ignoredAt'] != null)
+                                            if (ignored &&
+                                                s['ignoredAt'] != null)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 4,
                                                 ),
                                                 child: Text(
-                                                    'Ignored at: \\${s['ignoredAt']}',
+                                                  'Ignored at: \\${s['ignoredAt']}',
                                                   style: const TextStyle(
                                                     color: Colors.redAccent,
                                                     fontSize: 12,
                                                   ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                          ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
-                                      );
-                                    }),
-                                  ],
-                                ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ],
                               ),
+                            ),
                   ),
                 ),
                 const SizedBox(height: 18),
-                _SectionHeader('Knowledge Graph', icon: Icons.device_hub),
-                Builder(
-                  builder: (context) {
-                    final graph = provider.knowledgeGraph;
-                    if (graph == null || graph.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No knowledge graph data.', style: TextStyle(color: Colors.white70)),
-                      );
-                    }
-                    // Support both Map<String, List<String>> and Map<String, dynamic> (from isolate)
-                    final entries = graph.entries.where((e) => (e.value as List).isNotEmpty).toList();
-                    if (entries.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No knowledge graph data.', style: TextStyle(color: Colors.white70)),
-                      );
-                    }
-                    return Card(
+                _SectionHeader('Test Coverage', icon: Icons.analytics),
+                Card(
                   color: Colors.grey[900],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -336,681 +316,120 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                          SizedBox(
-                            height: 220,
-                              child: (mermaid != null)
-                                    ? FutureBuilder<String>(
-                                      future: mermaid.generateSvg(
-                                        _generateMermaidGraph(Map<String, List<String>>.fromEntries(
-                                          entries.map((e) => MapEntry(e.key, List<String>.from(e.value))),
-                                        )),
-                                      ),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return const Center(child: CircularProgressIndicator());
-                                        } else if (snapshot.hasError) {
-                                          return Text('Error rendering diagram: \\${snapshot.error}', style: TextStyle(color: Colors.redAccent));
-                                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                                          return const Text('No diagram data.', style: TextStyle(color: Colors.white70));
-                                        }
-                                        return SvgPicture.string(
-                                          snapshot.data!,
-                                          fit: BoxFit.contain,
-                                          placeholderBuilder: (context) => const Center(child: CircularProgressIndicator()),
-                                        );
-                                      },
-                                    )
-                                  : const Center(child: Text('Diagram rendering not available.', style: TextStyle(color: Colors.white70))),
-                                      ),
-                            ...entries.map(
+                        ...provider.testCoverage.entries.map(
                           (entry) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Text(
-                                  '${entry.key}: ${((entry.value as List).isEmpty) ? 'No dependencies' : (entry.value as List).join(', ')}',
-                              style: const TextStyle(color: Colors.cyanAccent),
-                            ),
-                          ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader('Test Coverage', icon: Icons.analytics),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...provider.testCoverage.entries.map(
-                                  (entry) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 2,
-                                    ),
-                                    child: Text(
-                                      '${entry.key}: ${entry.value} tests',
-                                      style: const TextStyle(
-                                        color: Colors.lightGreenAccent,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Feedback Analytics',
-                          icon: Icons.bar_chart,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: _buildFeedbackAnalytics(provider),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'AI Sandbox Test Feed',
-                          icon: Icons.science,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child:
-                                ((sandboxFeed.isEmpty))
-                                    ? const Text(
-                                      'No tests run yet. The AI is preparing...',
-                                      style: TextStyle(color: Colors.white70),
-                                    )
-                                    : Container(
-                                        height: 300,
-                                        child: ListView(
-                                          children: sandboxFeed
-                                              .take(10)
-                                              .map<Widget>(
-                                                (test) => Card(
-                                                  color:
-                                                      test['result'] == 'pass'
-                                                          ? Colors.green[900]
-                                                          : Colors.red[900],
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          10,
-                                                        ),
-                                                  ),
-                                                  margin:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 6,
-                                                      ),
-                                                  child: ListTile(
-                                                    leading: Icon(
-                                                      test['result'] == 'pass'
-                                                          ? Icons.check_circle
-                                                          : Icons.cancel,
-                                                      color:
-                                                          test['result'] ==
-                                                                  'pass'
-                                                              ? Colors
-                                                                  .greenAccent
-                                                              : Colors
-                                                                  .redAccent,
-                                                    ),
-                                                    title: Text(
-                                                      '${test['testType']} test on ${test['function'] ?? 'code'}',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                    subtitle: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          '${test['details']}',
-                                                          style: const TextStyle(
-                                                            color:
-                                                                Colors.white70,
-                                                          ),
-                                                        ),
-                                                        if (test['reasoning'] !=
-                                                            null)
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets.only(
-                                                                  top: 4,
-                                                                ),
-                                                            child: Text(
-                                                              'Reasoning: ${test['reasoning']}',
-                                                              style: const TextStyle(
-                                                                color:
-                                                                    Colors
-                                                                        .amberAccent,
-                                                                fontSize: 12,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                    trailing: Text(
-                                                      test['result']
-                                                              ?.toUpperCase() ??
-                                                          '',
-                                                      style: TextStyle(
-                                                        color:
-                                                            test['result'] ==
-                                                                    'pass'
-                                                                ? Colors
-                                                                    .greenAccent
-                                                                : Colors
-                                                                    .redAccent,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(),
-                                        ),
-                                    ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Mechanicum Learns',
-                          icon: Icons.auto_awesome,
-                        ),
-                        Card(
-                          color: Colors.deepPurple[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: _AIBrainExperimentList(),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Improvement Strategies',
-                          icon: Icons.tips_and_updates,
-                        ),
-                Builder(
-                  builder: (context) {
-                    final strategies = provider.improvementStrategies;
-                    if (strategies == null || strategies.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Text('No improvement strategies available.', style: TextStyle(color: Colors.white70)),
-                      );
-                    }
-                    return Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                          children: strategies.map<Widget>(
-                                        (strategy) => ListTile(
-                                          leading: const Icon(
-                                            Icons.lightbulb_outline,
-                                            color: Colors.amber,
-                                          ),
-                                          title: Text(
-                                strategy['name'] ?? '',
-                                style: const TextStyle(color: Colors.white),
-                                          ),
-                                          subtitle: Text(
-                                strategy['description'] ?? '',
-                                style: const TextStyle(color: Colors.white70),
-                                            ),
-                                          ),
-                          ).toList(),
-                                        ),
-                            ),
-                    );
-                  },
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Upload Code for Mechanicum',
-                          icon: Icons.upload,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                RadioListTile<String>(
-                                  title: const Text(
-                                    'For App Improvement',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  value: 'app_improvement',
-                                  groupValue: _uploadType,
-                                  onChanged:
-                                      (value) =>
-                                          setState(() => _uploadType = value!),
-                                  activeColor: Colors.blue,
-                                  tileColor: Colors.black,
-                                ),
-                                RadioListTile<String>(
-                                  title: const Text(
-                                    'For Mechanicum\'s Knowledge Base',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  value: 'knowledge_base',
-                                  groupValue: _uploadType,
-                                  onChanged:
-                                      (value) =>
-                                          setState(() => _uploadType = value!),
-                                  activeColor: Colors.blue,
-                                  tileColor: Colors.black,
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _subjectController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Subject',
-                                    labelStyle: TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.black,
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _descriptionController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Description',
-                                    labelStyle: TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.black,
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _tagsController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Tags (comma-separated)',
-                                    labelStyle: TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.black,
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _codeController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Code (Dart)',
-                                    labelStyle: TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.black,
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  maxLines: 4,
-                                ),
-                                const SizedBox(height: 8),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    if (_subjectController.text.isNotEmpty &&
-                                        _codeController.text.isNotEmpty) {
-                                      final tags =
-                                          _tagsController.text
-                                              .split(',')
-                                              .map((t) => t.trim())
-                                              .where((t) => t.isNotEmpty)
-                                              .toList();
-                                      provider.uploadCode(
-                                        type: _uploadType,
-                                        subject: _subjectController.text,
-                                        description:
-                                            _descriptionController.text,
-                                        code: _codeController.text,
-                                        tags: tags,
-                                      );
-                                      _subjectController.clear();
-                                      _descriptionController.clear();
-                                      _codeController.clear();
-                                      _tagsController.clear();
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Code uploaded for Mechanicum!',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: const Text('Upload Code'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Search Knowledge Base',
-                          icon: Icons.search,
-                        ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                  child: TextField(
-                                  controller: _searchController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                      labelText: 'Search by subject, description, or tag...',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                                    prefixIcon: const Icon(
-                                      Icons.search,
-                                      color: Colors.white70,
-                                    ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                                            ? IconButton(
-                                              icon: const Icon(
-                                                Icons.clear,
-                                                color: Colors.white70,
-                                              ),
-                              onPressed: () => _searchController.clear(),
-                                            )
-                                            : null,
-                                    filled: true,
-                                    fillColor: Colors.black,
-                                    border: const OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader('Mechanicum Suggests', icon: Icons.code),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Container(
-                              height: 400,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if ((provider
-                                        .appliedAISuggestions
-                                        ?.isNotEmpty ??
-                                    false))
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Applied Suggestions:',
-                                        style: TextStyle(
-                                          color: Colors.greenAccent,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                        Container(
-                                          height: 120,
-                                          child: ListView(
-                                            children: provider.appliedAISuggestions.map(
-                                        (s) => Card(
-                                          color: Colors.black,
-                                          child: ListTile(
-                                            leading: const Icon(
-                                              Icons.build,
-                                              color: Colors.blueAccent,
-                                            ),
-                                            title: Text(
-                                              s['title'] ?? '',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              'Applied',
-                                              style: const TextStyle(
-                                                color: Colors.blueAccent,
-                                              ),
-                                            ),
-                                          ),
-                                              ),
-                                            ).toList(),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                  ),
-                        Builder(
-                          builder: (context) {
-                            final suggestions = provider.aiGeneratedCodeSuggestions;
-                            if (suggestions.isEmpty) {
-                                return const Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      'No code suggestions yet.',
-                                      style: TextStyle(color: Colors.white70),
-                                    ),
-                                  ),
-                              );
-                            }
-                              return Expanded(
-                                child: RepaintBoundary(
-                              child: _MechanicumSuggestionsInstantUI(suggestions: suggestions, provider: provider),
-                                ),
-                            );
-                          },
-                                    ),
-                              ],
+                              '${entry.key}: ${entry.value} tests',
+                              style: const TextStyle(
+                                color: Colors.lightGreenAccent,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'AI Extension Ideas',
-                          icon: Icons.extension,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                              children:
-                                  (provider.aiExtensionIdeas.isEmpty)
-                                      ? [
-                                        const Text(
-                                          'No extension ideas yet.',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                      ]
-                                      : provider.aiExtensionIdeas
-                                          .map<Widget>(
-                                            (e) => ListTile(
-                                              leading: const Icon(
-                                                Icons.lightbulb_outline,
-                                                color: Colors.amber,
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _SectionHeader('AI Sandbox Test Feed', icon: Icons.science),
+                Card(
+                  color: Colors.grey[900],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 12,
+                    ),
+                    child:
+                        ((sandboxFeed.isEmpty))
+                            ? const Text(
+                              'No tests run yet. The AI is preparing...',
+                              style: TextStyle(color: Colors.white70),
+                            )
+                            : Container(
+                              height: 300,
+                              child: ListView(
+                                children:
+                                    sandboxFeed
+                                        .take(10)
+                                        .map<Widget>(
+                                          (test) => Card(
+                                            color:
+                                                test['result'] == 'pass'
+                                                    ? Colors.green[900]
+                                                    : Colors.red[900],
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            margin: const EdgeInsets.symmetric(
+                                              vertical: 6,
+                                            ),
+                                            child: ListTile(
+                                              leading: Icon(
+                                                test['result'] == 'pass'
+                                                    ? Icons.check_circle
+                                                    : Icons.cancel,
+                                                color:
+                                                    test['result'] == 'pass'
+                                                        ? Colors.greenAccent
+                                                        : Colors.redAccent,
                                               ),
                                               title: Text(
-                                                e['feature'] ?? '',
+                                                '${test['testType']} test on ${test['function'] ?? 'code'}',
                                                 style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              subtitle: Text(
-                                                e['rationale'] ?? '',
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Personalized Suggestions',
-                          icon: Icons.person,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: Column(
-                              children:
-                                  (provider
-                                              .aiPersonalizedSuggestions
-                                              .isEmpty)
-                                      ? [
-                                        const Text(
-                                          'No personalized suggestions yet.',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                          ),
-                                        ),
-                                      ]
-                                      : provider.aiPersonalizedSuggestions
-                                          .map<Widget>(
-                                            (p) => ListTile(
-                                              leading: Chip(
-                                                label: Text(
-                                                  (p['priority'] ?? '')
-                                                      .toString()
-                                                      .toUpperCase(),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
+                                              subtitle: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${test['details']}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                    ),
                                                   ),
-                                                ),
-                                                backgroundColor:
-                                                    (p['priority'] == 'high')
-                                                        ? Colors.redAccent
-                                                        : Colors.blueGrey,
+                                                  if (test['reasoning'] != null)
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            top: 4,
+                                                          ),
+                                                      child: Text(
+                                                        'Reasoning: ${test['reasoning']}',
+                                                        style: const TextStyle(
+                                                          color:
+                                                              Colors
+                                                                  .amberAccent,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
-                                              title: Text(
-                                                p['suggestion'] ?? '',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                              trailing: Text(
+                                                test['result']?.toUpperCase() ??
+                                                    '',
+                                                style: TextStyle(
+                                                  color:
+                                                      test['result'] == 'pass'
+                                                          ? Colors.greenAccent
+                                                          : Colors.redAccent,
                                                 ),
                                               ),
                                             ),
-                                          )
-                                          .toList(),
+                                          ),
+                                        )
+                                        .toList(),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        _SectionHeader(
-                          'Suggest an Extension Idea',
-                          icon: Icons.add_circle_outline,
-                        ),
-                        Card(
-                          color: Colors.grey[900],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            child: _ExtensionIdeaForm(),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -1031,16 +450,34 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                       builder: (context) {
                         final metaLog = TheImperium.instance.metaLearningLog;
                         if (metaLog.isEmpty) {
-                          return const Text('No meta-AI activity yet.', style: TextStyle(color: Colors.amberAccent));
+                          return const Text(
+                            'No meta-AI activity yet.',
+                            style: TextStyle(color: Colors.amberAccent),
+                          );
                         }
-                        final proposalCount = metaLog.where((e) => e['suggestion'] != null && e['suggestion'].toString().isNotEmpty).length;
-                        final appliedCount = metaLog.where((e) => (e['insight'] ?? '').contains('Applied proposal')).length;
+                        final proposalCount =
+                            metaLog
+                                .where(
+                                  (e) =>
+                                      e['suggestion'] != null &&
+                                      e['suggestion'].toString().isNotEmpty,
+                                )
+                                .length;
+                        final appliedCount =
+                            metaLog
+                                .where(
+                                  (e) => (e['insight'] ?? '').contains(
+                                    'Applied proposal',
+                                  ),
+                                )
+                                .length;
                         final issueCounts = <String, int>{};
                         for (final entry in metaLog) {
                           final event = entry['event'] as Map<String, dynamic>?;
                           final action = event?['action']?.toString() ?? '';
                           if (action.isNotEmpty) {
-                            issueCounts[action] = (issueCounts[action] ?? 0) + 1;
+                            issueCounts[action] =
+                                (issueCounts[action] ?? 0) + 1;
                           }
                         }
                         return Column(
@@ -1048,11 +485,26 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                           children: [
                             Row(
                               children: [
-                                Text('Proposals: $proposalCount', style: const TextStyle(color: Colors.amberAccent)),
+                                Text(
+                                  'Proposals: $proposalCount',
+                                  style: const TextStyle(
+                                    color: Colors.amberAccent,
+                                  ),
+                                ),
                                 const SizedBox(width: 16),
-                                Text('Applied: $appliedCount', style: const TextStyle(color: Colors.greenAccent)),
+                                Text(
+                                  'Applied: $appliedCount',
+                                  style: const TextStyle(
+                                    color: Colors.greenAccent,
+                                  ),
+                                ),
                                 const SizedBox(width: 16),
-                                Text('Unique Issues: ${issueCounts.length}', style: const TextStyle(color: Colors.orangeAccent)),
+                                Text(
+                                  'Unique Issues: ${issueCounts.length}',
+                                  style: const TextStyle(
+                                    color: Colors.orangeAccent,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -1066,29 +518,62 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(ts, style: const TextStyle(color: Colors.amberAccent, fontSize: 10)),
-                                      Text(insight, style: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
+                                      Text(
+                                        ts,
+                                        style: const TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Text(
+                                        insight,
+                                        style: const TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                       if (suggestion.isNotEmpty)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 4),
-                                          child: Text('Proposal: $suggestion', style: const TextStyle(color: Colors.orangeAccent)),
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
+                                          child: Text(
+                                            'Proposal: $suggestion',
+                                            style: const TextStyle(
+                                              color: Colors.orangeAccent,
+                                            ),
+                                          ),
                                         ),
                                       if (code.isNotEmpty)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 4),
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              const Text('Proposed Code:', style: TextStyle(color: Colors.orangeAccent)),
+                                              const Text(
+                                                'Proposed Code:',
+                                                style: TextStyle(
+                                                  color: Colors.orangeAccent,
+                                                ),
+                                              ),
                                               Container(
                                                 width: double.infinity,
-                                                margin: const EdgeInsets.only(top: 2),
-                                                padding: const EdgeInsets.all(8),
+                                                margin: const EdgeInsets.only(
+                                                  top: 2,
+                                                ),
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.grey[850],
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: SelectableText(
                                                   code,
@@ -1100,16 +585,34 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
                                               ),
                                               const SizedBox(height: 4),
                                               ElevatedButton.icon(
-                                                icon: const Icon(Icons.check, color: Colors.amberAccent),
-                                                label: const Text('Approve & Apply', style: TextStyle(color: Colors.amberAccent)),
+                                                icon: const Icon(
+                                                  Icons.check,
+                                                  color: Colors.amberAccent,
+                                                ),
+                                                label: const Text(
+                                                  'Approve & Apply',
+                                                  style: TextStyle(
+                                                    color: Colors.amberAccent,
+                                                  ),
+                                                ),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.black,
-                                                  foregroundColor: Colors.amberAccent,
+                                                  foregroundColor:
+                                                      Colors.amberAccent,
                                                 ),
                                                 onPressed: () async {
-                                                  await TheImperium.instance.applyProposal(entry);
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(content: Text('Proposal applied!'), backgroundColor: Colors.amber),
+                                                  await TheImperium.instance
+                                                      .applyProposal(entry);
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Proposal applied!',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.amber,
+                                                    ),
                                                   );
                                                 },
                                               ),
@@ -1134,8 +637,6 @@ class _MechanicumAnalyticsScreenState extends State<MechanicumAnalyticsScreen> {
       },
     );
   }
-
-
 
   String _generateMermaidGraph(Map<String, List<String>> graph) {
     final buffer = StringBuffer('graph TD;\n');
@@ -1362,14 +863,14 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
     final experiments = provider.aiExperiments;
     final learningLog = provider.aiLearningLog;
     final fileInsights = provider.fileInsights;
-    
+
     if (experiments.isEmpty) {
       return const Text(
         'AI is currently reflecting and preparing new experiments...',
         style: TextStyle(color: Colors.white70),
       );
     }
-    
+
     // Group by month for dropdown
     final Map<String, List<String>> monthToDates = {};
     for (final date in _sortedKeys) {
@@ -1379,7 +880,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
       final monthKey = '${parts[0]}-${parts[1]}';
       monthToDates.putIfAbsent(monthKey, () => []).add(date);
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1402,10 +903,14 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
               scrollDirection: Axis.horizontal,
               itemCount: learningLog.length,
               itemBuilder: (context, index) {
-                final entry = learningLog[learningLog.length - 1 - index]; // Most recent first
-                final testResults = entry['testResults'] as List<Map<String, dynamic>>? ?? [];
+                final entry =
+                    learningLog[learningLog.length -
+                        1 -
+                        index]; // Most recent first
+                final testResults =
+                    entry['testResults'] as List<Map<String, dynamic>>? ?? [];
                 final learnings = entry['learnings'] as List<String>? ?? [];
-                
+
                 // Extract test-based learnings
                 String learningText = 'No test results available';
                 if (testResults.isNotEmpty) {
@@ -1413,7 +918,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                   final result = lastTest['result'] ?? 'unknown';
                   final testType = lastTest['testType'] ?? 'test';
                   final details = lastTest['details'] ?? '';
-                  
+
                   if (result == 'pass') {
                     learningText = '✅ $testType passed: $details';
                   } else if (result == 'fail') {
@@ -1424,7 +929,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                 } else if (learnings.isNotEmpty) {
                   learningText = learnings.first;
                 }
-                
+
                 return Container(
                   width: 250,
                   margin: const EdgeInsets.only(right: 8),
@@ -1442,17 +947,17 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                            Expanded(
-                              child: Text(
+                          Expanded(
+                            child: Text(
                               learningText,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 3,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 3,
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -1463,7 +968,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
           ),
           const SizedBox(height: 12),
         ],
-        
+
         // File Insights
         if (fileInsights.isNotEmpty) ...[
           const Padding(
@@ -1486,14 +991,16 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                 final entry = fileInsights.entries.elementAt(index);
                 final filePath = entry.key;
                 final insights = entry.value;
-                
+
                 if (insights.isEmpty) return const SizedBox.shrink();
-                
+
                 final latestInsight = insights.last;
-                final patterns = latestInsight['patterns'] as List<String>? ?? [];
-                final functions = latestInsight['functions'] as List<String>? ?? [];
+                final patterns =
+                    latestInsight['patterns'] as List<String>? ?? [];
+                final functions =
+                    latestInsight['functions'] as List<String>? ?? [];
                 final classes = latestInsight['classes'] as List<String>? ?? [];
-                
+
                 return Container(
                   width: 220,
                   margin: const EdgeInsets.only(right: 8),
@@ -1539,7 +1046,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
           ),
           const SizedBox(height: 12),
         ],
-        
+
         // Date selector
         Row(
           children: [
@@ -1596,7 +1103,7 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
           ],
         ),
         const SizedBox(height: 8),
-        
+
         // Enhanced experiment list
         SizedBox(
           height: 220,
@@ -1653,9 +1160,13 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                               // File analysis details
                               if (exp['filesAnalyzed'] != null) ...[
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '📁 Files Analyzed:',
@@ -1665,21 +1176,29 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      ...(exp['filesAnalyzed'] as List<String>).take(3).map(
-                                        (file) => Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: Text(
-                                            file.split('/').last,
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
+                                      ...(exp['filesAnalyzed'] as List<String>)
+                                          .take(3)
+                                          .map(
+                                            (file) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                left: 8,
+                                              ),
+                                              child: Text(
+                                                file.split('/').last,
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                      if ((exp['filesAnalyzed'] as List<String>).length > 3)
+                                      if ((exp['filesAnalyzed'] as List<String>)
+                                              .length >
+                                          3)
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
                                           child: Text(
                                             '... and ${(exp['filesAnalyzed'] as List<String>).length - 3} more',
                                             style: const TextStyle(
@@ -1692,13 +1211,17 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                                   ),
                                 ),
                               ],
-                              
+
                               // Learning insights
                               if (exp['learning'] != null) ...[
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '🧠 Key Learnings:',
@@ -1708,21 +1231,29 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      ...(exp['learning'] as List<String>).take(2).map(
-                                        (learning) => Padding(
-                                          padding: const EdgeInsets.only(left: 8),
-                                          child: Text(
-                                            learning,
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
+                                      ...(exp['learning'] as List<String>)
+                                          .take(2)
+                                          .map(
+                                            (learning) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                left: 8,
+                                              ),
+                                              child: Text(
+                                                learning,
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                      if ((exp['learning'] as List<String>).length > 2)
+                                      if ((exp['learning'] as List<String>)
+                                              .length >
+                                          2)
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.only(
+                                            left: 8,
+                                          ),
                                           child: Text(
                                             '... and ${(exp['learning'] as List<String>).length - 2} more insights',
                                             style: const TextStyle(
@@ -1735,13 +1266,17 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
                                   ),
                                 ),
                               ],
-                              
+
                               // Primary focus
                               if (exp['primaryFile'] != null) ...[
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '🎯 Primary Focus:',
@@ -1810,29 +1345,38 @@ class _AIBrainExperimentListState extends State<_AIBrainExperimentList> {
 class _MechanicumSuggestionsInstantUI extends StatefulWidget {
   final List<Map<String, dynamic>> suggestions;
   final dynamic provider;
-  const _MechanicumSuggestionsInstantUI({required this.suggestions, required this.provider});
+  const _MechanicumSuggestionsInstantUI({
+    required this.suggestions,
+    required this.provider,
+  });
 
   @override
-  State<_MechanicumSuggestionsInstantUI> createState() => _MechanicumSuggestionsInstantUIState();
+  State<_MechanicumSuggestionsInstantUI> createState() =>
+      _MechanicumSuggestionsInstantUIState();
 }
 
-class _MechanicumSuggestionsInstantUIState extends State<_MechanicumSuggestionsInstantUI> {
+class _MechanicumSuggestionsInstantUIState
+    extends State<_MechanicumSuggestionsInstantUI> {
   final Set<String> _locallyApplied = {};
   final Set<String> _locallyIgnored = {};
-  
+
   // Cache provider data to prevent repeated calls
   Map<String, String>? _cachedFeedback;
   List<Map<String, dynamic>>? _cachedAppliedSuggestions;
-  
+
   @override
   void initState() {
     super.initState();
     _cacheProviderData();
   }
-  
+
   void _cacheProviderData() {
-    _cachedFeedback = Map<String, String>.from(widget.provider.aiSuggestionFeedback);
-    _cachedAppliedSuggestions = List<Map<String, dynamic>>.from(widget.provider.appliedAISuggestions);
+    _cachedFeedback = Map<String, String>.from(
+      widget.provider.aiSuggestionFeedback,
+    );
+    _cachedAppliedSuggestions = List<Map<String, dynamic>>.from(
+      widget.provider.appliedAISuggestions,
+    );
   }
 
   @override
@@ -1854,7 +1398,7 @@ class _MechanicumSuggestionsInstantUIState extends State<_MechanicumSuggestionsI
     }
     // Sort months descending
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1865,19 +1409,22 @@ class _MechanicumSuggestionsInstantUIState extends State<_MechanicumSuggestionsI
               final monthSuggestions = grouped[month]!;
               int redCount = 0;
               int greenCount = 0;
-              
+
               // Cache provider data to prevent repeated calls
               final aiSuggestionFeedback = _cachedFeedback ?? {};
               final appliedAISuggestions = _cachedAppliedSuggestions ?? [];
-              
+
               for (final s in monthSuggestions) {
                 final title = s['title'];
                 final status = aiSuggestionFeedback[title] ?? '';
                 final isLocallyApplied = _locallyApplied.contains(title);
                 final isLocallyIgnored = _locallyIgnored.contains(title);
-                final isApplied = isLocallyApplied || status == 'applied' || appliedAISuggestions.any((a) => a['title'] == title);
+                final isApplied =
+                    isLocallyApplied ||
+                    status == 'applied' ||
+                    appliedAISuggestions.any((a) => a['title'] == title);
                 final isIgnored = isLocallyIgnored || status == 'ignored';
-                
+
                 if (isApplied) {
                   greenCount++;
                 } else if (isIgnored) {
@@ -1886,18 +1433,29 @@ class _MechanicumSuggestionsInstantUIState extends State<_MechanicumSuggestionsI
                   redCount++;
                 }
               }
-              
+
               final monthName = () {
                 final parts = month.split('-');
                 final y = parts[0];
                 final m = int.tryParse(parts[1]) ?? 1;
                 const names = [
-                  '', 'January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'
+                  '',
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December',
                 ];
                 return '${names[m]} $y';
               }();
-              
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
@@ -1931,159 +1489,175 @@ class _MechanicumSuggestionsInstantUIState extends State<_MechanicumSuggestionsI
           ),
           // Suggestion cards (only show not applied/ignored locally)
           ...grouped[month]!
-            .where((s) {
-              final title = s['title'];
-              // Cache provider data to prevent repeated calls
-              final aiSuggestionFeedback = _cachedFeedback ?? {};
-              final appliedAISuggestions = _cachedAppliedSuggestions ?? [];
-              
-              final status = aiSuggestionFeedback[title] ?? '';
-              final isLocallyApplied = _locallyApplied.contains(title);
-              final isLocallyIgnored = _locallyIgnored.contains(title);
-              final isApplied = isLocallyApplied || status == 'applied' || appliedAISuggestions.any((a) => a['title'] == title);
-              final isIgnored = isLocallyIgnored || status == 'ignored';
-              
-              return !isApplied && !isIgnored;
-            })
-            .map((s) {
-              final title = s['title'];
-              // Cache provider data to prevent repeated calls
-              final aiSuggestionFeedback = _cachedFeedback ?? {};
-              final status = aiSuggestionFeedback[title] ?? '';
-              final isLocallyIgnored = _locallyIgnored.contains(title);
-              
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Card(
-                  color: Colors.black,
-                  child: Container(
-                    width: 420,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  s['title'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+              .where((s) {
+                final title = s['title'];
+                // Cache provider data to prevent repeated calls
+                final aiSuggestionFeedback = _cachedFeedback ?? {};
+                final appliedAISuggestions = _cachedAppliedSuggestions ?? [];
+
+                final status = aiSuggestionFeedback[title] ?? '';
+                final isLocallyApplied = _locallyApplied.contains(title);
+                final isLocallyIgnored = _locallyIgnored.contains(title);
+                final isApplied =
+                    isLocallyApplied ||
+                    status == 'applied' ||
+                    appliedAISuggestions.any((a) => a['title'] == title);
+                final isIgnored = isLocallyIgnored || status == 'ignored';
+
+                return !isApplied && !isIgnored;
+              })
+              .map<Widget>((s) {
+                final title = s['title'];
+                // Cache provider data to prevent repeated calls
+                final aiSuggestionFeedback = _cachedFeedback ?? {};
+                final status = aiSuggestionFeedback[title] ?? '';
+                final isLocallyIgnored = _locallyIgnored.contains(title);
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Card(
+                    color: Colors.black,
+                    child: Container(
+                      width: 420,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    s['title'] ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (status == 'ignored' || isLocallyIgnored)
-                                const Icon(
-                                  Icons.cancel,
-                                  color: Colors.redAccent,
-                                ),
-                            ],
-                          ),
-                          if (s['reasoning'] != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                'Reason: ${s['reasoning']}',
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                            ),
-                          if (s['diff'] != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                'Diff: ${s['diff']}',
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ),
-                          if (s['code'] != null)
-                            Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(top: 4, bottom: 4),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SelectableText(
-                                s['code'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.copy,
-                                  color: Colors.cyanAccent,
-                                ),
-                                tooltip: 'Copy code',
-                                onPressed: () {
-                                  Clipboard.setData(
-                                    ClipboardData(text: s['code'] ?? ''),
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Code copied to clipboard'),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              if (!_locallyApplied.contains(title) && !_locallyIgnored.contains(title))
-                                _ApplySuggestionButton(
-                                  suggestion: s,
-                                  onApplied: () {
-                                    // Only update if not already applied
-                                    if (!_locallyApplied.contains(title)) {
-                                    setState(() {
-                                      _locallyApplied.add(title);
-                                    });
-                                    }
-                                  },
-                                ),
-                              const SizedBox(width: 8),
-                              if (!_locallyApplied.contains(title) && !_locallyIgnored.contains(title))
-                                OutlinedButton.icon(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    size: 16,
+                                if (status == 'ignored' || isLocallyIgnored)
+                                  const Icon(
+                                    Icons.cancel,
                                     color: Colors.redAccent,
                                   ),
-                                  label: const Text(
-                                    'Ignore',
-                                    style: TextStyle(color: Colors.redAccent),
+                              ],
+                            ),
+                            if (s['reasoning'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  'Reason: ${s['reasoning']}',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                            if (s['diff'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  'Diff: ${s['diff']}',
+                                  style: const TextStyle(
+                                    color: Colors.greenAccent,
+                                    fontFamily: 'monospace',
                                   ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Colors.redAccent),
+                                ),
+                              ),
+                            if (s['code'] != null)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(
+                                  top: 4,
+                                  bottom: 4,
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[850],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: SelectableText(
+                                  s['code'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'monospace',
                                   ),
+                                ),
+                              ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.copy,
+                                    color: Colors.cyanAccent,
+                                  ),
+                                  tooltip: 'Copy code',
                                   onPressed: () {
-                                    // Only update if not already ignored
-                                    if (!_locallyIgnored.contains(title)) {
-                                    setState(() {
-                                      _locallyIgnored.add(title);
-                                    });
-                                    }
-                                    // Call provider in background
-                                    Future.microtask(() => widget.provider.ignoreAISuggestion(title));
+                                    Clipboard.setData(
+                                      ClipboardData(text: s['code'] ?? ''),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Code copied to clipboard',
+                                        ),
+                                      ),
+                                    );
                                   },
                                 ),
-                            ],
-                          ),
-                        ],
+                                const SizedBox(width: 8),
+                                if (!_locallyApplied.contains(title) &&
+                                    !_locallyIgnored.contains(title))
+                                  _ApplySuggestionButton(
+                                    suggestion: s,
+                                    onApplied: () {
+                                      // Only update if not already applied
+                                      if (!_locallyApplied.contains(title)) {
+                                        setState(() {
+                                          _locallyApplied.add(title);
+                                        });
+                                      }
+                                    },
+                                  ),
+                                const SizedBox(width: 8),
+                                if (!_locallyApplied.contains(title) &&
+                                    !_locallyIgnored.contains(title))
+                                  OutlinedButton.icon(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.redAccent,
+                                    ),
+                                    label: const Text(
+                                      'Ignore',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      // Only update if not already ignored
+                                      if (!_locallyIgnored.contains(title)) {
+                                        setState(() {
+                                          _locallyIgnored.add(title);
+                                        });
+                                      }
+                                      // Call provider in background
+                                      Future.microtask(
+                                        () => widget.provider
+                                            .ignoreAISuggestion(title),
+                                      );
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              })
+              .toList(),
         ],
       ],
     );
@@ -2106,52 +1680,68 @@ class _ApplySuggestionButtonState extends State<_ApplySuggestionButton> {
   Widget build(BuildContext context) {
     final provider = Provider.of<MissionProvider>(context, listen: false);
     final suggestion = widget.suggestion;
-    final hasTarget = suggestion.containsKey('targetFile') && suggestion.containsKey('targetSymbol') &&
+    final hasTarget =
+        suggestion.containsKey('targetFile') &&
+        suggestion.containsKey('targetSymbol') &&
         (suggestion['targetFile']?.toString().isNotEmpty ?? false) &&
         (suggestion['targetSymbol']?.toString().isNotEmpty ?? false);
-    
+
     return _loading
         ? const SizedBox(
-            width: 90,
-            child: Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
+          width: 90,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        )
         : ElevatedButton.icon(
-            icon: const Icon(Icons.build, size: 16),
-            label: const Text('Apply'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: hasTarget ? Colors.blueAccent : Colors.grey,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: hasTarget
-                ? () async {
+          icon: const Icon(Icons.build, size: 16),
+          label: const Text('Apply'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: hasTarget ? Colors.blueAccent : Colors.grey,
+            foregroundColor: Colors.white,
+          ),
+          onPressed:
+              hasTarget
+                  ? () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: Colors.grey[900],
-                        title: const Text('Apply Suggestion?', style: TextStyle(color: Colors.white)),
-                        content: const Text('Are you sure you want to apply this suggestion?', style: TextStyle(color: Colors.white70)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('No', style: TextStyle(color: Colors.redAccent)),
+                      builder:
+                          (context) => AlertDialog(
+                            backgroundColor: Colors.grey[900],
+                            title: const Text(
+                              'Apply Suggestion?',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            content: const Text(
+                              'Are you sure you want to apply this suggestion?',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed:
+                                    () => Navigator.of(context).pop(false),
+                                child: const Text(
+                                  'No',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed:
+                                    () => Navigator.of(context).pop(true),
+                                child: const Text(
+                                  'Yes',
+                                  style: TextStyle(color: Colors.greenAccent),
+                                ),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text('Yes', style: TextStyle(color: Colors.greenAccent)),
-                          ),
-                        ],
-                      ),
                     );
                     if (confirmed == true) {
                       setState(() => _loading = true);
-                      
+
                       // Call the onApplied callback first
                       if (widget.onApplied != null) {
                         widget.onApplied!();
                       }
-                      
+
                       // Apply the suggestion in the background without waiting
                       Future.microtask(() {
                         try {
@@ -2160,19 +1750,21 @@ class _ApplySuggestionButtonState extends State<_ApplySuggestionButton> {
                           // Silently handle errors
                         }
                       });
-                      
+
                       if (mounted) {
-                      setState(() => _loading = false);
+                        setState(() => _loading = false);
                         // Use the context safely after checking mounted
                         if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Suggestion applied!')),
-                      );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Suggestion applied!'),
+                            ),
+                          );
                         }
                       }
                     }
                   }
-                : null,
-          );
+                  : null,
+        );
   }
 }
