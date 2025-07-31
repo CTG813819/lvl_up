@@ -200,6 +200,15 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
+@app.get("/health")
+async def health_check():
+    """Simple health check endpoint for Railway"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "ai-backend-python"
+    }
+
 @app.get("/api/health")
 async def health_check_proxy(request: Request):
     # Call the real health_check from imperium_learning

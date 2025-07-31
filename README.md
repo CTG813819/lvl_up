@@ -1,6 +1,6 @@
 # LVL AI Backend
 
-A comprehensive AI-powered backend system for the LVL (Level Up) application, designed for deployment on Railway.
+A comprehensive AI-powered backend system for the LVL (Level Up) application, designed for deployment on Railway with Neon database.
 
 ## Features
 
@@ -50,6 +50,30 @@ The application is configured for Railway deployment with:
 - **Start Command**: `python start.py`
 - **Health Check**: `/health` endpoint
 - **Port**: Automatically configured via `PORT` environment variable
+- **Database**: Neon PostgreSQL integration
+- **Configuration**: See `RAILWAY_DEPLOYMENT.md` for detailed setup
+
+#### Quick Railway Setup
+
+1. **Prepare for deployment**:
+   ```bash
+   python deploy_to_railway.py
+   ```
+
+2. **Deploy to Railway**:
+   ```bash
+   # Install Railway CLI
+   npm install -g @railway/cli
+   
+   # Login and deploy
+   railway login
+   railway up
+   ```
+
+3. **Set environment variables** in Railway dashboard:
+   - `DATABASE_URL`: Your Neon PostgreSQL connection string
+   - `DEBUG`: false (for production)
+   - Optional: AI service API keys
 
 ## API Endpoints
 
