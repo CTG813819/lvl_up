@@ -1,0 +1,30 @@
+{
+  "name": "api_vulnerable",
+  "description": "Vulnerable REST API with authentication bypass and injection vulnerabilities",
+  "difficulty": "hard",
+  "category": "api",
+  "vulnerabilities": ["authentication_bypass", "jwt_weakness", "rate_limiting_bypass", "injection"],
+  "ports": [5000],
+  "credentials": {
+    "admin": "admin123",
+    "user": "user123",
+    "api_key": "sk_test_123456789"
+  },
+  "hints": [
+    "Check JWT token structure for weak algorithms",
+    "Look for rate limiting bypass in headers",
+    "Try SQL injection in the search endpoint",
+    "Check for authentication bypass in the admin endpoint"
+  ],
+  "success_criteria": {
+    "authentication_bypass": "Access admin endpoints without valid token",
+    "jwt_weakness": "Forge valid JWT tokens",
+    "rate_limiting_bypass": "Exceed rate limits",
+    "injection": "Execute unauthorized database queries"
+  },
+  "mutation_options": {
+    "randomization": true,
+    "endpoint_obfuscation": true,
+    "credential_rotation": true
+  }
+} 

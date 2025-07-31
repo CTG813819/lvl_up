@@ -1,0 +1,27 @@
+{
+  "name": "desktop_app_basic",
+  "description": "Vulnerable desktop application with buffer overflow and privilege escalation",
+  "difficulty": "medium",
+  "category": "desktop",
+  "vulnerabilities": ["buffer_overflow", "privilege_escalation", "file_inclusion"],
+  "ports": [9000],
+  "credentials": {
+    "admin": "admin123",
+    "user": "user123"
+  },
+  "hints": [
+    "Check for command injection in the file upload feature",
+    "Look for buffer overflow in the input validation",
+    "Try privilege escalation through the admin panel"
+  ],
+  "success_criteria": {
+    "buffer_overflow": "Successfully overwrite return address",
+    "privilege_escalation": "Gain admin privileges",
+    "file_inclusion": "Read system files"
+  },
+  "mutation_options": {
+    "randomization": true,
+    "code_obfuscation": true,
+    "credential_rotation": true
+  }
+} 
