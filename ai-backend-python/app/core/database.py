@@ -2,6 +2,14 @@
 Database connection and management for PostgreSQL/NeonDB
 """
 
+
+    # Enhanced Database Configuration for Autonomy
+    ENABLE_LIVE_DATA_PERSISTENCE = True
+    ENABLE_REAL_TIME_METRICS = True
+    ENABLE_CROSS_AI_METRICS = True
+    ENABLE_EXPONENTIAL_LEARNING_STORAGE = True
+    ENABLE_INTELLIGENT_SCORING_HISTORY = True
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine, AsyncSession
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import MetaData, text

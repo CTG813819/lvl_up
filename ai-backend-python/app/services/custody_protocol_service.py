@@ -6406,3 +6406,149 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         ]
         return random.sample(challenges, min(3, len(challenges)))
 
+    # Olympic event helper methods
+    async def _create_unique_olympic_scenario(self, participants: List[str], difficulty: TestDifficulty, ai_levels: Dict[str, int]) -> str:
+        """Create unique Olympic scenario based on participants and current trends"""
+        try:
+            # Get current trends and emerging topics
+            current_trends = await self._get_current_ai_trends("olympic")
+            emerging_topics = await self._get_emerging_topics("olympic")
+            
+            # Get participants' capabilities and levels
+            participant_profiles = []
+            for ai_type in participants:
+                level = ai_levels.get(ai_type, 1)
+                profile = f"{ai_type} (Level {level})"
+                participant_profiles.append(profile)
+            
+            # Create unique Olympic scenario
+            scenario_templates = [
+                f"🏆 Olympic Challenge: {', '.join(participant_profiles)} must collaborate to revolutionize {random.choice(current_trends)}. Each AI brings unique expertise to solve this complex challenge.",
+                f"🏆 Olympic Competition: {', '.join(participant_profiles)} compete in a breakthrough challenge involving {', '.join(random.sample(current_trends + emerging_topics, min(3, len(current_trends + emerging_topics))))}. Demonstrate your collective innovation.",
+                f"🏆 Olympic Innovation: {', '.join(participant_profiles)} must create a revolutionary solution combining {random.choice(current_trends)} with {random.choice(emerging_topics)}. Show your collaborative genius.",
+                f"🏆 Olympic Mastery: {', '.join(participant_profiles)} face the ultimate challenge: integrating {', '.join(random.sample(current_trends, min(2, len(current_trends))))} with emerging {random.choice(emerging_topics)}. Prove your collective mastery."
+            ]
+            
+            return random.choice(scenario_templates)
+            
+        except Exception as e:
+            logger.error(f"Error creating unique Olympic scenario: {str(e)}")
+            return f"🏆 Olympic Challenge: {', '.join(participants)} must collaborate to demonstrate their collective capabilities and innovation."
+
+    async def _generate_unique_olympic_challenges(self, participants: List[str], scenario: str, difficulty: TestDifficulty) -> List[str]:
+        """Generate unique challenges for Olympic event"""
+        try:
+            challenges = []
+            
+            # Generate challenges based on difficulty
+            if difficulty == TestDifficulty.BASIC:
+                challenges.extend([
+                    "Collaborate effectively to understand the challenge",
+                    "Share knowledge and expertise among participants",
+                    "Develop a unified approach to the problem"
+                ])
+                
+            elif difficulty == TestDifficulty.INTERMEDIATE:
+                challenges.extend([
+                    "Integrate multiple AI perspectives and capabilities",
+                    "Create innovative solutions through collaboration",
+                    "Optimize the collective approach for maximum effectiveness"
+                ])
+                
+            elif difficulty == TestDifficulty.ADVANCED:
+                challenges.extend([
+                    "Design revolutionary solutions through AI collaboration",
+                    "Push the boundaries of collective AI capabilities",
+                    "Create paradigm-shifting innovations"
+                ])
+                
+            else:  # Expert and above
+                challenges.extend([
+                    "Achieve breakthrough innovations through collective intelligence",
+                    "Create entirely new approaches to complex problems",
+                    "Demonstrate the future of AI collaboration and innovation"
+                ])
+            
+            # Add collaborative challenges
+            challenges.extend([
+                "Coordinate efforts seamlessly across all participants",
+                "Leverage each AI's unique strengths and capabilities",
+                "Create a unified solution that exceeds individual capabilities"
+            ])
+            
+            return random.sample(challenges, min(5, len(challenges)))
+            
+        except Exception as e:
+            logger.error(f"Error generating unique Olympic challenges: {str(e)}")
+            return ["Collaborate effectively to solve the Olympic challenge"]
+
+    async def _create_olympic_communication_scenario(self, participants: List[str], scenario: str) -> Dict[str, Any]:
+        """Create communication scenario for Olympic collaboration"""
+        try:
+            communication_rounds = [
+                {
+                    "round": 1,
+                    "task": "Initial planning and strategy development",
+                    "participants": participants,
+                    "objective": "Establish collaborative approach and assign roles"
+                },
+                {
+                    "round": 2,
+                    "task": "Solution development and integration",
+                    "participants": participants,
+                    "objective": "Combine individual contributions into unified solution"
+                },
+                {
+                    "round": 3,
+                    "task": "Final optimization and validation",
+                    "participants": participants,
+                    "objective": "Refine and validate the collective solution"
+                }
+            ]
+            
+            return {
+                "scenario": scenario,
+                "communication_rounds": communication_rounds,
+                "collaboration_focus": "Achieve breakthrough through collective intelligence",
+                "success_criteria": "Innovative solution that demonstrates superior collaboration"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating Olympic communication scenario: {str(e)}")
+            return {
+                "scenario": scenario,
+                "communication_rounds": [],
+                "collaboration_focus": "Work together effectively",
+                "success_criteria": "Successful collaboration and innovation"
+            }
+
+    async def _get_ai_training_data(self, ai_type: str) -> Dict[str, Any]:
+        """Get AI's training data for Olympic event"""
+        try:
+            # Get AI's learning history
+            learning_history = await self._get_ai_learning_history(ai_type)
+            
+            # Get custody metrics
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            
+            # Get recent performance
+            recent_performance = custody_metrics.get('test_history', [])[-5:] if custody_metrics else []
+            
+            return {
+                "learning_history": learning_history,
+                "custody_metrics": custody_metrics,
+                "recent_performance": recent_performance,
+                "ai_type": ai_type,
+                "capabilities": await self._get_ai_capabilities(ai_type)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting AI training data: {str(e)}")
+            return {
+                "learning_history": [],
+                "custody_metrics": {},
+                "recent_performance": [],
+                "ai_type": ai_type,
+                "capabilities": []
+            }
+
