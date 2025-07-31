@@ -1,0 +1,15 @@
+[Unit]
+Description=Training Ground Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/python training_ground_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

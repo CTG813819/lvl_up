@@ -1,0 +1,35 @@
+[Unit]
+Description=Guardian-Custodes AI Scheduler
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/python guardian_scheduler_enhanced.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=guardian-custodes-scheduler
+
+# Environment variables
+Environment=PYTHONPATH=/home/ubuntu/ai-backend-python
+Environment=LOG_LEVEL=info
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ubuntu/ai-backend-python
+
+[Install]
+WantedBy=multi-user.target 
