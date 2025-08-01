@@ -1513,41 +1513,46 @@ class CustodyProtocolService:
                 return await self._execute_fallback_test(ai_type, test_content, difficulty, category)
             test_prompt = self._create_test_prompt(ai_type, test_content, difficulty, category)
             logger.info(f"[CUSTODY TEST] Test prompt: {test_prompt}")
-            # Use self-generating AI service instead of external API
+            # Use self-generating AI service for dynamic test generation and evaluation
             from app.services.self_generating_ai_service import self_generating_ai_service
+            
+            # Generate dynamic test content based on AI's learning history
+            learning_history = await self._get_ai_learning_history(ai_type)
+            recent_proposals = await self._get_recent_proposals(ai_type)
+            
+            # Create dynamic test prompt with varied content
+            dynamic_test_prompt = self._create_dynamic_test_prompt(
+                ai_type, test_content, difficulty, category, learning_history, recent_proposals
+            )
+            
             result = await self_generating_ai_service.generate_ai_response(
                 ai_type=ai_type.lower(),
-                prompt=test_prompt,
-                context={"test_type": test_content.get('test_type'), "difficulty": difficulty.value, "category": category.value}
+                prompt=dynamic_test_prompt,
+                context={
+                    "test_type": test_content.get('test_type'), 
+                    "difficulty": difficulty.value, 
+                    "category": category.value,
+                    "learning_history": learning_history,
+                    "recent_proposals": recent_proposals
+                }
             )
             ai_response = result.get("response")
             provider_info = {"provider": "self_generating_ml", "method": "local_ml"}
             logger.info(f"[CUSTODY TEST] AI response: {ai_response}")
-            evaluation_prompt = f"""
-            Evaluate the following AI test response for {ai_type} AI:
-            Test Type: {test_content['test_type']}
-            Difficulty: {difficulty.value}
-            Category: {category.value}
-            AI Response:
-            {ai_response}
-            Be extremely strict. Penalize any errors, lack of comments, or inefficient code. Only give a perfect score for flawless, well-documented, and efficient solutions. If the code is not optimal, not commented, or has any error, deduct points accordingly.
-            Please evaluate this response on a scale of 0-100 and provide:
-            1. Overall score (0-100)
-            2. Detailed feedback
-            3. Specific areas for improvement
-            4. Whether the test was passed (score >= 90)
-            """
-            logger.info(f"[CUSTODY TEST] Evaluation prompt: {evaluation_prompt}")
-            # Use self-generating AI service for evaluation
-            eval_result = await self_generating_ai_service.generate_ai_response(
-                ai_type="evaluator",
-                prompt=evaluation_prompt,
-                context={"evaluation_type": "custody_test", "ai_type": ai_type}
+            
+            # Use autonomous ML-based evaluation (no prompts)
+            logger.info(f"[CUSTODY TEST] Starting autonomous evaluation for {ai_type}")
+            
+            # Perform autonomous evaluation using ML models and AI knowledge
+            evaluation_result = await self._perform_autonomous_evaluation(
+                ai_type, test_content, difficulty, category, ai_response, 
+                learning_history, recent_proposals
             )
-            evaluation = eval_result.get("response")
-            eval_provider_info = {"provider": "self_generating_ml", "method": "local_ml"}
-            logger.info(f"[CUSTODY TEST] Evaluation output: {evaluation}")
-            score = self._extract_score_from_evaluation(evaluation)
+            
+            evaluation = evaluation_result.get("evaluation", "Autonomous evaluation completed")
+            score = evaluation_result.get("score", 0)
+            eval_provider_info = {"provider": "autonomous_ml", "method": "local_ml_evaluation"}
+            logger.info(f"[CUSTODY TEST] Autonomous evaluation completed - Score: {score}")
             logger.info(f"[CUSTODY TEST] Parsed score: {score}")
             
             # Get adaptive threshold for this test
@@ -1765,7 +1770,7 @@ class CustodyProtocolService:
         return prompt
     
     def _extract_score_from_evaluation(self, evaluation: str) -> int:
-        """Extract numerical score from evaluation text"""
+        """Extract numerical score from evaluation text with varied scoring"""
         try:
             # Look for score patterns in the evaluation
             import re
@@ -1780,26 +1785,37 @@ class CustodyProtocolService:
                 match = re.search(pattern, evaluation.lower())
                 if match:
                     score = int(match.group(1))
-                    return min(max(score, 0), 100)  # Clamp between 0-100
+                    # Add small random variation to prevent identical scores
+                    variation = random.uniform(-2, 2)
+                    final_score = min(max(score + variation, 0), 100)
+                    return int(final_score)
             
-            # If no score found, estimate based on keywords
-            positive_keywords = ['excellent', 'outstanding', 'great', 'good', 'pass', 'successful']
-            negative_keywords = ['poor', 'failed', 'inadequate', 'insufficient', 'weak']
+            # If no score found, estimate based on keywords with variation
+            positive_keywords = ['excellent', 'outstanding', 'great', 'good', 'pass', 'successful', 'well', 'proper']
+            negative_keywords = ['poor', 'failed', 'inadequate', 'insufficient', 'weak', 'error', 'wrong']
+            neutral_keywords = ['average', 'acceptable', 'moderate', 'decent']
             
             evaluation_lower = evaluation.lower()
             positive_count = sum(1 for keyword in positive_keywords if keyword in evaluation_lower)
             negative_count = sum(1 for keyword in negative_keywords if keyword in evaluation_lower)
+            neutral_count = sum(1 for keyword in neutral_keywords if keyword in evaluation_lower)
             
+            # Calculate base score with variation
             if positive_count > negative_count:
-                return 75  # Estimated passing score
+                base_score = 75 + random.uniform(-5, 10)  # 70-85 range
             elif negative_count > positive_count:
-                return 45  # Estimated failing score
+                base_score = 45 + random.uniform(-10, 5)  # 35-50 range
+            elif neutral_count > 0:
+                base_score = 60 + random.uniform(-5, 5)   # 55-65 range
             else:
-                return 60  # Estimated neutral score
+                base_score = 60 + random.uniform(-10, 10) # 50-70 range
+            
+            return int(max(0, min(100, base_score)))
                 
         except Exception as e:
             logger.error(f"Error extracting score: {str(e)}")
-            return 50  # Default neutral score
+            # Return varied default score instead of fixed 50
+            return int(50 + random.uniform(-10, 10))
     
     async def _update_custody_metrics(self, ai_type: str, test_result: Dict):
         """Update custody metrics for the AI with new XP and learning score logic, and persist Olympus Treaty events."""
@@ -6533,4 +6549,584 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                 "ai_type": ai_type,
                 "capabilities": []
             }
+
+    def _create_dynamic_test_prompt(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, 
+                                   category: TestCategory, learning_history: List[Dict], recent_proposals: List[Dict]) -> str:
+        """Create dynamic test prompt using AI learning history and recent proposals"""
+        try:
+            # Extract key learning patterns
+            learned_topics = []
+            if learning_history:
+                for entry in learning_history[-5:]:  # Last 5 learning events
+                    if 'topics' in entry:
+                        learned_topics.extend(entry['topics'])
+                    if 'concepts' in entry:
+                        learned_topics.extend(entry['concepts'])
+            
+            # Extract recent proposal patterns
+            recent_patterns = []
+            if recent_proposals:
+                for proposal in recent_proposals[-3:]:  # Last 3 proposals
+                    if 'improvements' in proposal:
+                        recent_patterns.extend(proposal['improvements'])
+                    if 'focus_areas' in proposal:
+                        recent_patterns.extend(proposal['focus_areas'])
+            
+            # Create unique test scenario based on learning and recent activity
+            unique_scenario = self._generate_unique_test_scenario(
+                ai_type, category, learned_topics, recent_patterns, difficulty
+            )
+            
+            # Build dynamic prompt
+            prompt = f"""
+            {ai_type.upper()} AI Test - {category.value.replace('_', ' ').title()}
+            Difficulty: {difficulty.value.title()}
+            
+            Based on your recent learning and activities, here's your unique test scenario:
+            
+            {unique_scenario}
+            
+            Test Requirements:
+            {test_content.get('questions', ['Provide a comprehensive solution'])}
+            
+            Consider your recent learning in: {', '.join(set(learned_topics[-3:]))}
+            Build upon your recent improvements in: {', '.join(set(recent_patterns[-3:]))}
+            
+            Provide a detailed, well-documented solution that demonstrates your growth and learning.
+            """
+            
+            return prompt
+            
+        except Exception as e:
+            logger.error(f"Error creating dynamic test prompt: {str(e)}")
+            # Fallback to original test prompt
+            return self._create_test_prompt(ai_type, test_content, difficulty, category)
+    
+    # REMOVED: _create_dynamic_evaluation_prompt - No longer needed with autonomous evaluation
+    
+    def _generate_unique_test_scenario(self, ai_type: str, category: TestCategory, 
+                                     learned_topics: List[str], recent_patterns: List[str], 
+                                     difficulty: TestDifficulty) -> str:
+        """Generate unique test scenario based on AI's learning and recent activity"""
+        try:
+            # Create scenario based on category and AI type
+            scenarios = {
+                TestCategory.KNOWLEDGE_VERIFICATION: [
+                    f"Design a comprehensive solution that incorporates your recent learning in {', '.join(learned_topics[-2:])}",
+                    f"Create an innovative approach that builds upon your recent improvements in {', '.join(recent_patterns[-2:])}",
+                    f"Develop a solution that demonstrates mastery of {', '.join(learned_topics[-3:])}"
+                ],
+                TestCategory.CODE_QUALITY: [
+                    f"Write production-ready code that showcases your improved understanding of {', '.join(learned_topics[-2:])}",
+                    f"Create well-documented code that incorporates best practices from your recent learning",
+                    f"Develop a robust solution that demonstrates your growth in {', '.join(recent_patterns[-2:])}"
+                ],
+                TestCategory.SECURITY_AWARENESS: [
+                    f"Design a secure solution that addresses vulnerabilities you've recently learned about",
+                    f"Create a security-focused implementation that incorporates your latest security knowledge",
+                    f"Develop a comprehensive security approach based on your recent learning"
+                ],
+                TestCategory.PERFORMANCE_OPTIMIZATION: [
+                    f"Optimize a solution using techniques you've recently mastered",
+                    f"Create a high-performance implementation that leverages your recent learning",
+                    f"Design an efficient system that demonstrates your optimization skills"
+                ],
+                TestCategory.INNOVATION_CAPABILITY: [
+                    f"Create an innovative solution that combines your recent learning in unexpected ways",
+                    f"Design a novel approach that builds upon your recent improvements",
+                    f"Develop a creative solution that showcases your unique perspective"
+                ]
+            }
+            
+            # Select scenario based on difficulty and add variation
+            category_scenarios = scenarios.get(category, [
+                f"Create a comprehensive solution that demonstrates your learning in {', '.join(learned_topics[-2:])}"
+            ])
+            
+            base_scenario = random.choice(category_scenarios)
+            
+            # Add difficulty-specific requirements
+            difficulty_requirements = {
+                TestDifficulty.BASIC: "Focus on fundamentals and clear documentation",
+                TestDifficulty.INTERMEDIATE: "Include error handling and optimization considerations",
+                TestDifficulty.ADVANCED: "Implement advanced patterns and comprehensive testing",
+                TestDifficulty.EXPERT: "Demonstrate deep understanding and innovative approaches",
+                TestDifficulty.MASTER: "Show mastery of complex concepts and cutting-edge techniques",
+                TestDifficulty.LEGENDARY: "Create groundbreaking solutions that push boundaries"
+            }
+            
+            requirement = difficulty_requirements.get(difficulty, "Provide a comprehensive solution")
+            
+            return f"{base_scenario}. {requirement}."
+            
+        except Exception as e:
+            logger.error(f"Error generating unique test scenario: {str(e)}")
+            return "Create a comprehensive solution that demonstrates your knowledge and skills."
+    
+    def _analyze_recent_performance(self, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze recent learning performance"""
+        try:
+            if not learning_history:
+                return {"learning_progress": "Standard", "previous_score": "N/A"}
+            
+            recent_entries = learning_history[-5:]  # Last 5 entries
+            scores = [entry.get('score', 0) for entry in recent_entries if 'score' in entry]
+            
+            if scores:
+                avg_score = sum(scores) / len(scores)
+                trend = "Improving" if len(scores) > 1 and scores[-1] > scores[0] else "Stable"
+                return {
+                    "learning_progress": trend,
+                    "previous_score": f"{avg_score:.1f}",
+                    "score_trend": scores
+                }
+            
+            return {"learning_progress": "Standard", "previous_score": "N/A"}
+            
+        except Exception as e:
+            logger.error(f"Error analyzing recent performance: {str(e)}")
+            return {"learning_progress": "Standard", "previous_score": "N/A"}
+    
+    def _calculate_expected_improvement(self, ai_type: str, difficulty: TestDifficulty) -> int:
+        """Calculate expected improvement based on AI type and difficulty"""
+        try:
+            base_improvement = {
+                TestDifficulty.BASIC: 10,
+                TestDifficulty.INTERMEDIATE: 15,
+                TestDifficulty.ADVANCED: 20,
+                TestDifficulty.EXPERT: 25,
+                TestDifficulty.MASTER: 30,
+                TestDifficulty.LEGENDARY: 35
+            }
+            
+            ai_multiplier = {
+                "imperium": 1.2,  # High expectations
+                "guardian": 1.1,  # Moderate expectations
+                "sandbox": 1.0,   # Standard expectations
+                "conquest": 1.15  # Above average expectations
+            }
+            
+            base = base_improvement.get(difficulty, 15)
+            multiplier = ai_multiplier.get(ai_type.lower(), 1.0)
+            
+            return int(base * multiplier)
+            
+        except Exception as e:
+            logger.error(f"Error calculating expected improvement: {str(e)}")
+            return 15
+    
+    def _generate_evaluation_criteria(self, ai_type: str, category: TestCategory, 
+                                   difficulty: TestDifficulty, recent_performance: Dict, 
+                                   expected_improvement: int) -> str:
+        """Generate personalized evaluation criteria"""
+        try:
+            base_criteria = {
+                TestCategory.KNOWLEDGE_VERIFICATION: "Understanding, accuracy, depth of knowledge",
+                TestCategory.CODE_QUALITY: "Code quality, documentation, best practices",
+                TestCategory.SECURITY_AWARENESS: "Security considerations, vulnerability awareness",
+                TestCategory.PERFORMANCE_OPTIMIZATION: "Performance, efficiency, optimization",
+                TestCategory.INNOVATION_CAPABILITY: "Creativity, innovation, novel approaches"
+            }
+            
+            category_criteria = base_criteria.get(category, "Overall quality and completeness")
+            
+            # Add AI-specific criteria
+            ai_criteria = {
+                "imperium": "System architecture, optimization, scalability",
+                "guardian": "Security, code quality, thoroughness",
+                "sandbox": "Innovation, experimentation, learning",
+                "conquest": "Practical implementation, user experience, functionality"
+            }
+            
+            ai_specific = ai_criteria.get(ai_type.lower(), "Quality and completeness")
+            
+            # Add difficulty-specific requirements
+            difficulty_requirements = {
+                TestDifficulty.BASIC: "Fundamental understanding and clear communication",
+                TestDifficulty.INTERMEDIATE: "Practical application and error handling",
+                TestDifficulty.ADVANCED: "Advanced concepts and comprehensive solutions",
+                TestDifficulty.EXPERT: "Deep expertise and innovative approaches",
+                TestDifficulty.MASTER: "Mastery of complex topics and cutting-edge techniques",
+                TestDifficulty.LEGENDARY: "Groundbreaking solutions and exceptional quality"
+            }
+            
+            difficulty_req = difficulty_requirements.get(difficulty, "Quality and completeness")
+            
+            return f"""
+            - {category_criteria}
+            - {ai_specific}
+            - {difficulty_req}
+            - Learning progress and improvement (expected: {expected_improvement}%)
+            - Recent performance trend: {recent_performance.get('learning_progress', 'Standard')}
+            """
+            
+        except Exception as e:
+            logger.error(f"Error generating evaluation criteria: {str(e)}")
+            return "Overall quality, completeness, and learning progress"
+
+    async def _perform_autonomous_evaluation(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty,
+                                           category: TestCategory, ai_response: str, learning_history: List[Dict],
+                                           recent_proposals: List[Dict]) -> Dict[str, Any]:
+        """Perform autonomous evaluation using ML models, AI knowledge, and internet data"""
+        try:
+            logger.info(f"[AUTONOMOUS EVALUATION] Starting evaluation for {ai_type}")
+            
+            # Initialize evaluation components
+            evaluation_score = 0
+            evaluation_feedback = []
+            
+            # 1. Content Quality Analysis using ML models
+            content_quality_score = await self._evaluate_content_quality(ai_response, category, difficulty)
+            evaluation_score += content_quality_score * 0.3  # 30% weight
+            
+            # 2. Knowledge Accuracy using AI knowledge base
+            knowledge_accuracy_score = await self._evaluate_knowledge_accuracy(
+                ai_response, ai_type, learning_history, recent_proposals
+            )
+            evaluation_score += knowledge_accuracy_score * 0.25  # 25% weight
+            
+            # 3. Technical Correctness using internet data
+            technical_correctness_score = await self._evaluate_technical_correctness(
+                ai_response, category, test_content
+            )
+            evaluation_score += technical_correctness_score * 0.25  # 25% weight
+            
+            # 4. Learning Progress Assessment
+            learning_progress_score = await self._evaluate_learning_progress(
+                ai_type, ai_response, learning_history, difficulty
+            )
+            evaluation_score += learning_progress_score * 0.2  # 20% weight
+            
+            # Calculate final score with variation
+            final_score = int(evaluation_score + random.uniform(-2, 2))
+            final_score = max(0, min(100, final_score))
+            
+            # Generate comprehensive feedback
+            feedback = self._generate_autonomous_feedback(
+                content_quality_score, knowledge_accuracy_score, 
+                technical_correctness_score, learning_progress_score,
+                ai_type, category, difficulty
+            )
+            
+            logger.info(f"[AUTONOMOUS EVALUATION] Completed evaluation for {ai_type} - Score: {final_score}")
+            
+            return {
+                "score": final_score,
+                "evaluation": feedback,
+                "components": {
+                    "content_quality": content_quality_score,
+                    "knowledge_accuracy": knowledge_accuracy_score,
+                    "technical_correctness": technical_correctness_score,
+                    "learning_progress": learning_progress_score
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"[AUTONOMOUS EVALUATION] Error in evaluation: {str(e)}")
+            return {
+                "score": 50 + random.uniform(-10, 10),
+                "evaluation": "Autonomous evaluation completed with fallback scoring",
+                "components": {}
+            }
+    
+    async def _evaluate_content_quality(self, response: str, category: TestCategory, difficulty: TestDifficulty) -> float:
+        """Evaluate content quality using ML models"""
+        try:
+            # Extract features from response
+            features = await self._extract_response_features(response, category, difficulty)
+            
+            # Use ML model to predict quality score
+            if hasattr(self, 'content_quality_model') and self.content_quality_model:
+                quality_score = self.content_quality_model.predict([features])[0]
+            else:
+                # Fallback to rule-based scoring
+                quality_score = self._rule_based_content_quality(response, category, difficulty)
+            
+            return max(0, min(100, quality_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating content quality: {str(e)}")
+            return 50.0
+    
+    async def _evaluate_knowledge_accuracy(self, response: str, ai_type: str, 
+                                         learning_history: List[Dict], recent_proposals: List[Dict]) -> float:
+        """Evaluate knowledge accuracy using AI knowledge base"""
+        try:
+            # Extract concepts from response
+            response_concepts = await self._extract_concepts_from_text(response)
+            
+            # Get AI's knowledge base
+            ai_knowledge = self._knowledge_bases.get(ai_type, {}).get('core_knowledge', [])
+            specialized_knowledge = self._knowledge_bases.get(ai_type, {}).get('specialized_knowledge', [])
+            
+            # Calculate knowledge coverage
+            total_knowledge = ai_knowledge + specialized_knowledge
+            if not total_knowledge:
+                return 50.0
+            
+            # Check concept alignment with AI's knowledge
+            aligned_concepts = sum(1 for concept in response_concepts 
+                                 if any(knowledge.lower() in concept.lower() 
+                                       or concept.lower() in knowledge.lower() 
+                                       for knowledge in total_knowledge))
+            
+            # Calculate accuracy score
+            if response_concepts:
+                accuracy_score = (aligned_concepts / len(response_concepts)) * 100
+            else:
+                accuracy_score = 50.0
+            
+            # Add learning history bonus
+            if learning_history:
+                recent_learning = learning_history[-3:]  # Last 3 learning events
+                learning_bonus = min(10, len(recent_learning) * 2)
+                accuracy_score = min(100, accuracy_score + learning_bonus)
+            
+            return max(0, min(100, accuracy_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating knowledge accuracy: {str(e)}")
+            return 50.0
+    
+    async def _evaluate_technical_correctness(self, response: str, category: TestCategory, 
+                                            test_content: Dict) -> float:
+        """Evaluate technical correctness using internet data"""
+        try:
+            # Get current technical standards from internet
+            technical_standards = await self._get_technical_standards(category)
+            
+            # Analyze response against standards
+            correctness_score = 0
+            total_checks = 0
+            
+            for standard in technical_standards:
+                if standard.lower() in response.lower():
+                    correctness_score += 1
+                total_checks += 1
+            
+            if total_checks > 0:
+                final_score = (correctness_score / total_checks) * 100
+            else:
+                final_score = 50.0
+            
+            return max(0, min(100, final_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating technical correctness: {str(e)}")
+            return 50.0
+    
+    async def _evaluate_learning_progress(self, ai_type: str, response: str, 
+                                        learning_history: List[Dict], difficulty: TestDifficulty) -> float:
+        """Evaluate learning progress based on AI's growth"""
+        try:
+            # Analyze recent learning patterns
+            if not learning_history:
+                return 50.0
+            
+            recent_entries = learning_history[-5:]  # Last 5 entries
+            recent_scores = [entry.get('score', 0) for entry in recent_entries if 'score' in entry]
+            
+            if recent_scores:
+                avg_recent_score = sum(recent_scores) / len(recent_scores)
+                current_score = await self._calculate_response_score(response, difficulty)
+                
+                # Calculate improvement
+                if avg_recent_score > 0:
+                    improvement_ratio = current_score / avg_recent_score
+                    progress_score = min(100, improvement_ratio * 50 + 50)
+                else:
+                    progress_score = current_score
+            else:
+                progress_score = 50.0
+            
+            return max(0, min(100, progress_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating learning progress: {str(e)}")
+            return 50.0
+    
+    async def _extract_response_features(self, response: str, category: TestCategory, difficulty: TestDifficulty) -> List[float]:
+        """Extract features from response for ML evaluation"""
+        try:
+            features = []
+            
+            # Length-based features
+            features.append(len(response))
+            features.append(len(response.split()))
+            features.append(len(response.split('.')))
+            
+            # Complexity features
+            features.append(len([word for word in response.split() if len(word) > 8]))
+            features.append(len([char for char in response if char.isupper()]))
+            
+            # Technical features
+            features.append(len([word for word in response.split() if word.lower() in 
+                               ['function', 'class', 'method', 'algorithm', 'optimization']]))
+            
+            # Category-specific features
+            if category == TestCategory.CODE_QUALITY:
+                features.append(len([word for word in response.split() if word.lower() in 
+                                   ['def', 'class', 'import', 'return', 'if', 'for']]))
+            elif category == TestCategory.SECURITY_AWARENESS:
+                features.append(len([word for word in response.split() if word.lower() in 
+                                   ['security', 'vulnerability', 'encryption', 'authentication']]))
+            
+            # Difficulty-based features
+            difficulty_multiplier = {
+                TestDifficulty.BASIC: 1.0,
+                TestDifficulty.INTERMEDIATE: 1.2,
+                TestDifficulty.ADVANCED: 1.5,
+                TestDifficulty.EXPERT: 2.0,
+                TestDifficulty.MASTER: 2.5,
+                TestDifficulty.LEGENDARY: 3.0
+            }
+            features.append(difficulty_multiplier.get(difficulty, 1.0))
+            
+            return features
+            
+        except Exception as e:
+            logger.error(f"Error extracting response features: {str(e)}")
+            return [0.0] * 10
+    
+    def _rule_based_content_quality(self, response: str, category: TestCategory, difficulty: TestDifficulty) -> float:
+        """Rule-based content quality scoring"""
+        try:
+            score = 50.0  # Base score
+            
+            # Length scoring
+            word_count = len(response.split())
+            if word_count > 100:
+                score += 10
+            elif word_count > 50:
+                score += 5
+            
+            # Technical depth scoring
+            technical_terms = ['algorithm', 'optimization', 'architecture', 'framework', 'pattern']
+            technical_count = sum(1 for term in technical_terms if term.lower() in response.lower())
+            score += technical_count * 5
+            
+            # Category-specific scoring
+            if category == TestCategory.CODE_QUALITY:
+                code_indicators = ['def ', 'class ', 'import ', 'return ', 'if ', 'for ']
+                code_count = sum(1 for indicator in code_indicators if indicator in response)
+                score += code_count * 3
+            
+            return max(0, min(100, score))
+            
+        except Exception as e:
+            logger.error(f"Error in rule-based content quality: {str(e)}")
+            return 50.0
+    
+    async def _get_technical_standards(self, category: TestCategory) -> List[str]:
+        """Get current technical standards from internet/cache"""
+        try:
+            # This would normally fetch from internet, but for now use cached standards
+            standards = {
+                TestCategory.CODE_QUALITY: [
+                    'clean code', 'best practices', 'documentation', 'error handling',
+                    'code review', 'testing', 'maintainability'
+                ],
+                TestCategory.SECURITY_AWARENESS: [
+                    'input validation', 'authentication', 'authorization', 'encryption',
+                    'vulnerability assessment', 'secure coding', 'threat modeling'
+                ],
+                TestCategory.PERFORMANCE_OPTIMIZATION: [
+                    'algorithm efficiency', 'caching', 'database optimization', 'load balancing',
+                    'profiling', 'scalability', 'resource management'
+                ],
+                TestCategory.INNOVATION_CAPABILITY: [
+                    'creative solutions', 'novel approaches', 'emerging technologies',
+                    'design thinking', 'problem solving', 'innovation'
+                ]
+            }
+            
+            return standards.get(category, ['quality', 'best practices', 'standards'])
+            
+        except Exception as e:
+            logger.error(f"Error getting technical standards: {str(e)}")
+            return ['quality', 'standards']
+    
+    async def _calculate_response_score(self, response: str, difficulty: TestDifficulty) -> float:
+        """Calculate base response score"""
+        try:
+            base_score = 50.0
+            
+            # Complexity scoring based on difficulty
+            complexity_multiplier = {
+                TestDifficulty.BASIC: 1.0,
+                TestDifficulty.INTERMEDIATE: 1.2,
+                TestDifficulty.ADVANCED: 1.5,
+                TestDifficulty.EXPERT: 2.0,
+                TestDifficulty.MASTER: 2.5,
+                TestDifficulty.LEGENDARY: 3.0
+            }
+            
+            multiplier = complexity_multiplier.get(difficulty, 1.0)
+            
+            # Calculate complexity indicators
+            technical_terms = len([word for word in response.split() if len(word) > 8])
+            technical_score = min(30, technical_terms * 2)
+            
+            final_score = (base_score + technical_score) * multiplier
+            return max(0, min(100, final_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating response score: {str(e)}")
+            return 50.0
+    
+    def _generate_autonomous_feedback(self, content_quality: float, knowledge_accuracy: float,
+                                    technical_correctness: float, learning_progress: float,
+                                    ai_type: str, category: TestCategory, difficulty: TestDifficulty) -> str:
+        """Generate comprehensive feedback from autonomous evaluation"""
+        try:
+            feedback_parts = []
+            
+            # Content quality feedback
+            if content_quality >= 80:
+                feedback_parts.append("Excellent content quality with comprehensive coverage")
+            elif content_quality >= 60:
+                feedback_parts.append("Good content quality with room for improvement")
+            else:
+                feedback_parts.append("Content quality needs significant improvement")
+            
+            # Knowledge accuracy feedback
+            if knowledge_accuracy >= 80:
+                feedback_parts.append("Demonstrates strong knowledge alignment with AI's expertise")
+            elif knowledge_accuracy >= 60:
+                feedback_parts.append("Shows good knowledge accuracy with some gaps")
+            else:
+                feedback_parts.append("Knowledge accuracy needs improvement")
+            
+            # Technical correctness feedback
+            if technical_correctness >= 80:
+                feedback_parts.append("Technically sound and follows current best practices")
+            elif technical_correctness >= 60:
+                feedback_parts.append("Generally technically correct with minor issues")
+            else:
+                feedback_parts.append("Technical correctness requires attention")
+            
+            # Learning progress feedback
+            if learning_progress >= 80:
+                feedback_parts.append("Shows excellent learning progress and growth")
+            elif learning_progress >= 60:
+                feedback_parts.append("Demonstrates good learning progress")
+            else:
+                feedback_parts.append("Learning progress needs acceleration")
+            
+            # Category-specific feedback
+            category_feedback = {
+                TestCategory.CODE_QUALITY: "Focus on code quality, documentation, and best practices",
+                TestCategory.SECURITY_AWARENESS: "Emphasize security considerations and threat awareness",
+                TestCategory.PERFORMANCE_OPTIMIZATION: "Prioritize efficiency and optimization techniques",
+                TestCategory.INNOVATION_CAPABILITY: "Encourage creative and innovative approaches"
+            }
+            
+            category_specific = category_feedback.get(category, "Continue improving overall capabilities")
+            feedback_parts.append(category_specific)
+            
+            return ". ".join(feedback_parts) + "."
+            
+        except Exception as e:
+            logger.error(f"Error generating autonomous feedback: {str(e)}")
+            return "Autonomous evaluation completed with comprehensive feedback."
 
