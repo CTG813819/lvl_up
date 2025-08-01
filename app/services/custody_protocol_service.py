@@ -445,19 +445,25 @@ class CustodyProtocolService:
             recent_scores = performance.get('recent_scores', [])
             pass_rate = performance.get('pass_rate', 0.0)
             
+            logger.info(f"[DIFFICULTY ADJUSTMENT] Base difficulty: {base_difficulty.value}, consecutive_failures: {consecutive_failures}, consecutive_successes: {consecutive_successes}")
+            
             # More aggressive difficulty adjustment for consecutive failures
             if consecutive_failures >= 20:
-                # AI is failing consistently for a very long time - decrease difficulty dramatically
-                return self._decrease_difficulty(base_difficulty, 5)
+                # AI is failing consistently for a very long time - force to BASIC
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
+                return TestDifficulty.BASIC
             elif consecutive_failures >= 10:
-                # AI is failing consistently for a long time - decrease difficulty significantly
-                return self._decrease_difficulty(base_difficulty, 4)
+                # AI is failing consistently for a long time - force to BASIC
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
+                return TestDifficulty.BASIC
             elif consecutive_failures >= 5:
-                # AI is failing consistently - decrease difficulty moderately
-                return self._decrease_difficulty(base_difficulty, 3)
+                # AI is failing consistently - force to BASIC
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
+                return TestDifficulty.BASIC
             elif consecutive_failures >= 3:
-                # AI is struggling - decrease difficulty
-                return self._decrease_difficulty(base_difficulty, 2)
+                # AI is struggling - force to BASIC
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
+                return TestDifficulty.BASIC
             
             # Difficulty progression based on consecutive successes
             if consecutive_successes >= 5:
@@ -481,6 +487,7 @@ class CustodyProtocolService:
             elif pass_rate <= 0.2:
                 return self._decrease_difficulty(base_difficulty, 1)
             
+            logger.info(f"[DIFFICULTY ADJUSTMENT] Final difficulty: {base_difficulty.value}")
             return base_difficulty
             
         except Exception as e:
@@ -2379,6 +2386,8 @@ Consider the learning objectives and previous areas of difficulty when formulati
     async def _update_custody_metrics(self, ai_type: str, test_result: Dict):
         """Update custody metrics for the AI with dynamic difficulty progression and layered complexity."""
         try:
+            from datetime import datetime
+            import json
             logger.info(f"[CUSTODY METRICS] Starting metrics update for {ai_type}")
             logger.info(f"[CUSTODY METRICS][DEBUG] Called _update_custody_metrics for {ai_type} with test_result: {json.dumps(test_result, default=str, ensure_ascii=False)}")
             
@@ -2496,6 +2505,7 @@ Consider the learning objectives and previous areas of difficulty when formulati
                                 test_history_entry["timestamp"] = datetime.utcnow().isoformat()
                 except Exception as e:
                     logger.warning(f"[CUSTODY METRICS] Error validating timestamp for {ai_type}: {str(e)}")
+                    from datetime import datetime
                     test_history_entry["timestamp"] = datetime.utcnow().isoformat()
                 
                 # Ensure difficulty is properly set from test result
