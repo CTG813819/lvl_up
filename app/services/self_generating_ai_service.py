@@ -75,7 +75,7 @@ class SelfGeneratingAIService:
         self._initialize_knowledge_bases()
         
         # Initialize AgentMetricsService for database storage
-        self._agent_metrics_service = None
+        self._agent_metrics_service = AgentMetricsService()
     
     @classmethod
     async def initialize(cls):
@@ -336,9 +336,12 @@ class SelfGeneratingAIService:
     def _add_response_randomness(self, features: List[float], ai_type: str) -> List[float]:
         """Add controlled randomness to features for response diversity"""
         try:
+            # Ensure all features are floats
+            float_features = [float(f) for f in features]
+            
             # Add small random variations to features
             randomness_factor = random.uniform(0.1, 0.3)  # 10-30% randomness
-            random_features = [f + random.uniform(-randomness_factor, randomness_factor) for f in features]
+            random_features = [f + random.uniform(-randomness_factor, randomness_factor) for f in float_features]
             
             # Add AI-specific randomness patterns
             if ai_type == "imperium":
@@ -358,7 +361,7 @@ class SelfGeneratingAIService:
             
         except Exception as e:
             logger.error(f"Error adding randomness to features: {str(e)}")
-            return features
+            return [0.0] * len(features) if features else [0.0] * 10
     
     async def _apply_dynamic_sampling(self, response: str, ai_type: str, prompt: str, personality: Dict) -> str:
         """Apply dynamic sampling to enhance response diversity"""
@@ -1085,7 +1088,12 @@ This practical approach ensures the solution is not only correct but also useful
             }
             
             # Get current metrics
-            current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return
+                
             if current_metrics:
                 test_history = current_metrics.get('test_history', [])
                 test_history.append(test_data)
@@ -1101,16 +1109,19 @@ This practical approach ensures the solution is not only correct but also useful
                 failure_rate = 1.0 - success_rate
                 
                 # Update metrics in database
-                await self._agent_metrics_service.update_specific_metrics(ai_type, {
-                    'test_history': test_history,
-                    'success_rate': success_rate,
-                    'failure_rate': failure_rate,
-                    'pass_rate': success_rate,
-                    'total_tests_given': total_tests,
-                    'total_tests_passed': passed_tests,
-                    'total_tests_failed': total_tests - passed_tests,
-                    'last_test_date': datetime.utcnow()
-                })
+                try:
+                    await self._agent_metrics_service.update_specific_metrics(ai_type, {
+                        'test_history': test_history,
+                        'success_rate': success_rate,
+                        'failure_rate': failure_rate,
+                        'pass_rate': success_rate,
+                        'total_tests_given': total_tests,
+                        'total_tests_passed': passed_tests,
+                        'total_tests_failed': total_tests - passed_tests,
+                        'last_test_date': datetime.utcnow()
+                    })
+                except Exception as e:
+                    logger.error(f"Error updating metrics for {ai_type}: {str(e)}")
             
             # Check if retraining is needed
             recent_data_count = len([entry for entry in test_history if 
@@ -1271,7 +1282,12 @@ This practical approach ensures the solution is not only correct but also useful
             logger.info(f"Starting model retraining for {ai_type} using database data")
             
             # Get metrics from database
-            metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return False
+                
             if not metrics:
                 logger.warning(f"No metrics found for {ai_type}, skipping retraining")
                 return False
@@ -1336,7 +1352,11 @@ This practical approach ensures the solution is not only correct but also useful
         """Get learning statistics for an AI from database"""
         try:
             # Get metrics from database
-            metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return {'ai_type': ai_type, 'error': f'Failed to get metrics: {str(e)}'}
             
             if not metrics:
                 return {'ai_type': ai_type, 'error': 'No metrics found'}
@@ -1392,7 +1412,12 @@ This practical approach ensures the solution is not only correct but also useful
                 return 0.5  # Default novelty score
             
             # Get recent response patterns from database
-            metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return 0.8  # High novelty for first response
+                
             if not metrics:
                 return 0.8  # High novelty for first response
             
@@ -1484,7 +1509,11 @@ This practical approach ensures the solution is not only correct but also useful
                 return
             
             # Get current metrics from database
-            current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return
             
             # Prepare learning data for database storage
             learning_data = {
@@ -1541,7 +1570,11 @@ This practical approach ensures the solution is not only correct but also useful
         """Update knowledge base with successful response patterns - stored in database"""
         try:
             # Get current metrics from database
-            current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            try:
+                current_metrics = await self._agent_metrics_service.get_agent_metrics(ai_type)
+            except Exception as e:
+                logger.error(f"Error getting agent metrics for {ai_type}: {str(e)}")
+                return
             
             if current_metrics:
                 # Extract key concepts from successful response
