@@ -41,7 +41,7 @@ from app.services.anthropic_service import call_claude, anthropic_rate_limited_c
 from app.services.sckipit_service import SckipitService
 from app.services.unified_ai_service_shared import unified_ai_service_shared
 from app.services.self_generating_ai_service import self_generating_ai_service
-from app.services.custodes_fallback_testing import custodes_fallback, FallbackTestCategory, FallbackTestDifficulty
+# Removed import of non-existent custodes_fallback_testing module
 from app.services.token_usage_service import token_usage_service
 from app.models.sql_models import OlympicEvent
 from app.services.imperium_ai_service import ImperiumAIService
@@ -3805,31 +3805,13 @@ class CustodyProtocolService:
         thresholds = [100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5000, 10000]
         return thresholds[current_level - 1] if current_level <= len(thresholds) else 10000
     
-    def _convert_to_fallback_category(self, category: TestCategory) -> FallbackTestCategory:
-        """Convert TestCategory to FallbackTestCategory"""
-        conversion_map = {
-            TestCategory.KNOWLEDGE_VERIFICATION: FallbackTestCategory.KNOWLEDGE_VERIFICATION,
-            TestCategory.CODE_QUALITY: FallbackTestCategory.CODE_QUALITY,
-            TestCategory.SECURITY_AWARENESS: FallbackTestCategory.SECURITY_AWARENESS,
-            TestCategory.PERFORMANCE_OPTIMIZATION: FallbackTestCategory.PERFORMANCE_OPTIMIZATION,
-            TestCategory.INNOVATION_CAPABILITY: FallbackTestCategory.INNOVATION_CAPABILITY,
-            TestCategory.SELF_IMPROVEMENT: FallbackTestCategory.SELF_IMPROVEMENT,
-            TestCategory.CROSS_AI_COLLABORATION: FallbackTestCategory.CROSS_AI_COLLABORATION,
-            TestCategory.EXPERIMENTAL_VALIDATION: FallbackTestCategory.EXPERIMENTAL_VALIDATION
-        }
-        return conversion_map.get(category, FallbackTestCategory.KNOWLEDGE_VERIFICATION)
+    def _convert_to_fallback_category(self, category: TestCategory) -> str:
+        """Convert TestCategory to string (fallback implementation)"""
+        return category.value
     
-    def _convert_to_fallback_difficulty(self, difficulty: TestDifficulty) -> FallbackTestDifficulty:
-        """Convert TestDifficulty to FallbackTestDifficulty"""
-        conversion_map = {
-            TestDifficulty.BASIC: FallbackTestDifficulty.BASIC,
-            TestDifficulty.INTERMEDIATE: FallbackTestDifficulty.INTERMEDIATE,
-            TestDifficulty.ADVANCED: FallbackTestDifficulty.ADVANCED,
-            TestDifficulty.EXPERT: FallbackTestDifficulty.EXPERT,
-            TestDifficulty.MASTER: FallbackTestDifficulty.MASTER,
-            TestDifficulty.LEGENDARY: FallbackTestDifficulty.LEGENDARY
-        }
-        return conversion_map.get(difficulty, FallbackTestDifficulty.BASIC)
+    def _convert_to_fallback_difficulty(self, difficulty: TestDifficulty) -> str:
+        """Convert TestDifficulty to string (fallback implementation)"""
+        return difficulty.value
     
     def _generate_basic_fallback_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
         """Generate a basic fallback test when all else fails"""
