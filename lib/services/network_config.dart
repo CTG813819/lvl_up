@@ -5,14 +5,11 @@ class NetworkConfig {
   static const String railwayUrl =
       'https://ai-backend-railway-production.up.railway.app';
 
-  // AWS EC2 Backend URL - Updated to use port 8000 (where backend is actually running)
-  static const String baseUrl = 'http://34.202.215.209:8000';
-
   // API Endpoints
-  static const String apiUrl = '$baseUrl/api';
+  static const String apiUrl = '$railwayUrl/api';
 
-  // WebSocket URL for real-time updates - Now working on port 8000
-  static const String socketUrl = 'ws://34.202.215.209:8000';
+  // WebSocket URL for real-time updates
+  static const String socketUrl = 'wss://ai-backend-railway-production.up.railway.app';
 
   // Working endpoint for all data
   static const String workingEndpoint = '/api/learning/data';
@@ -29,17 +26,14 @@ class NetworkConfig {
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
 
-  static const String apiBaseUrl =
-      'http://34.202.215.209:8000'; // <-- Set your backend base URL here
+  static const String apiBaseUrl = railwayUrl; // Use Railway as base URL
 
   // Get the appropriate backend URL based on platform and environment
   static String get backendUrl => railwayUrl; // Use Railway as primary
 
-  // Get all possible backend URLs for testing - Enhanced with Railway and local options
+  // Get all possible backend URLs for testing - Railway and local options only
   static List<String> get allBackendUrls => [
     railwayUrl, // Railway production (primary)
-    baseUrl, // AWS production (port 8000) - fallback
-    'http://34.202.215.209:8000', // AWS fallback (port 8000)
     'http://10.0.2.2:8000', // Android emulator
     'http://localhost:8000', // Local development
     'http://127.0.0.1:8000', // Local development fallback
