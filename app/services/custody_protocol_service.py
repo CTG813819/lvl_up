@@ -1272,20 +1272,30 @@ class CustodyProtocolService:
             ai1_integration = await self_generating_ai_service.generate_ai_response(ai_type_1, integration_prompt)
             ai2_integration = await self_generating_ai_service.generate_ai_response(ai_type_2, integration_prompt)
             
-            # Phase 4: Final Evaluation
-            evaluation_prompt = f"""
-            Evaluate your collaborative solution:
+            # Phase 4: Autonomous Evaluation (no prompts)
+            logger.info(f"[COLLABORATIVE TEST] Starting autonomous evaluation for {ai_type_1} and {ai_type_2}")
             
-            - How well did you work together?
-            - What are the strengths of your collaborative approach?
-            - What challenges did you face and how did you overcome them?
-            - What is the final outcome of your collaboration?
+            # Get AI learning histories for evaluation
+            ai1_learning_history = await self._get_ai_learning_history(ai_type_1)
+            ai2_learning_history = await self._get_ai_learning_history(ai_type_2)
+            ai1_recent_proposals = await self._get_recent_proposals(ai_type_1)
+            ai2_recent_proposals = await self._get_recent_proposals(ai_type_2)
             
-            Provide a comprehensive evaluation of your collaborative effort and final solution.
-            """
+            # Perform autonomous evaluation for both AIs
+            ai1_evaluation_result = await self._perform_autonomous_evaluation(
+                ai_type_1, {"test_type": "collaborative", "scenario": scenario}, 
+                TestDifficulty.INTERMEDIATE, TestCategory.CROSS_AI_COLLABORATION,
+                ai1_integration.get('response', ''), ai1_learning_history, ai1_recent_proposals
+            )
             
-            ai1_evaluation = await self_generating_ai_service.generate_ai_response(ai_type_1, evaluation_prompt)
-            ai2_evaluation = await self_generating_ai_service.generate_ai_response(ai_type_2, evaluation_prompt)
+            ai2_evaluation_result = await self._perform_autonomous_evaluation(
+                ai_type_2, {"test_type": "collaborative", "scenario": scenario}, 
+                TestDifficulty.INTERMEDIATE, TestCategory.CROSS_AI_COLLABORATION,
+                ai2_integration.get('response', ''), ai2_learning_history, ai2_recent_proposals
+            )
+            
+            ai1_evaluation = ai1_evaluation_result.get("evaluation", "Autonomous evaluation completed")
+            ai2_evaluation = ai2_evaluation_result.get("evaluation", "Autonomous evaluation completed")
             
             # Calculate collaborative score
             collaborative_score = await self._calculate_real_collaborative_score(
@@ -1417,45 +1427,28 @@ class CustodyProtocolService:
             return 50  # Default score
     
     async def _calculate_collaborative_score(self, ai_contributions: Dict, scenario: str) -> int:
-        """Calculate collaborative score from AI contributions"""
+        """Calculate collaborative score from AI contributions using autonomous evaluation"""
         try:
-            # Create evaluation prompt
-            evaluation_prompt = f"""
-            Evaluate this collaborative AI solution:
-            
-            Scenario: {scenario}
-            
-            AI Contributions:
-            """
-            
+            # Combine all AI contributions into a single response for evaluation
+            combined_response = f"Scenario: {scenario}\n\nAI Contributions:\n"
             for ai_type, contribution in ai_contributions.items():
-                evaluation_prompt += f"\n{ai_type.upper()}: {contribution.get('answer', 'No response')}"
+                combined_response += f"{ai_type.upper()}: {contribution.get('answer', 'No response')}\n"
             
-            evaluation_prompt += """
+            # Use autonomous evaluation for collaborative scoring
+            # Get learning history for the first AI (as representative)
+            first_ai_type = list(ai_contributions.keys())[0] if ai_contributions else "collaborative"
+            learning_history = await self._get_ai_learning_history(first_ai_type)
+            recent_proposals = await self._get_recent_proposals(first_ai_type)
             
-            Score this collaboration on a scale of 0-100 based on:
-            1. Individual contribution quality (25 points)
-            2. Collaboration effectiveness (25 points)
-            3. Solution completeness (25 points)
-            4. Innovation and creativity (25 points)
+            # Perform autonomous evaluation
+            evaluation_result = await self._perform_autonomous_evaluation(
+                first_ai_type, {"test_type": "collaborative", "scenario": scenario}, 
+                TestDifficulty.INTERMEDIATE, TestCategory.CROSS_AI_COLLABORATION,
+                combined_response, learning_history, recent_proposals
+            )
             
-            Return only the numerical score.
-            """
-            
-            # Get evaluation from Claude
-            evaluation = await call_claude(evaluation_prompt)
-            
-            # Extract score from response
-            try:
-                import re
-                score_match = re.search(r'\b(\d{1,2}|100)\b', evaluation)
-                if score_match:
-                    score = int(score_match.group(1))
-                    return max(0, min(100, score))
-                else:
-                    return 75
-            except:
-                return 75
+            score = evaluation_result.get("score", 50)
+            return max(0, min(100, score))
                 
         except Exception as e:
             logger.error(f"Error calculating collaborative score: {str(e)}")
@@ -1769,53 +1762,7 @@ class CustodyProtocolService:
         
         return prompt
     
-    def _extract_score_from_evaluation(self, evaluation: str) -> int:
-        """Extract numerical score from evaluation text with varied scoring"""
-        try:
-            # Look for score patterns in the evaluation
-            import re
-            score_patterns = [
-                r'score[:\s]*(\d+)',
-                r'(\d+)/100',
-                r'(\d+)%',
-                r'(\d+)\s*out\s*of\s*100'
-            ]
-            
-            for pattern in score_patterns:
-                match = re.search(pattern, evaluation.lower())
-                if match:
-                    score = int(match.group(1))
-                    # Add small random variation to prevent identical scores
-                    variation = random.uniform(-2, 2)
-                    final_score = min(max(score + variation, 0), 100)
-                    return int(final_score)
-            
-            # If no score found, estimate based on keywords with variation
-            positive_keywords = ['excellent', 'outstanding', 'great', 'good', 'pass', 'successful', 'well', 'proper']
-            negative_keywords = ['poor', 'failed', 'inadequate', 'insufficient', 'weak', 'error', 'wrong']
-            neutral_keywords = ['average', 'acceptable', 'moderate', 'decent']
-            
-            evaluation_lower = evaluation.lower()
-            positive_count = sum(1 for keyword in positive_keywords if keyword in evaluation_lower)
-            negative_count = sum(1 for keyword in negative_keywords if keyword in evaluation_lower)
-            neutral_count = sum(1 for keyword in neutral_keywords if keyword in evaluation_lower)
-            
-            # Calculate base score with variation
-            if positive_count > negative_count:
-                base_score = 75 + random.uniform(-5, 10)  # 70-85 range
-            elif negative_count > positive_count:
-                base_score = 45 + random.uniform(-10, 5)  # 35-50 range
-            elif neutral_count > 0:
-                base_score = 60 + random.uniform(-5, 5)   # 55-65 range
-            else:
-                base_score = 60 + random.uniform(-10, 10) # 50-70 range
-            
-            return int(max(0, min(100, base_score)))
-                
-        except Exception as e:
-            logger.error(f"Error extracting score: {str(e)}")
-            # Return varied default score instead of fixed 50
-            return int(50 + random.uniform(-10, 10))
+    # REMOVED: _extract_score_from_evaluation - No longer needed with autonomous evaluation
     
     async def _update_custody_metrics(self, ai_type: str, test_result: Dict):
         """Update custody metrics for the AI with new XP and learning score logic, and persist Olympus Treaty events."""
@@ -4048,15 +3995,22 @@ class CustodyProtocolService:
                 f"Criteria: 1. Does it solve/attack/create as required? 2. Is the reasoning clear and step-by-step? 3. Are justifications provided? 4. Is the self-critique insightful? 5. Is the code error-free and practical? 6. Rate pass/fail (99% required to pass). Provide a score and detailed feedback.\n"
                 f"Be extremely strict. Penalize any errors, lack of reasoning, or weak self-critique. Only give a perfect score for flawless, well-documented, and creative solutions."
             )
-            # Use self-generating AI service for Olympus treaty evaluation
-            eval_result = await self_generating_ai_service.generate_ai_response(
-                ai_type="evaluator",
-                prompt=evaluation_prompt,
-                context={"evaluation_type": "olympus_treaty", "ai_type": ai_type}
+            # Use autonomous ML-based evaluation for Olympus treaty (no prompts)
+            logger.info(f"[OLYMPUS TREATY] Starting autonomous evaluation for {ai_type}")
+            
+            # Get AI's learning history and knowledge base for evaluation
+            learning_history = await self._get_ai_learning_history(ai_type)
+            recent_proposals = await self._get_recent_proposals(ai_type)
+            
+            # Perform autonomous evaluation using ML models and AI knowledge
+            evaluation_result = await self._perform_autonomous_evaluation(
+                ai_type, {"test_type": "olympus_treaty", "scenario": scenario}, difficulty, 
+                TestCategory.INNOVATION_CAPABILITY, ai_response, learning_history, recent_proposals
             )
-            evaluation = eval_result.get("response")
-            logger.info(f"[OLYMPUS TREATY] Evaluation: {evaluation}")
-            score = self._extract_score_from_evaluation(evaluation)
+            
+            evaluation = evaluation_result.get("evaluation", "Autonomous evaluation completed")
+            score = evaluation_result.get("score", 0)
+            logger.info(f"[OLYMPUS TREATY] Autonomous evaluation completed - Score: {score}")
             
             # Get adaptive threshold for Olympus Treaty
             if self.adaptive_threshold_service:
