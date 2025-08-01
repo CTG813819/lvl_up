@@ -296,6 +296,10 @@ class CustodyProtocolService:
             test_result = await self._execute_custody_test(ai_type, test_content, difficulty, test_category)
             logger.info(f"[ADMINISTER TEST] Test execution completed: {json.dumps(test_result, default=str, ensure_ascii=False)}")
             
+            # Add complexity metadata to test result
+            test_result["difficulty_multiplier"] = test_content.get("difficulty_multiplier", 1.0)
+            test_result["complexity_layers"] = test_content.get("complexity_layers", 1)
+            
             # Update custody metrics
             logger.info(f"[ADMINISTER TEST] Updating custody metrics...")
             # Update custody metrics with test result using the proper XP awarding method
@@ -351,8 +355,20 @@ class CustodyProtocolService:
             logger.error(f"Error getting AI level: {str(e)}")
             return 1
     
-    def _calculate_test_difficulty(self, ai_level: int) -> TestDifficulty:
-        """Calculate test difficulty based on AI level"""
+    def _calculate_test_difficulty(self, ai_level: int, recent_performance: Dict = None) -> TestDifficulty:
+        """Calculate dynamic test difficulty based on AI level and recent performance"""
+        # Base difficulty from AI level
+        base_difficulty = self._get_base_difficulty_from_level(ai_level)
+        
+        # Apply performance-based adjustments
+        if recent_performance:
+            adjusted_difficulty = self._adjust_difficulty_based_on_performance(base_difficulty, recent_performance)
+            return adjusted_difficulty
+        
+        return base_difficulty
+    
+    def _get_base_difficulty_from_level(self, ai_level: int) -> TestDifficulty:
+        """Get base difficulty from AI level"""
         if ai_level >= 50:
             return TestDifficulty.LEGENDARY
         elif ai_level >= 40:
@@ -365,6 +381,138 @@ class CustodyProtocolService:
             return TestDifficulty.INTERMEDIATE
         else:
             return TestDifficulty.BASIC
+    
+    def _adjust_difficulty_based_on_performance(self, base_difficulty: TestDifficulty, performance: Dict) -> TestDifficulty:
+        """Dynamically adjust difficulty based on recent performance"""
+        try:
+            consecutive_successes = performance.get('consecutive_successes', 0)
+            consecutive_failures = performance.get('consecutive_failures', 0)
+            recent_scores = performance.get('recent_scores', [])
+            pass_rate = performance.get('pass_rate', 0.0)
+            
+            # Difficulty progression based on consecutive successes
+            if consecutive_successes >= 5:
+                # AI is performing excellently - increase difficulty significantly
+                return self._increase_difficulty(base_difficulty, 2)
+            elif consecutive_successes >= 3:
+                # AI is performing well - increase difficulty moderately
+                return self._increase_difficulty(base_difficulty, 1)
+            elif consecutive_failures >= 3:
+                # AI is struggling - decrease difficulty
+                return self._decrease_difficulty(base_difficulty, 1)
+            elif consecutive_failures >= 5:
+                # AI is failing consistently - decrease difficulty significantly
+                return self._decrease_difficulty(base_difficulty, 2)
+            
+            # Adjust based on recent scores
+            if recent_scores:
+                avg_score = sum(recent_scores) / len(recent_scores)
+                if avg_score >= 90:
+                    return self._increase_difficulty(base_difficulty, 1)
+                elif avg_score <= 40:
+                    return self._decrease_difficulty(base_difficulty, 1)
+            
+            # Adjust based on pass rate
+            if pass_rate >= 0.8:
+                return self._increase_difficulty(base_difficulty, 1)
+            elif pass_rate <= 0.2:
+                return self._decrease_difficulty(base_difficulty, 1)
+            
+            return base_difficulty
+            
+        except Exception as e:
+            logger.error(f"Error adjusting difficulty based on performance: {str(e)}")
+            return base_difficulty
+    
+    def _increase_difficulty(self, current_difficulty: TestDifficulty, levels: int) -> TestDifficulty:
+        """Increase difficulty by specified number of levels with unlimited scaling"""
+        try:
+            # Get current difficulty multiplier from database or calculate
+            current_multiplier = self._get_difficulty_multiplier(current_difficulty)
+            
+            # Calculate new multiplier based on AI progression
+            new_multiplier = current_multiplier + (levels * 0.5)  # Progressive scaling
+            
+            # Create new difficulty level with unlimited scaling
+            new_difficulty = self._create_scaled_difficulty(new_multiplier)
+            
+            logger.info(f"🔺 Difficulty increased: {current_difficulty.value} (multiplier: {current_multiplier:.2f}) → {new_difficulty.value} (multiplier: {new_multiplier:.2f})")
+            
+            return new_difficulty
+            
+        except Exception as e:
+            logger.error(f"Error increasing difficulty: {str(e)}")
+            return current_difficulty
+    
+    def _decrease_difficulty(self, current_difficulty: TestDifficulty, levels: int) -> TestDifficulty:
+        """Decrease difficulty by specified number of levels with minimum floor"""
+        try:
+            # Get current difficulty multiplier
+            current_multiplier = self._get_difficulty_multiplier(current_difficulty)
+            
+            # Calculate new multiplier (never go below 1.0)
+            new_multiplier = max(current_multiplier - (levels * 0.3), 1.0)
+            
+            # Create new difficulty level
+            new_difficulty = self._create_scaled_difficulty(new_multiplier)
+            
+            logger.info(f"🔻 Difficulty decreased: {current_difficulty.value} (multiplier: {current_multiplier:.2f}) → {new_difficulty.value} (multiplier: {new_multiplier:.2f})")
+            
+            return new_difficulty
+            
+        except Exception as e:
+            logger.error(f"Error decreasing difficulty: {str(e)}")
+            return current_difficulty
+    
+    def _get_difficulty_multiplier(self, difficulty: TestDifficulty) -> float:
+        """Get the difficulty multiplier for a given difficulty level"""
+        base_multipliers = {
+            TestDifficulty.BASIC: 1.0,
+            TestDifficulty.INTERMEDIATE: 1.5,
+            TestDifficulty.ADVANCED: 2.0,
+            TestDifficulty.EXPERT: 3.0,
+            TestDifficulty.MASTER: 4.0,
+            TestDifficulty.LEGENDARY: 5.0
+        }
+        
+        # Extract multiplier from difficulty name if it's a scaled difficulty
+        if hasattr(difficulty, 'value') and 'x' in difficulty.value:
+            try:
+                # Parse multiplier from difficulty name (e.g., "LEGENDARY_x2.5")
+                multiplier_str = difficulty.value.split('x')[-1]
+                return float(multiplier_str)
+            except:
+                return base_multipliers.get(difficulty, 1.0)
+        
+        return base_multipliers.get(difficulty, 1.0)
+    
+    def _create_scaled_difficulty(self, multiplier: float) -> TestDifficulty:
+        """Create a scaled difficulty level based on multiplier"""
+        # Determine base difficulty level
+        if multiplier >= 10.0:
+            base_level = "LEGENDARY"
+        elif multiplier >= 7.0:
+            base_level = "MASTER"
+        elif multiplier >= 5.0:
+            base_level = "EXPERT"
+        elif multiplier >= 3.0:
+            base_level = "ADVANCED"
+        elif multiplier >= 2.0:
+            base_level = "INTERMEDIATE"
+        else:
+            base_level = "BASIC"
+        
+        # Create scaled difficulty name
+        scaled_name = f"{base_level}_x{multiplier:.1f}"
+        
+        # Create new TestDifficulty enum value dynamically
+        try:
+            # Try to get existing scaled difficulty
+            return TestDifficulty(scaled_name)
+        except ValueError:
+            # Create new scaled difficulty
+            new_difficulty = TestDifficulty(scaled_name)
+            return new_difficulty
     
     def _select_test_category(self, ai_type: str, difficulty: TestDifficulty) -> TestCategory:
         """Select appropriate test category based on AI type and difficulty"""
@@ -404,54 +552,195 @@ class CustodyProtocolService:
             return categories[0]
     
     async def _generate_custody_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
-        """Generate self-generated custody test based on AI's knowledge and internet research"""
+        """Generate layered and complex custody test based on AI's knowledge, internet research, and dynamic difficulty"""
         try:
-            logger.info(f"🔍 Generating self-generated test for {ai_type} - {category.value} - {difficulty.value}")
+            logger.info(f"🔍 Generating layered test for {ai_type} - {category.value} - {difficulty.value}")
             
             # Get AI's current knowledge and learning history
             learning_history = await self._get_ai_learning_history(ai_type)
             custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
             
-            # Generate unique test based on category
+            # Calculate complexity based on difficulty multiplier
+            difficulty_multiplier = self._get_difficulty_multiplier(difficulty)
+            complexity_layers = max(1, int(difficulty_multiplier))
+            
+            logger.info(f"🎯 Difficulty multiplier: {difficulty_multiplier:.2f}, Complexity layers: {complexity_layers}")
+            
+            # Generate base test content
             if category == TestCategory.KNOWLEDGE_VERIFICATION:
-                test_content = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CODE_QUALITY:
-                test_content = await self._generate_self_generated_code_quality_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_code_quality_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SECURITY_AWARENESS:
-                test_content = await self._generate_self_generated_security_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_security_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.PERFORMANCE_OPTIMIZATION:
-                test_content = await self._generate_self_generated_performance_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_performance_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.INNOVATION_CAPABILITY:
-                test_content = await self._generate_self_generated_innovation_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_innovation_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SELF_IMPROVEMENT:
-                test_content = await self._generate_self_generated_self_improvement_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_self_improvement_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CROSS_AI_COLLABORATION:
-                test_content = await self._generate_self_generated_collaboration_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_collaboration_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.EXPERIMENTAL_VALIDATION:
-                test_content = await self._generate_self_generated_experimental_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_experimental_test(ai_type, difficulty, learning_history)
             else:
-                test_content = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
             
-            # Add unique identifier and timestamp
-            test_content["test_id"] = f"{ai_type}_{category.value}_{int(datetime.utcnow().timestamp())}"
-            test_content["generated_at"] = datetime.utcnow().isoformat()
-            test_content["ai_type"] = ai_type
-            test_content["category"] = category.value
-            test_content["difficulty"] = difficulty.value
+            # Apply layered complexity
+            layered_test = await self._apply_layered_complexity(base_test, complexity_layers, category, ai_type, difficulty)
             
-            logger.info(f"✅ Generated unique test for {ai_type}: {test_content['test_id']}")
-            return test_content
+            # Add unique identifier and metadata
+            layered_test["test_id"] = f"{ai_type}_{category.value}_{int(datetime.utcnow().timestamp())}"
+            layered_test["generated_at"] = datetime.utcnow().isoformat()
+            layered_test["ai_type"] = ai_type
+            layered_test["category"] = category.value
+            layered_test["difficulty"] = difficulty.value
+            layered_test["difficulty_multiplier"] = difficulty_multiplier
+            layered_test["complexity_layers"] = complexity_layers
+            
+            logger.info(f"✅ Generated layered test for {ai_type}: {layered_test['test_id']} with {complexity_layers} layers")
+            return layered_test
             
         except Exception as e:
-            logger.error(f"❌ Error generating self-generated test: {str(e)}")
+            logger.error(f"❌ Error generating layered test: {str(e)}")
             # Fallback to basic test
             return {
                 "test_type": "fallback_knowledge",
                 "questions": [f"Demonstrate your current knowledge and capabilities as {ai_type} AI."],
                 "difficulty": difficulty.value,
+                "difficulty_multiplier": 1.0,
+                "complexity_layers": 1,
                 "test_id": f"fallback_{ai_type}_{int(datetime.utcnow().timestamp())}",
                 "generated_at": datetime.utcnow().isoformat()
             }
+    
+    async def _apply_layered_complexity(self, base_test: Dict, complexity_layers: int, category: TestCategory, ai_type: str, difficulty: TestDifficulty) -> Dict:
+        """Apply layered complexity to test content based on difficulty multiplier"""
+        try:
+            layered_test = base_test.copy()
+            
+            # Get current trends and emerging topics for complexity
+            current_trends = await self._get_current_ai_trends(ai_type)
+            emerging_topics = await self._get_emerging_topics(ai_type)
+            
+            # Apply complexity layers
+            for layer in range(1, complexity_layers + 1):
+                layer_multiplier = layer * 0.5
+                
+                if layer == 1:
+                    # Base layer - enhance with current trends
+                    layered_test = await self._enhance_with_trends(layered_test, current_trends, layer_multiplier)
+                elif layer == 2:
+                    # Integration layer - combine multiple concepts
+                    layered_test = await self._enhance_with_integration(layered_test, category, layer_multiplier)
+                elif layer == 3:
+                    # Innovation layer - require creative solutions
+                    layered_test = await self._enhance_with_innovation(layered_test, emerging_topics, layer_multiplier)
+                elif layer == 4:
+                    # Optimization layer - require performance considerations
+                    layered_test = await self._enhance_with_optimization(layered_test, layer_multiplier)
+                elif layer == 5:
+                    # Security layer - add security considerations
+                    layered_test = await self._enhance_with_security(layered_test, layer_multiplier)
+                else:
+                    # Advanced layers - combine multiple advanced concepts
+                    layered_test = await self._enhance_with_advanced_concepts(layered_test, layer, layer_multiplier)
+                
+                logger.info(f"🔧 Applied layer {layer} complexity (multiplier: {layer_multiplier:.2f})")
+            
+            return layered_test
+            
+        except Exception as e:
+            logger.error(f"Error applying layered complexity: {str(e)}")
+            return base_test
+    
+    async def _enhance_with_trends(self, test: Dict, trends: List[str], multiplier: float) -> Dict:
+        """Enhance test with current industry trends"""
+        if not trends:
+            return test
+        
+        # Add trend-based questions
+        trend_questions = []
+        for trend in trends[:3]:  # Use top 3 trends
+            trend_questions.append(f"Apply current industry trend '{trend}' to your solution.")
+        
+        if "questions" in test:
+            test["questions"].extend(trend_questions)
+        
+        return test
+    
+    async def _enhance_with_integration(self, test: Dict, category: TestCategory, multiplier: float) -> Dict:
+        """Enhance test with integration requirements"""
+        integration_requirements = [
+            "Integrate your solution with existing systems.",
+            "Consider cross-platform compatibility.",
+            "Ensure backward compatibility with legacy systems."
+        ]
+        
+        if "questions" in test:
+            test["questions"].extend(integration_requirements)
+        
+        return test
+    
+    async def _enhance_with_innovation(self, test: Dict, emerging_topics: List[str], multiplier: float) -> Dict:
+        """Enhance test with innovation requirements"""
+        innovation_requirements = [
+            "Propose a novel approach to this problem.",
+            "Consider cutting-edge technologies in your solution.",
+            "Demonstrate creative problem-solving techniques."
+        ]
+        
+        if emerging_topics:
+            for topic in emerging_topics[:2]:
+                innovation_requirements.append(f"Incorporate emerging technology '{topic}' in your approach.")
+        
+        if "questions" in test:
+            test["questions"].extend(innovation_requirements)
+        
+        return test
+    
+    async def _enhance_with_optimization(self, test: Dict, multiplier: float) -> Dict:
+        """Enhance test with performance optimization requirements"""
+        optimization_requirements = [
+            "Optimize your solution for maximum performance.",
+            "Consider resource efficiency and scalability.",
+            "Implement caching strategies where appropriate.",
+            "Analyze and optimize time complexity."
+        ]
+        
+        if "questions" in test:
+            test["questions"].extend(optimization_requirements)
+        
+        return test
+    
+    async def _enhance_with_security(self, test: Dict, multiplier: float) -> Dict:
+        """Enhance test with security considerations"""
+        security_requirements = [
+            "Implement security best practices in your solution.",
+            "Consider potential vulnerabilities and mitigation strategies.",
+            "Apply the principle of least privilege.",
+            "Include input validation and sanitization."
+        ]
+        
+        if "questions" in test:
+            test["questions"].extend(security_requirements)
+        
+        return test
+    
+    async def _enhance_with_advanced_concepts(self, test: Dict, layer: int, multiplier: float) -> Dict:
+        """Enhance test with advanced concepts for higher layers"""
+        advanced_requirements = [
+            f"Layer {layer}: Implement advanced architectural patterns.",
+            f"Layer {layer}: Consider distributed system challenges.",
+            f"Layer {layer}: Apply machine learning concepts where relevant.",
+            f"Layer {layer}: Implement real-time processing capabilities.",
+            f"Layer {layer}: Consider edge computing scenarios."
+        ]
+        
+        if "questions" in test:
+            test["questions"].extend(advanced_requirements)
+        
+        return test
     
     async def _generate_knowledge_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
         """Generate knowledge verification test based on AI's actual learning history"""
@@ -1765,7 +2054,7 @@ class CustodyProtocolService:
     # REMOVED: _extract_score_from_evaluation - No longer needed with autonomous evaluation
     
     async def _update_custody_metrics(self, ai_type: str, test_result: Dict):
-        """Update custody metrics for the AI with new XP and learning score logic, and persist Olympus Treaty events."""
+        """Update custody metrics for the AI with dynamic difficulty progression and layered complexity."""
         try:
             logger.info(f"[CUSTODY METRICS] Starting metrics update for {ai_type}")
             logger.info(f"[CUSTODY METRICS][DEBUG] Called _update_custody_metrics for {ai_type} with test_result: {json.dumps(test_result, default=str, ensure_ascii=False)}")
@@ -1778,6 +2067,8 @@ class CustodyProtocolService:
                     "total_tests_passed": 0,
                     "total_tests_failed": 0,
                     "current_difficulty": TestDifficulty.BASIC.value,
+                    "difficulty_multiplier": 1.0,
+                    "complexity_layers": 1,
                     "last_test_date": None,
                     "consecutive_failures": 0,
                     "consecutive_successes": 0,
@@ -1786,12 +2077,25 @@ class CustodyProtocolService:
                     "custody_xp": 0,
                     "xp": 0,
                     "level": 1,
-                    "learning_score": 0.0
+                    "learning_score": 0.0,
+                    "progression_rate": 1.0
                 }
             metrics = custody_metrics
             logger.info(f"[CUSTODY METRICS] Current metrics before update: {json.dumps(metrics, default=str, ensure_ascii=False)}")
             metrics["total_tests_given"] += 1
             logger.info(f"[CUSTODY METRICS] Updated total_tests_given to: {metrics['total_tests_given']}")
+            
+            # Calculate performance metrics for dynamic difficulty adjustment
+            recent_scores = [t.get("score", 0) for t in metrics.get("test_history", [])[-10:]]
+            pass_rate = metrics.get("total_tests_passed", 0) / max(metrics.get("total_tests_given", 1), 1)
+            
+            performance_data = {
+                "consecutive_successes": metrics.get("consecutive_successes", 0),
+                "consecutive_failures": metrics.get("consecutive_failures", 0),
+                "recent_scores": recent_scores,
+                "pass_rate": pass_rate
+            }
+            
             if test_result.get("olympus_treaty"):
                 # Olympus Treaty event: persist full event and never trim
                 logger.info(f"[CUSTODY METRICS] Appending Olympus Treaty event to test_history for {ai_type}")
@@ -1812,15 +2116,25 @@ class CustodyProtocolService:
                     metrics["consecutive_failures"] = 0
                     metrics["custody_xp"] += 50
                     metrics["learning_score"] = metrics.get("learning_score", 0.0) + 50
+                    
+                    # Increase progression rate for successful AIs
+                    metrics["progression_rate"] = min(metrics.get("progression_rate", 1.0) + 0.1, 3.0)
+                    
                     logger.info(f"[CUSTODY METRICS] Test PASSED - Updated passed: {metrics['total_tests_passed']}, consecutive_successes: {metrics['consecutive_successes']}, XP: {metrics['custody_xp']}, Learning Score: {metrics['learning_score']}")
                 else:
                     metrics["total_tests_failed"] += 1
                     metrics["consecutive_failures"] += 1
                     metrics["consecutive_successes"] = 0
                     metrics["custody_xp"] += 1  # Small XP for attempting
+                    
+                    # Decrease progression rate for struggling AIs
+                    metrics["progression_rate"] = max(metrics.get("progression_rate", 1.0) - 0.05, 0.5)
+                    
                     logger.info(f"[CUSTODY METRICS] Test FAILED - Updated failed: {metrics['total_tests_failed']}, consecutive_failures: {metrics['consecutive_failures']}, XP: {metrics['custody_xp']}")
+                
                 metrics["last_test_date"] = datetime.utcnow()
                 logger.info(f"[CUSTODY METRICS] Updated last_test_date: {metrics['last_test_date']}")
+                
                 # Handle different test result formats
                 if test_result.get("test_type") == "collaborative" or test_result.get("test_type") == "real_collaboration":
                     # Collaborative tests have different field names
@@ -1828,7 +2142,9 @@ class CustodyProtocolService:
                         "timestamp": test_result.get("timestamp", datetime.utcnow().isoformat()),
                         "passed": test_result["passed"],
                         "score": test_result.get("collaborative_score", test_result.get("score", 0)),
-                        "duration": test_result.get("duration", 0)
+                        "duration": test_result.get("duration", 0),
+                        "difficulty": test_result.get("difficulty", "unknown"),
+                        "complexity_layers": test_result.get("complexity_layers", 1)
                     }
                 else:
                     # Standard test format
@@ -1836,10 +2152,13 @@ class CustodyProtocolService:
                         "timestamp": test_result.get("timestamp", datetime.utcnow().isoformat()),
                         "passed": test_result["passed"],
                         "score": test_result["score"],
-                        "duration": test_result.get("duration", 0)
+                        "duration": test_result.get("duration", 0),
+                        "difficulty": test_result.get("difficulty", "unknown"),
+                        "complexity_layers": test_result.get("complexity_layers", 1)
                     }
                 metrics["test_history"].append(test_history_entry)
                 logger.info(f"[CUSTODY METRICS] Added test history entry: {json.dumps(test_history_entry, default=str, ensure_ascii=False)}")
+            
             # Only trim non-Olympus events, always keep all Olympus Treaty events
             olympus_events = [t for t in metrics["test_history"] if t.get("olympus_treaty")]
             non_olympus_events = [t for t in metrics["test_history"] if not t.get("olympus_treaty")]
@@ -1847,17 +2166,31 @@ class CustodyProtocolService:
                 non_olympus_events = non_olympus_events[-50:]
             metrics["test_history"] = olympus_events + non_olympus_events
             logger.info(f"[CUSTODY METRICS] Final test_history for {ai_type}: {json.dumps(metrics['test_history'], default=str, ensure_ascii=False)}")
+            
+            # Dynamic level progression based on performance
             new_level = (metrics["custody_xp"] // 100) + 1
             if new_level > metrics["custody_level"] and metrics["consecutive_successes"] >= 3:
                 metrics["custody_level"] = new_level
                 logger.info(f"[CUSTODY METRICS] {ai_type} AI custody level increased to {new_level} (required 3 consecutive passes)")
+            
+            # Calculate new dynamic difficulty based on performance
             ai_level = await self._get_ai_level(ai_type)
-            new_difficulty = self._calculate_test_difficulty(ai_level)
+            new_difficulty = self._calculate_test_difficulty(ai_level, performance_data)
+            
+            # Update difficulty multiplier and complexity layers
+            new_multiplier = self._get_difficulty_multiplier(new_difficulty)
+            metrics["difficulty_multiplier"] = new_multiplier
             metrics["current_difficulty"] = new_difficulty.value
-            logger.info(f"[CUSTODY METRICS] Updated difficulty to: {new_difficulty.value}")
+            
+            # Calculate complexity layers based on difficulty multiplier
+            complexity_layers = max(1, int(new_multiplier))
+            metrics["complexity_layers"] = complexity_layers
+            
+            logger.info(f"[CUSTODY METRICS] Updated difficulty to: {new_difficulty.value} (multiplier: {new_multiplier:.2f}, layers: {complexity_layers})")
             logger.info(f"[CUSTODY METRICS] Final metrics after update: {json.dumps(metrics, default=str, ensure_ascii=False)}")
             await self.agent_metrics_service.create_or_update_agent_metrics(ai_type, metrics)
             logger.info(f"[CUSTODY METRICS] Successfully persisted metrics to database for {ai_type}")
+            
         except Exception as e:
             logger.error(f"[CUSTODY METRICS] Error updating custody metrics: {str(e)}", exc_info=True)
     
