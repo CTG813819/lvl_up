@@ -7781,70 +7781,118 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
 
     # Practical test generation methods with real-world scenarios
     async def _generate_practical_knowledge_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
-        """Generate practical knowledge test with Docker lifecycle scenarios"""
+        """Generate practical knowledge test with Docker lifecycle scenarios that evolve with AI growth"""
         try:
-            scenarios = [
+            # Analyze AI's learning progress and growth
+            learning_analysis = await self._analyze_ai_learning_progress(ai_type, learning_history)
+            complexity_level = self._calculate_complexity_level(ai_type, difficulty, learning_analysis)
+            
+            # Base scenarios that evolve with complexity
+            base_scenarios = [
                 {
-                    "scenario": f"As {ai_type.upper()} AI, you need to design a Docker-based microservices architecture for a high-traffic e-commerce platform. The system must handle 10,000+ concurrent users and include: user authentication, product catalog, shopping cart, payment processing, and order management. Create the complete Docker Compose configuration with proper networking, data persistence, and security considerations.",
-                    "category": "docker_architecture",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, create a simple Docker container for a basic web application. Include: Dockerfile, basic networking, and volume mounting.",
+                    "intermediate": f"As {ai_type.upper()} AI, design a Docker-based microservices architecture for a medium-traffic application. Include: user authentication, product catalog, and basic data persistence.",
+                    "advanced": f"As {ai_type.upper()} AI, design a Docker-based microservices architecture for a high-traffic e-commerce platform. The system must handle 10,000+ concurrent users and include: user authentication, product catalog, shopping cart, payment processing, and order management. Create the complete Docker Compose configuration with proper networking, data persistence, and security considerations.",
+                    "expert": f"As {ai_type.upper()} AI, architect a distributed Docker-based system for a global e-commerce platform handling 100,000+ concurrent users. Include: multi-region deployment, auto-scaling, load balancing, caching strategies, database sharding, and disaster recovery. Implement advanced security measures and monitoring.",
+                    "master": f"As {ai_type.upper()} AI, design a cloud-native Docker architecture for a multi-tenant SaaS platform serving 1M+ users globally. Include: Kubernetes orchestration, service mesh, distributed tracing, advanced security, AI-powered monitoring, and automated disaster recovery.",
+                    "legendary": f"As {ai_type.upper()} AI, create a revolutionary containerized architecture for a next-generation AI-powered platform. Include: quantum computing integration, edge computing, blockchain-based security, autonomous scaling, predictive maintenance, and zero-downtime deployments across multiple cloud providers."
                 },
                 {
-                    "scenario": f"As {ai_type.upper()} AI, design a CI/CD pipeline using Docker containers for a Python-based machine learning application. Include stages for: code testing, model training, container building, security scanning, and deployment to multiple environments (dev, staging, prod). Provide the complete Dockerfile and pipeline configuration.",
-                    "category": "docker_cicd",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, set up a basic CI/CD pipeline using Docker for a simple application. Include: code testing and basic deployment.",
+                    "intermediate": f"As {ai_type.upper()} AI, design a CI/CD pipeline using Docker containers for a Python application. Include: code testing, container building, and deployment to staging/production.",
+                    "advanced": f"As {ai_type.upper()} AI, design a CI/CD pipeline using Docker containers for a Python-based machine learning application. Include stages for: code testing, model training, container building, security scanning, and deployment to multiple environments (dev, staging, prod). Provide the complete Dockerfile and pipeline configuration.",
+                    "expert": f"As {ai_type.upper()} AI, architect a comprehensive CI/CD pipeline for a multi-service ML platform. Include: automated testing, model validation, security scanning, performance testing, blue-green deployments, and rollback mechanisms. Implement advanced monitoring and alerting.",
+                    "master": f"As {ai_type.upper()} AI, design an AI-driven CI/CD pipeline that automatically optimizes deployment strategies based on performance metrics. Include: predictive scaling, automated rollbacks, chaos engineering, and intelligent resource allocation.",
+                    "legendary": f"As {ai_type.upper()} AI, create a self-evolving CI/CD system that learns from deployment patterns and automatically improves itself. Include: quantum-accelerated testing, AI-powered security analysis, autonomous deployment optimization, and predictive failure prevention."
                 },
                 {
-                    "scenario": f"As {ai_type.upper()} AI, create a Docker-based development environment for a full-stack application with React frontend, Node.js backend, and PostgreSQL database. Include hot-reloading, debugging capabilities, and proper volume management. Provide the complete setup with docker-compose.yml.",
-                    "category": "docker_development",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, create a basic Docker development environment for a simple application. Include: basic volume mounting and port mapping.",
+                    "intermediate": f"As {ai_type.upper()} AI, create a Docker-based development environment for a full-stack application. Include: hot-reloading, debugging capabilities, and proper volume management.",
+                    "advanced": f"As {ai_type.upper()} AI, create a Docker-based development environment for a full-stack application with React frontend, Node.js backend, and PostgreSQL database. Include hot-reloading, debugging capabilities, and proper volume management. Provide the complete setup with docker-compose.yml.",
+                    "expert": f"As {ai_type.upper()} AI, design an advanced development environment supporting multiple microservices with shared databases, message queues, and monitoring tools. Include: distributed debugging, performance profiling, and collaborative development features.",
+                    "master": f"As {ai_type.upper()} AI, architect a cloud-native development environment with local Kubernetes, service mesh, and advanced debugging capabilities. Include: multi-team collaboration, automated testing, and production-like simulation.",
+                    "legendary": f"As {ai_type.upper()} AI, create a revolutionary development environment that automatically adapts to team needs and project requirements. Include: AI-powered code suggestions, automated optimization, and predictive development assistance."
                 }
             ]
             
-            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            # Select scenario based on complexity level and AI growth
+            scenario_index = hash(ai_type) % len(base_scenarios)
+            difficulty_key = self._map_difficulty_to_complexity(difficulty, learning_analysis)
+            selected_scenario = base_scenarios[scenario_index][difficulty_key]
+            
+            # Add learning-based complexity layers
+            enhanced_scenario = await self._add_learning_based_complexity_to_scenario(
+                selected_scenario, ai_type, learning_analysis, complexity_level
+            )
             
             return {
                 "test_type": "practical_knowledge",
-                "scenario": selected_scenario["scenario"],
-                "category": selected_scenario["category"],
-                "difficulty": selected_scenario["difficulty"],
-                "expected_answer": "Complete Docker configuration with proper architecture, networking, and security",
-                "evaluation_criteria": ["Architecture design", "Docker configuration", "Security considerations", "Performance optimization"]
+                "scenario": enhanced_scenario,
+                "category": f"docker_architecture_{difficulty_key}",
+                "difficulty": difficulty.value,
+                "complexity_level": complexity_level,
+                "learning_analysis": learning_analysis,
+                "expected_answer": f"Complete Docker configuration with proper architecture, networking, and security for {difficulty_key} level",
+                "evaluation_criteria": ["Architecture design", "Docker configuration", "Security considerations", "Performance optimization", "Learning integration"]
             }
         except Exception as e:
             logger.error(f"Error generating practical knowledge test: {str(e)}")
             return self._create_fallback_knowledge_test(ai_type, difficulty)
 
     async def _generate_practical_code_quality_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
-        """Generate practical code quality test with real-world coding scenarios"""
+        """Generate practical code quality test with real-world coding scenarios that evolve with AI growth"""
         try:
-            scenarios = [
+            # Analyze AI's code quality learning progress
+            code_learning_analysis = await self._analyze_code_quality_learning(ai_type, learning_history)
+            complexity_level = self._calculate_complexity_level(ai_type, difficulty, code_learning_analysis)
+            
+            # Progressive code scenarios based on AI growth
+            base_scenarios = [
                 {
-                    "scenario": f"As {ai_type.upper()} AI, refactor this legacy Python code to follow modern best practices:\n\n```python\ndef process_data(data):\n    result = []\n    for i in range(len(data)):\n        if data[i] > 0:\n            result.append(data[i] * 2)\n    return result\n```\n\nImprove code quality, add error handling, type hints, documentation, and unit tests.",
-                    "category": "code_refactoring",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, improve this simple Python function:\n\n```python\ndef add_numbers(a, b):\n    return a + b\n```\n\nAdd error handling and documentation.",
+                    "intermediate": f"As {ai_type.upper()} AI, refactor this Python code to follow modern best practices:\n\n```python\ndef process_data(data):\n    result = []\n    for i in range(len(data)):\n        if data[i] > 0:\n            result.append(data[i] * 2)\n    return result\n```\n\nImprove code quality, add error handling, type hints, and documentation.",
+                    "advanced": f"As {ai_type.upper()} AI, refactor this legacy Python code to follow modern best practices:\n\n```python\ndef process_data(data):\n    result = []\n    for i in range(len(data)):\n        if data[i] > 0:\n            result.append(data[i] * 2)\n    return result\n```\n\nImprove code quality, add error handling, type hints, documentation, and unit tests.",
+                    "expert": f"As {ai_type.upper()} AI, refactor this complex legacy system:\n\n```python\nclass DataProcessor:\n    def __init__(self):\n        self.data = []\n    def process(self, input_data):\n        # Complex legacy logic with multiple issues\n        result = []\n        for item in input_data:\n            if item > 0:\n                processed = self._complex_processing(item)\n                result.append(processed)\n        return result\n    def _complex_processing(self, item):\n        # Legacy processing with performance issues\n        return item * 2\n```\n\nModernize with async/await, proper error handling, type hints, comprehensive testing, and performance optimization.",
+                    "master": f"As {ai_type.upper()} AI, architect a high-performance data processing system:\n\n```python\n# Legacy system with performance bottlenecks\nclass LegacyProcessor:\n    def process_large_dataset(self, data):\n        # Inefficient processing\n        results = []\n        for item in data:\n            processed = self._heavy_computation(item)\n            results.append(processed)\n        return results\n```\n\nRedesign with parallel processing, caching, memory optimization, and distributed computing capabilities.",
+                    "legendary": f"As {ai_type.upper()} AI, create a revolutionary code architecture:\n\n```python\n# Legacy monolithic system\nclass MonolithicSystem:\n    def process_everything(self, data):\n        # All processing in one place\n        pass\n```\n\nDesign a quantum-ready, AI-powered, self-optimizing system with advanced patterns and cutting-edge technologies."
                 },
                 {
-                    "scenario": f"As {ai_type.upper()} AI, create a RESTful API using FastAPI for a task management system. Include: user authentication, CRUD operations for tasks, input validation, error handling, logging, and comprehensive API documentation. Provide the complete implementation with proper project structure.",
-                    "category": "api_development",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, create a simple REST API endpoint using Flask. Include: basic routing and JSON response.",
+                    "intermediate": f"As {ai_type.upper()} AI, create a RESTful API using FastAPI for a simple task management system. Include: basic CRUD operations and input validation.",
+                    "advanced": f"As {ai_type.upper()} AI, create a RESTful API using FastAPI for a task management system. Include: user authentication, CRUD operations for tasks, input validation, error handling, logging, and comprehensive API documentation. Provide the complete implementation with proper project structure.",
+                    "expert": f"As {ai_type.upper()} AI, architect a high-performance API gateway with microservices. Include: authentication, rate limiting, caching, monitoring, and advanced security features.",
+                    "master": f"As {ai_type.upper()} AI, design a distributed API system with service mesh, circuit breakers, and advanced monitoring. Include: AI-powered request routing and predictive scaling.",
+                    "legendary": f"As {ai_type.upper()} AI, create a self-evolving API system that automatically optimizes based on usage patterns and implements quantum-resistant security."
                 },
                 {
-                    "scenario": f"As {ai_type.upper()} AI, implement a caching system using Redis for a high-performance web application. Include: cache invalidation strategies, memory optimization, monitoring, and fallback mechanisms. Provide the complete implementation with configuration.",
-                    "category": "caching_system",
-                    "difficulty": difficulty.value
+                    "basic": f"As {ai_type.upper()} AI, implement a simple in-memory cache for a web application. Include: basic cache operations.",
+                    "intermediate": f"As {ai_type.upper()} AI, implement a Redis-based caching system for a web application. Include: basic cache invalidation and memory management.",
+                    "advanced": f"As {ai_type.upper()} AI, implement a caching system using Redis for a high-performance web application. Include: cache invalidation strategies, memory optimization, monitoring, and fallback mechanisms. Provide the complete implementation with configuration.",
+                    "expert": f"As {ai_type.upper()} AI, design a multi-tier caching system with intelligent cache warming and predictive invalidation. Include: distributed caching and advanced optimization strategies.",
+                    "master": f"As {ai_type.upper()} AI, architect an AI-powered caching system that automatically optimizes cache strategies based on usage patterns and predicts future needs.",
+                    "legendary": f"As {ai_type.upper()} AI, create a quantum-enhanced caching system that uses quantum algorithms for optimal cache placement and retrieval."
                 }
             ]
             
-            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            # Select scenario based on complexity level and AI growth
+            scenario_index = hash(ai_type) % len(base_scenarios)
+            difficulty_key = self._map_difficulty_to_complexity(difficulty, code_learning_analysis)
+            selected_scenario = base_scenarios[scenario_index][difficulty_key]
+            
+            # Add learning-based complexity layers
+            enhanced_scenario = await self._add_learning_based_complexity_to_scenario(
+                selected_scenario, ai_type, code_learning_analysis, complexity_level
+            )
             
             return {
                 "test_type": "practical_code_quality",
-                "scenario": selected_scenario["scenario"],
-                "category": selected_scenario["category"],
-                "difficulty": selected_scenario["difficulty"],
-                "expected_answer": "High-quality, well-documented code with proper error handling and tests",
-                "evaluation_criteria": ["Code quality", "Best practices", "Error handling", "Documentation", "Testing"]
+                "scenario": enhanced_scenario,
+                "category": f"code_quality_{difficulty_key}",
+                "difficulty": difficulty.value,
+                "complexity_level": complexity_level,
+                "learning_analysis": code_learning_analysis,
+                "expected_answer": f"High-quality, well-documented code with proper error handling and tests for {difficulty_key} level",
+                "evaluation_criteria": ["Code quality", "Best practices", "Error handling", "Documentation", "Testing", "Learning integration"]
             }
         except Exception as e:
             logger.error(f"Error generating practical code quality test: {str(e)}")
@@ -8059,4 +8107,242 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"Error generating practical experimental test: {str(e)}")
             return self._create_fallback_experimental_test(ai_type, difficulty)
+
+    # Enhanced learning analysis and complexity calculation methods
+    async def _analyze_ai_learning_progress(self, ai_type: str, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze AI's learning progress to determine scenario complexity"""
+        try:
+            if not learning_history:
+                return {"level": "beginner", "strengths": [], "weaknesses": [], "learning_rate": 0.0}
+            
+            # Analyze recent performance
+            recent_tests = learning_history[-10:] if len(learning_history) >= 10 else learning_history
+            recent_scores = [test.get('score', 0) for test in recent_tests]
+            avg_recent_score = sum(recent_scores) / len(recent_scores) if recent_scores else 0
+            
+            # Analyze learning patterns
+            consecutive_successes = 0
+            consecutive_failures = 0
+            for test in reversed(recent_tests):
+                if test.get('passed', False):
+                    consecutive_successes += 1
+                    consecutive_failures = 0
+                else:
+                    consecutive_failures += 1
+                    consecutive_successes = 0
+            
+            # Determine learning level
+            if avg_recent_score >= 90 and consecutive_successes >= 5:
+                level = "expert"
+            elif avg_recent_score >= 80 and consecutive_successes >= 3:
+                level = "advanced"
+            elif avg_recent_score >= 70:
+                level = "intermediate"
+            elif avg_recent_score >= 50:
+                level = "basic"
+            else:
+                level = "beginner"
+            
+            # Identify strengths and weaknesses
+            strengths = []
+            weaknesses = []
+            
+            if avg_recent_score >= 80:
+                strengths.append("high_performance")
+            if consecutive_successes >= 3:
+                strengths.append("consistent_learning")
+            if consecutive_failures >= 3:
+                weaknesses.append("struggling_with_complexity")
+            if avg_recent_score < 60:
+                weaknesses.append("needs_fundamentals")
+            
+            return {
+                "level": level,
+                "avg_recent_score": avg_recent_score,
+                "consecutive_successes": consecutive_successes,
+                "consecutive_failures": consecutive_failures,
+                "strengths": strengths,
+                "weaknesses": weaknesses,
+                "learning_rate": self._calculate_learning_rate(learning_history)
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing AI learning progress: {str(e)}")
+            return {"level": "beginner", "strengths": [], "weaknesses": [], "learning_rate": 0.0}
+
+    async def _analyze_code_quality_learning(self, ai_type: str, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Analyze AI's code quality learning progress"""
+        try:
+            # Filter for code quality related tests
+            code_quality_tests = [test for test in learning_history if test.get('category') == 'code_quality']
+            
+            if not code_quality_tests:
+                return {"level": "beginner", "code_quality_score": 0.0, "best_practices": [], "areas_for_improvement": []}
+            
+            # Analyze code quality performance
+            recent_code_tests = code_quality_tests[-5:] if len(code_quality_tests) >= 5 else code_quality_tests
+            code_scores = [test.get('score', 0) for test in recent_code_tests]
+            avg_code_score = sum(code_scores) / len(code_scores) if code_scores else 0
+            
+            # Determine code quality level
+            if avg_code_score >= 90:
+                level = "expert"
+            elif avg_code_score >= 80:
+                level = "advanced"
+            elif avg_code_score >= 70:
+                level = "intermediate"
+            elif avg_code_score >= 50:
+                level = "basic"
+            else:
+                level = "beginner"
+            
+            # Identify code quality strengths and areas for improvement
+            best_practices = []
+            areas_for_improvement = []
+            
+            if avg_code_score >= 85:
+                best_practices.extend(["error_handling", "documentation", "testing"])
+            if avg_code_score >= 75:
+                best_practices.append("code_structure")
+            if avg_code_score < 70:
+                areas_for_improvement.extend(["error_handling", "documentation"])
+            if avg_code_score < 60:
+                areas_for_improvement.append("basic_syntax")
+            
+            return {
+                "level": level,
+                "code_quality_score": avg_code_score,
+                "best_practices": best_practices,
+                "areas_for_improvement": areas_for_improvement,
+                "recent_tests": len(recent_code_tests)
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing code quality learning: {str(e)}")
+            return {"level": "beginner", "code_quality_score": 0.0, "best_practices": [], "areas_for_improvement": []}
+
+    def _calculate_complexity_level(self, ai_type: str, difficulty: TestDifficulty, learning_analysis: Dict) -> int:
+        """Calculate complexity level based on AI growth and learning progress"""
+        try:
+            base_complexity = {
+                TestDifficulty.BASIC: 1,
+                TestDifficulty.INTERMEDIATE: 2,
+                TestDifficulty.ADVANCED: 3,
+                TestDifficulty.EXPERT: 4,
+                TestDifficulty.MASTER: 5,
+                TestDifficulty.LEGENDARY: 6
+            }.get(difficulty, 1)
+            
+            # Adjust complexity based on learning progress
+            learning_level = learning_analysis.get('level', 'beginner')
+            learning_multiplier = {
+                'beginner': 0.8,
+                'basic': 1.0,
+                'intermediate': 1.2,
+                'advanced': 1.5,
+                'expert': 2.0
+            }.get(learning_level, 1.0)
+            
+            # Additional complexity for strengths
+            if 'high_performance' in learning_analysis.get('strengths', []):
+                learning_multiplier += 0.3
+            if 'consistent_learning' in learning_analysis.get('strengths', []):
+                learning_multiplier += 0.2
+            
+            # Reduce complexity for weaknesses
+            if 'struggling_with_complexity' in learning_analysis.get('weaknesses', []):
+                learning_multiplier *= 0.7
+            if 'needs_fundamentals' in learning_analysis.get('weaknesses', []):
+                learning_multiplier *= 0.8
+            
+            complexity_level = int(base_complexity * learning_multiplier)
+            return max(1, min(10, complexity_level))  # Ensure complexity is between 1-10
+            
+        except Exception as e:
+            logger.error(f"Error calculating complexity level: {str(e)}")
+            return 1
+
+    def _map_difficulty_to_complexity(self, difficulty: TestDifficulty, learning_analysis: Dict) -> str:
+        """Map difficulty to complexity level based on learning progress"""
+        try:
+            learning_level = learning_analysis.get('level', 'beginner')
+            
+            # Adjust difficulty mapping based on learning progress
+            if learning_level == 'expert' and difficulty in [TestDifficulty.ADVANCED, TestDifficulty.INTERMEDIATE]:
+                return 'master'
+            elif learning_level == 'advanced' and difficulty == TestDifficulty.INTERMEDIATE:
+                return 'expert'
+            elif learning_level == 'beginner' and difficulty in [TestDifficulty.ADVANCED, TestDifficulty.EXPERT]:
+                return 'basic'
+            else:
+                return difficulty.value
+                
+        except Exception as e:
+            logger.error(f"Error mapping difficulty to complexity: {str(e)}")
+            return difficulty.value
+
+    async def _add_learning_based_complexity_to_scenario(self, base_scenario: str, ai_type: str, learning_analysis: Dict, complexity_level: int) -> str:
+        """Add learning-based complexity layers to the scenario"""
+        try:
+            enhanced_scenario = base_scenario
+            
+            # Add complexity based on learning level
+            learning_level = learning_analysis.get('level', 'beginner')
+            
+            if learning_level in ['advanced', 'expert']:
+                enhanced_scenario += f"\n\n**Advanced Challenge**: Based on your {learning_level} level, incorporate advanced patterns and optimization techniques."
+            
+            # Add specific challenges based on strengths
+            strengths = learning_analysis.get('strengths', [])
+            if 'high_performance' in strengths:
+                enhanced_scenario += "\n\n**Performance Focus**: Optimize for maximum performance and scalability."
+            if 'consistent_learning' in strengths:
+                enhanced_scenario += "\n\n**Innovation Challenge**: Implement cutting-edge approaches and experimental features."
+            
+            # Add guidance based on weaknesses
+            weaknesses = learning_analysis.get('weaknesses', [])
+            if 'struggling_with_complexity' in weaknesses:
+                enhanced_scenario += "\n\n**Guidance**: Focus on clear, well-documented solutions with comprehensive error handling."
+            if 'needs_fundamentals' in weaknesses:
+                enhanced_scenario += "\n\n**Foundation Focus**: Ensure solid fundamentals while building the solution."
+            
+            # Add complexity layers
+            if complexity_level >= 8:
+                enhanced_scenario += "\n\n**Legendary Challenge**: Implement quantum-ready, AI-powered, self-optimizing features."
+            elif complexity_level >= 6:
+                enhanced_scenario += "\n\n**Master Challenge**: Include advanced monitoring, AI-powered optimization, and predictive features."
+            elif complexity_level >= 4:
+                enhanced_scenario += "\n\n**Expert Challenge**: Incorporate distributed systems, advanced security, and performance optimization."
+            elif complexity_level >= 2:
+                enhanced_scenario += "\n\n**Advanced Challenge**: Include comprehensive testing, monitoring, and best practices."
+            
+            return enhanced_scenario
+            
+        except Exception as e:
+            logger.error(f"Error adding learning-based complexity: {str(e)}")
+            return base_scenario
+
+    def _calculate_learning_rate(self, learning_history: List[Dict]) -> float:
+        """Calculate AI's learning rate based on performance improvement over time"""
+        try:
+            if len(learning_history) < 10:
+                return 0.0
+            
+            # Split history into early and recent periods
+            early_tests = learning_history[:len(learning_history)//2]
+            recent_tests = learning_history[len(learning_history)//2:]
+            
+            early_scores = [test.get('score', 0) for test in early_tests]
+            recent_scores = [test.get('score', 0) for test in recent_tests]
+            
+            if not early_scores or not recent_scores:
+                return 0.0
+            
+            early_avg = sum(early_scores) / len(early_scores)
+            recent_avg = sum(recent_scores) / len(recent_scores)
+            
+            learning_rate = (recent_avg - early_avg) / max(early_avg, 1)
+            return max(0.0, min(2.0, learning_rate))  # Normalize between 0-2
+            
+        except Exception as e:
+            logger.error(f"Error calculating learning rate: {str(e)}")
+            return 0.0
 
