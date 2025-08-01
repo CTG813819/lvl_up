@@ -31,7 +31,7 @@ from sqlalchemy import text
 import logging
 import structlog
 from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
-from app.core.watchdog import start_watchdog
+# from app.core.watchdog import start_watchdog  # Temporarily disabled - psutil not installing properly in Railway
 from app.routers.ai import router as ai_router
 from app.routers.weapons import router as weapons
 from app.services.custody_protocol_service import CustodyProtocolService
