@@ -295,8 +295,8 @@ class CustodyProtocolService:
                 recent_tests = test_history[-5:]  # Last 5 tests
                 recent_performance['recent_scores'] = [test.get('score', 0) for test in recent_tests if 'score' in test]
             
-            # Calculate difficulty with performance-based adjustment
-            difficulty = self._calculate_test_difficulty(ai_level, recent_performance)
+            # Calculate difficulty with performance-based adjustment using current metrics
+            difficulty = await self._calculate_difficulty_from_current_metrics(ai_type, recent_performance)
             logger.info(f"[ADMINISTER TEST] AI level: {ai_level}, Difficulty: {difficulty.value}")
             logger.info(f"[ADMINISTER TEST] Recent performance: consecutive_successes={recent_performance['consecutive_successes']}, consecutive_failures={recent_performance['consecutive_failures']}, pass_rate={recent_performance['pass_rate']:.2f}")
             
@@ -383,6 +383,44 @@ class CustodyProtocolService:
             return adjusted_difficulty
         
         return base_difficulty
+    
+    async def _calculate_difficulty_from_current_metrics(self, ai_type: str, recent_performance: Dict = None) -> TestDifficulty:
+        """Calculate difficulty based on current metrics from database, not AI level"""
+        try:
+            # Get current metrics from database
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            if not custody_metrics:
+                # If no metrics exist, use AI level as fallback
+                ai_level = await self._get_ai_level(ai_type)
+                return self._get_base_difficulty_from_level(ai_level)
+            
+            # Get current difficulty from database
+            current_difficulty_str = custody_metrics.get('current_difficulty', 'basic')
+            
+            # Convert string to TestDifficulty enum
+            difficulty_mapping = {
+                'basic': TestDifficulty.BASIC,
+                'intermediate': TestDifficulty.INTERMEDIATE,
+                'advanced': TestDifficulty.ADVANCED,
+                'expert': TestDifficulty.EXPERT,
+                'master': TestDifficulty.MASTER,
+                'legendary': TestDifficulty.LEGENDARY
+            }
+            
+            current_difficulty = difficulty_mapping.get(current_difficulty_str, TestDifficulty.BASIC)
+            
+            # Apply performance-based adjustments to current difficulty
+            if recent_performance:
+                adjusted_difficulty = self._adjust_difficulty_based_on_performance(current_difficulty, recent_performance)
+                return adjusted_difficulty
+            
+            return current_difficulty
+            
+        except Exception as e:
+            logger.error(f"Error calculating difficulty from current metrics: {str(e)}")
+            # Fallback to AI level calculation
+            ai_level = await self._get_ai_level(ai_type)
+            return self._get_base_difficulty_from_level(ai_level)
     
     def _get_base_difficulty_from_level(self, ai_level: int) -> TestDifficulty:
         """Get base difficulty from AI level"""
@@ -2409,6 +2447,12 @@ Consider the learning objectives and previous areas of difficulty when formulati
                         "difficulty": test_result.get("difficulty", "unknown"),
                         "complexity_layers": test_result.get("complexity_layers", 1)
                     }
+                
+                # Ensure difficulty is properly set from test result
+                if test_result.get("difficulty"):
+                    test_history_entry["difficulty"] = test_result["difficulty"]
+                elif test_result.get("test_difficulty"):
+                    test_history_entry["difficulty"] = test_result["test_difficulty"]
                 metrics["test_history"].append(test_history_entry)
                 logger.info(f"[CUSTODY METRICS] Added test history entry: {json.dumps(test_history_entry, default=str, ensure_ascii=False)}")
             
@@ -2426,9 +2470,8 @@ Consider the learning objectives and previous areas of difficulty when formulati
                 metrics["custody_level"] = new_level
                 logger.info(f"[CUSTODY METRICS] {ai_type} AI custody level increased to {new_level} (required 3 consecutive passes)")
             
-            # Calculate new dynamic difficulty based on performance
-            ai_level = await self._get_ai_level(ai_type)
-            new_difficulty = self._calculate_test_difficulty(ai_level, performance_data)
+            # Calculate new dynamic difficulty based on performance using current metrics
+            new_difficulty = await self._calculate_difficulty_from_current_metrics(ai_type, performance_data)
             
             # Update difficulty multiplier and complexity layers
             new_multiplier = self._get_difficulty_multiplier(new_difficulty)
@@ -2441,6 +2484,9 @@ Consider the learning objectives and previous areas of difficulty when formulati
             
             logger.info(f"[CUSTODY METRICS] Updated difficulty to: {new_difficulty.value} (multiplier: {new_multiplier:.2f}, layers: {complexity_layers})")
             logger.info(f"[CUSTODY METRICS] Final metrics after update: {json.dumps(metrics, default=str, ensure_ascii=False)}")
+            
+            # Ensure XP is properly saved
+            metrics["xp"] = metrics.get("custody_xp", 0)  # Ensure XP field is set
             await self.agent_metrics_service.create_or_update_agent_metrics(ai_type, metrics)
             logger.info(f"[CUSTODY METRICS] Successfully persisted metrics to database for {ai_type}")
             
