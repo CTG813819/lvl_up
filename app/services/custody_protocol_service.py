@@ -447,23 +447,23 @@ class CustodyProtocolService:
             
             logger.info(f"[DIFFICULTY ADJUSTMENT] Base difficulty: {base_difficulty.value}, consecutive_failures: {consecutive_failures}, consecutive_successes: {consecutive_successes}")
             
-            # More aggressive difficulty adjustment for consecutive failures
-            if consecutive_failures >= 20:
+            # CRITICAL FIX: More aggressive difficulty reduction for consecutive failures
+            if consecutive_failures >= 10:
                 # AI is failing consistently for a very long time - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
-            elif consecutive_failures >= 10:
-                # AI is failing consistently for a long time - force to BASIC
-                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
-                return TestDifficulty.BASIC
             elif consecutive_failures >= 5:
-                # AI is failing consistently - force to BASIC
+                # AI is failing consistently for a long time - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
             elif consecutive_failures >= 3:
                 # AI is struggling - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
+            elif consecutive_failures >= 1:
+                # AI just failed - reduce difficulty
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Reducing difficulty due to {consecutive_failures} consecutive failures")
+                return self._decrease_difficulty(base_difficulty, 1)
             
             # Difficulty progression based on consecutive successes
             if consecutive_successes >= 5:
@@ -492,7 +492,7 @@ class CustodyProtocolService:
             
         except Exception as e:
             logger.error(f"Error adjusting difficulty based on performance: {str(e)}")
-            return base_difficulty
+            return TestDifficulty.BASIC  # Always fallback to BASIC on error
     
     def _increase_difficulty(self, current_difficulty: TestDifficulty, levels: int) -> TestDifficulty:
         """Increase difficulty by specified number of levels with unlimited scaling"""
@@ -611,13 +611,18 @@ class CustodyProtocolService:
             custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
             
             # Check if we should use real-world tests (for AIs with poor performance)
-            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
+            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 3:
                 logger.info(f"🎯 Using real-world test for {ai_type} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
                 return await self._generate_real_world_test(ai_type, difficulty, category, learning_history)
             
             # Calculate complexity based on difficulty multiplier
             difficulty_multiplier = self._get_difficulty_multiplier(difficulty)
             complexity_layers = max(1, int(difficulty_multiplier))
+            
+            # CRITICAL FIX: Reduce complexity for failing AIs
+            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
+                complexity_layers = 1  # Force single layer for failing AIs
+                logger.info(f"🎯 Forcing single complexity layer for {ai_type} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
             
             logger.info(f"🎯 Difficulty multiplier: {difficulty_multiplier:.2f}, Complexity layers: {complexity_layers}")
             
@@ -2004,6 +2009,12 @@ Please respond to the above scenario with your {ai_type} expertise:
                 threshold = 90
                 logger.info(f"[CUSTODY TEST] Using fixed threshold: {threshold}")
             
+            # CRITICAL FIX: Lower threshold for failing AIs
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
+                threshold = max(50, threshold - 20)  # Lower threshold by 20 points, minimum 50
+                logger.info(f"[CUSTODY TEST] Lowered threshold for {ai_type} to {threshold} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
+            
             passed = score >= threshold
             logger.info(f"[CUSTODY TEST] Pass result: {passed} (score: {score}, threshold: {threshold})")
             end_time = datetime.utcnow()
@@ -2539,6 +2550,11 @@ Consider the learning objectives and previous areas of difficulty when formulati
             
             # Calculate new dynamic difficulty based on performance using current metrics
             new_difficulty = await self._calculate_difficulty_from_current_metrics(ai_type, performance_data)
+            
+            # CRITICAL FIX: Force BASIC difficulty for AIs with excessive failures
+            if metrics.get('consecutive_failures', 0) >= 20:
+                new_difficulty = TestDifficulty.BASIC
+                logger.info(f"[CUSTODY METRICS] Forcing BASIC difficulty for {ai_type} due to {metrics.get('consecutive_failures', 0)} consecutive failures")
             
             # Update difficulty multiplier and complexity layers
             new_multiplier = self._get_difficulty_multiplier(new_difficulty)
