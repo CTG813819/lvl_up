@@ -311,8 +311,8 @@ class SelfGeneratingAIService:
             # Generate response using the AI's response generator
             response_generator = self._ai_models[ai_type]['response_generator']
             
-            # For now, use a template-based approach with ML enhancement
-            response = await self._generate_template_response(ai_type, prompt, features, personality, knowledge_base)
+            # Generate unique AI response instead of templates
+            response = await self._generate_unique_ai_response(ai_type, prompt, personality, knowledge_base)
             
             # Apply dynamic sampling and diversity enhancement
             response = await self._apply_dynamic_sampling(response, ai_type, prompt, personality)

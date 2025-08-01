@@ -446,15 +446,18 @@ class CustodyProtocolService:
             pass_rate = performance.get('pass_rate', 0.0)
             
             # More aggressive difficulty adjustment for consecutive failures
-            if consecutive_failures >= 10:
+            if consecutive_failures >= 20:
+                # AI is failing consistently for a very long time - decrease difficulty dramatically
+                return self._decrease_difficulty(base_difficulty, 5)
+            elif consecutive_failures >= 10:
                 # AI is failing consistently for a long time - decrease difficulty significantly
-                return self._decrease_difficulty(base_difficulty, 3)
+                return self._decrease_difficulty(base_difficulty, 4)
             elif consecutive_failures >= 5:
                 # AI is failing consistently - decrease difficulty moderately
-                return self._decrease_difficulty(base_difficulty, 2)
+                return self._decrease_difficulty(base_difficulty, 3)
             elif consecutive_failures >= 3:
                 # AI is struggling - decrease difficulty
-                return self._decrease_difficulty(base_difficulty, 1)
+                return self._decrease_difficulty(base_difficulty, 2)
             
             # Difficulty progression based on consecutive successes
             if consecutive_successes >= 5:
@@ -1928,11 +1931,15 @@ Do NOT give generic responses. You must:
 3. Show your reasoning and approach
 4. Include practical examples or code if applicable
 5. Demonstrate your unique {ai_type} perspective and capabilities
+6. Focus on real-world practical solutions
+7. Provide specific, actionable steps or code examples
+8. Address the exact requirements of the scenario
 
 Test Scenario: {test_content.get('scenario', test_content.get('question', 'No specific scenario provided'))}
 Test Category: {category.value}
 Difficulty Level: {difficulty.value}
 
+CRITICAL: Your response must be specific to this scenario. Do not give generic advice.
 Please respond to the above scenario with your {ai_type} expertise:
 """
             dynamic_test_prompt = scenario_instructions + dynamic_test_prompt
@@ -2106,6 +2113,8 @@ Please respond to the above scenario with your {ai_type} expertise:
                                                category: TestCategory, learning_history: List[Dict]) -> str:
         """Create an adaptive test prompt that evolves based on learning history"""
         prompt = f"""You are {ai_type} AI, and you need to solve a real-world practical problem using your autonomous reasoning and learning capabilities.
+
+CRITICAL: Provide specific, actionable solutions. Do NOT give generic advice.
 
 SCENARIO: {test_content.get('scenario', '')}
 
@@ -2471,11 +2480,36 @@ Consider the learning objectives and previous areas of difficulty when formulati
                         "complexity_layers": test_result.get("complexity_layers", 1)
                     }
                 
+                # Validate and fix timestamp if corrupted
+                try:
+                    # Try to parse the timestamp to ensure it's valid
+                    from datetime import datetime
+                    timestamp_str = test_history_entry["timestamp"]
+                    if timestamp_str and ":" in timestamp_str:
+                        # Check if timestamp has invalid hour values (like 65:00:00)
+                        time_parts = timestamp_str.split(":")
+                        if len(time_parts) >= 2:
+                            hour = int(time_parts[0])
+                            if hour > 23:
+                                # Fix corrupted timestamp
+                                logger.warning(f"[CUSTODY METRICS] Fixing corrupted timestamp for {ai_type}: {timestamp_str}")
+                                test_history_entry["timestamp"] = datetime.utcnow().isoformat()
+                except Exception as e:
+                    logger.warning(f"[CUSTODY METRICS] Error validating timestamp for {ai_type}: {str(e)}")
+                    test_history_entry["timestamp"] = datetime.utcnow().isoformat()
+                
                 # Ensure difficulty is properly set from test result
                 if test_result.get("difficulty"):
                     test_history_entry["difficulty"] = test_result["difficulty"]
+                    logger.info(f"[CUSTODY METRICS] Set difficulty from test_result['difficulty']: {test_result['difficulty']}")
                 elif test_result.get("test_difficulty"):
                     test_history_entry["difficulty"] = test_result["test_difficulty"]
+                    logger.info(f"[CUSTODY METRICS] Set difficulty from test_result['test_difficulty']: {test_result['test_difficulty']}")
+                else:
+                    # Log the test result to debug what's available
+                    logger.warning(f"[CUSTODY METRICS] No difficulty found in test_result for {ai_type}. Available keys: {list(test_result.keys())}")
+                    logger.warning(f"[CUSTODY METRICS] Full test_result for {ai_type}: {json.dumps(test_result, default=str, ensure_ascii=False)}")
+                    test_history_entry["difficulty"] = "unknown"
                 metrics["test_history"].append(test_history_entry)
                 logger.info(f"[CUSTODY METRICS] Added test history entry: {json.dumps(test_history_entry, default=str, ensure_ascii=False)}")
             
@@ -2510,6 +2544,7 @@ Consider the learning objectives and previous areas of difficulty when formulati
             
             # Ensure XP is properly saved
             metrics["xp"] = metrics.get("custody_xp", 0)  # Ensure XP field is set
+            logger.info(f"[CUSTODY METRICS] Final XP for {ai_type}: {metrics['xp']} (custody_xp: {metrics.get('custody_xp', 0)})")
             await self.agent_metrics_service.create_or_update_agent_metrics(ai_type, metrics)
             logger.info(f"[CUSTODY METRICS] Successfully persisted metrics to database for {ai_type}")
             
