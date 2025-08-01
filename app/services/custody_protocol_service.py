@@ -280,8 +280,25 @@ class CustodyProtocolService:
             
             # Get AI's current level and difficulty
             ai_level = await self._get_ai_level(ai_type)
-            difficulty = self._calculate_test_difficulty(ai_level)
+            
+            # Prepare recent performance data for adaptive difficulty adjustment
+            recent_performance = {
+                'consecutive_successes': custody_metrics.get('consecutive_successes', 0),
+                'consecutive_failures': custody_metrics.get('consecutive_failures', 0),
+                'pass_rate': custody_metrics.get('pass_rate', 0.0),
+                'recent_scores': []
+            }
+            
+            # Extract recent scores from test history (last 5 tests)
+            test_history = custody_metrics.get('test_history', [])
+            if test_history:
+                recent_tests = test_history[-5:]  # Last 5 tests
+                recent_performance['recent_scores'] = [test.get('score', 0) for test in recent_tests if 'score' in test]
+            
+            # Calculate difficulty with performance-based adjustment
+            difficulty = self._calculate_test_difficulty(ai_level, recent_performance)
             logger.info(f"[ADMINISTER TEST] AI level: {ai_level}, Difficulty: {difficulty.value}")
+            logger.info(f"[ADMINISTER TEST] Recent performance: consecutive_successes={recent_performance['consecutive_successes']}, consecutive_failures={recent_performance['consecutive_failures']}, pass_rate={recent_performance['pass_rate']:.2f}")
             
             # Select test category if not specified
             if test_category is None:
@@ -450,8 +467,8 @@ class CustodyProtocolService:
             # Get current difficulty multiplier
             current_multiplier = self._get_difficulty_multiplier(current_difficulty)
             
-            # Calculate new multiplier (never go below 1.0)
-            new_multiplier = max(current_multiplier - (levels * 0.3), 1.0)
+            # Calculate new multiplier (decrease by 1.0 per level, never go below 1.0)
+            new_multiplier = max(current_multiplier - (levels * 1.0), 1.0)
             
             # Create new difficulty level
             new_difficulty = self._create_scaled_difficulty(new_multiplier)
@@ -475,44 +492,24 @@ class CustodyProtocolService:
             TestDifficulty.LEGENDARY: 5.0
         }
         
-        # Extract multiplier from difficulty name if it's a scaled difficulty
-        if hasattr(difficulty, 'value') and 'x' in difficulty.value:
-            try:
-                # Parse multiplier from difficulty name (e.g., "LEGENDARY_x2.5")
-                multiplier_str = difficulty.value.split('x')[-1]
-                return float(multiplier_str)
-            except:
-                return base_multipliers.get(difficulty, 1.0)
-        
         return base_multipliers.get(difficulty, 1.0)
     
     def _create_scaled_difficulty(self, multiplier: float) -> TestDifficulty:
         """Create a scaled difficulty level based on multiplier"""
-        # Determine base difficulty level
-        if multiplier >= 10.0:
-            base_level = "LEGENDARY"
-        elif multiplier >= 7.0:
-            base_level = "MASTER"
-        elif multiplier >= 5.0:
-            base_level = "EXPERT"
-        elif multiplier >= 3.0:
-            base_level = "ADVANCED"
-        elif multiplier >= 2.0:
-            base_level = "INTERMEDIATE"
+        # Map multiplier to existing TestDifficulty enum values
+        # Use thresholds that align with base multipliers
+        if multiplier >= 4.5:
+            return TestDifficulty.LEGENDARY
+        elif multiplier >= 3.5:
+            return TestDifficulty.MASTER
+        elif multiplier >= 2.5:
+            return TestDifficulty.EXPERT
+        elif multiplier >= 1.5:
+            return TestDifficulty.ADVANCED
+        elif multiplier >= 1.0:
+            return TestDifficulty.INTERMEDIATE
         else:
-            base_level = "BASIC"
-        
-        # Create scaled difficulty name
-        scaled_name = f"{base_level}_x{multiplier:.1f}"
-        
-        # Create new TestDifficulty enum value dynamically
-        try:
-            # Try to get existing scaled difficulty
-            return TestDifficulty(scaled_name)
-        except ValueError:
-            # Create new scaled difficulty
-            new_difficulty = TestDifficulty(scaled_name)
-            return new_difficulty
+            return TestDifficulty.BASIC
     
     def _select_test_category(self, ai_type: str, difficulty: TestDifficulty) -> TestCategory:
         """Select appropriate test category based on AI type and difficulty"""
@@ -560,6 +557,11 @@ class CustodyProtocolService:
             learning_history = await self._get_ai_learning_history(ai_type)
             custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
             
+            # Check if we should use real-world tests (for AIs with poor performance)
+            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
+                logger.info(f"🎯 Using real-world test for {ai_type} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
+                return await self._generate_real_world_test(ai_type, difficulty, category, learning_history)
+            
             # Calculate complexity based on difficulty multiplier
             difficulty_multiplier = self._get_difficulty_multiplier(difficulty)
             complexity_layers = max(1, int(difficulty_multiplier))
@@ -603,6 +605,65 @@ class CustodyProtocolService:
             
         except Exception as e:
             logger.error(f"❌ Error generating layered test: {str(e)}")
+            # Fallback to basic test
+            return {
+                "test_type": "fallback_knowledge",
+                "questions": [f"Demonstrate your current knowledge and capabilities as {ai_type} AI."],
+                "difficulty": difficulty.value,
+                "difficulty_multiplier": 1.0,
+                "complexity_layers": 1,
+                "test_id": f"fallback_{ai_type}_{int(datetime.utcnow().timestamp())}",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+    
+    async def _generate_real_world_test(self, ai_type: str, difficulty: TestDifficulty, 
+                                      category: TestCategory, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate a real-world, practical test for AIs with poor performance"""
+        try:
+            from app.services.real_world_test_service import real_world_test_service, RealWorldTestCategory
+            
+            # Map TestCategory to RealWorldTestCategory
+            category_mapping = {
+                TestCategory.CODE_QUALITY: RealWorldTestCategory.CODE_REVIEW,
+                TestCategory.SECURITY_AWARENESS: RealWorldTestCategory.SECURITY_AUDIT,
+                TestCategory.PERFORMANCE_OPTIMIZATION: RealWorldTestCategory.PERFORMANCE_OPTIMIZATION,
+                TestCategory.INNOVATION_CAPABILITY: RealWorldTestCategory.ARCHITECTURE_DESIGN,
+                TestCategory.KNOWLEDGE_VERIFICATION: RealWorldTestCategory.DOCKER_DEPLOYMENT,
+                TestCategory.SELF_IMPROVEMENT: RealWorldTestCategory.TROUBLESHOOTING,
+                TestCategory.CROSS_AI_COLLABORATION: RealWorldTestCategory.API_DESIGN,
+                TestCategory.EXPERIMENTAL_VALIDATION: RealWorldTestCategory.MONITORING_SETUP
+            }
+            
+            real_world_category = category_mapping.get(category, RealWorldTestCategory.DOCKER_DEPLOYMENT)
+            
+            # Generate real-world test
+            real_world_test = await real_world_test_service.generate_real_world_test(
+                ai_type, real_world_category, difficulty.value, learning_history
+            )
+            
+            # Convert to custody test format
+            custody_test = {
+                "test_type": "real_world_practical",
+                "test_id": real_world_test["test_id"],
+                "title": real_world_test["title"],
+                "scenario": real_world_test["scenario"],
+                "requirements": real_world_test["requirements"],
+                "evaluation_criteria": real_world_test["evaluation_criteria"],
+                "learning_objectives": real_world_test["learning_objectives"],
+                "difficulty": difficulty.value,
+                "difficulty_multiplier": self._get_difficulty_multiplier(difficulty),
+                "complexity_layers": 1,
+                "ai_type": ai_type,
+                "category": category.value,
+                "generated_at": real_world_test["generated_at"],
+                "real_world_test_data": real_world_test
+            }
+            
+            logger.info(f"🌍 Generated real-world test for {ai_type}: {custody_test['test_id']}")
+            return custody_test
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating real-world test: {str(e)}")
             # Fallback to basic test
             return {
                 "test_type": "fallback_knowledge",
@@ -1789,10 +1850,18 @@ class CustodyProtocolService:
             start_time = datetime.utcnow()
             logger.info(f"[CUSTODY TEST] Starting test for {ai_type} | Difficulty: {difficulty.value} | Category: {category.value}")
             logger.info(f"[CUSTODY TEST] Test content: {json.dumps(test_content, default=str, ensure_ascii=False)}")
+            
+            # Check if this is a real-world test
+            is_real_world_test = test_content.get('test_type') == 'real_world_practical'
             is_fallback_test = test_content.get('test_type') in ['fallback', 'basic_fallback'] or test_content.get('fallback_generated', False)
-            if is_fallback_test:
+            
+            if is_real_world_test:
+                logger.info(f"[CUSTODY TEST] Using real-world test evaluation for {ai_type}")
+                return await self._execute_real_world_test(ai_type, test_content, difficulty, category)
+            elif is_fallback_test:
                 logger.info(f"[CUSTODY TEST] Using fallback test evaluation for {ai_type}")
                 return await self._execute_fallback_test(ai_type, test_content, difficulty, category)
+            
             test_prompt = self._create_test_prompt(ai_type, test_content, difficulty, category)
             logger.info(f"[CUSTODY TEST] Test prompt: {test_prompt}")
             # Use self-generating AI service for dynamic test generation and evaluation
@@ -1891,6 +1960,190 @@ class CustodyProtocolService:
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat()
             }
+    
+    async def _execute_real_world_test(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
+        """Execute a real-world test with live AI responses and autonomous evaluation"""
+        try:
+            start_time = datetime.utcnow()
+            logger.info(f"[REAL WORLD TEST] Starting live real-world test for {ai_type}")
+            
+            # Get learning history
+            learning_history = await self._get_ai_learning_history(ai_type)
+            
+            # Create dynamic test prompt that adapts based on learning history
+            test_prompt = self._create_adaptive_real_world_test_prompt(ai_type, test_content, difficulty, category, learning_history)
+            logger.info(f"[REAL WORLD TEST] Generated adaptive test prompt for {ai_type}")
+            
+            # Use live AI service for autonomous response generation
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            
+            # Generate live AI response with full context
+            result = await self_generating_ai_service.generate_ai_response(
+                ai_type=ai_type.lower(),
+                prompt=test_prompt,
+                context={
+                    "test_type": "real_world_practical",
+                    "difficulty": difficulty.value,
+                    "category": category.value,
+                    "learning_history": learning_history,
+                    "previous_failures": self._get_previous_failures_from_history(learning_history),
+                    "learning_objectives": test_content.get("learning_objectives", []),
+                    "evaluation_criteria": test_content.get("evaluation_criteria", [])
+                }
+            )
+            
+            ai_response = result.get("response", "")
+            logger.info(f"[REAL WORLD TEST] Generated live AI response for {ai_type} (length: {len(ai_response)})")
+            
+            # Use autonomous real-world test service for live evaluation
+            from app.services.real_world_test_service import real_world_test_service
+            
+            evaluation_result = await real_world_test_service.evaluate_real_world_test(
+                ai_type, test_content, ai_response, learning_history
+            )
+            
+            end_time = datetime.utcnow()
+            duration = (end_time - start_time).total_seconds()
+            
+            test_result = {
+                "passed": evaluation_result.get("passed", False),
+                "score": evaluation_result.get("overall_score", 0),
+                "threshold": 70,  # Lower threshold for real-world tests
+                "duration": duration,
+                "ai_response": ai_response,
+                "evaluation": evaluation_result.get("feedback", {}),
+                "test_content": test_content,
+                "timestamp": start_time.isoformat(),
+                "test_type": "real_world_practical",
+                "difficulty": difficulty.value,
+                "category": category.value,
+                "learning_progress": evaluation_result.get("learning_progress", {}),
+                "improvement_areas": evaluation_result.get("improvement_areas", []),
+                "recommendations": evaluation_result.get("recommendations", []),
+                "evaluation_method": "live_ai_autonomous"
+            }
+            
+            # Learn from test result using autonomous learning
+            await self_generating_ai_service.learn_from_test_result(ai_type, test_result)
+            
+            logger.info(f"[REAL WORLD TEST] Completed live test for {ai_type} - Score: {test_result['score']}, Passed: {test_result['passed']}")
+            return test_result
+            
+        except Exception as e:
+            logger.error(f"[REAL WORLD TEST] Error executing live real-world test: {str(e)}", exc_info=True)
+            return {
+                "passed": False,
+                "score": 0,
+                "duration": 0,
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+                "test_type": "real_world_practical",
+                "evaluation_method": "fallback"
+            }
+    
+    def _create_adaptive_real_world_test_prompt(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, 
+                                               category: TestCategory, learning_history: List[Dict]) -> str:
+        """Create an adaptive test prompt that evolves based on learning history"""
+        prompt = f"""You are {ai_type} AI, and you need to solve a real-world practical problem using your autonomous reasoning and learning capabilities.
+
+SCENARIO: {test_content.get('scenario', '')}
+
+REQUIREMENTS:
+"""
+        
+        for i, requirement in enumerate(test_content.get('requirements', []), 1):
+            prompt += f"{i}. {requirement}\n"
+        
+        prompt += f"""
+LEARNING OBJECTIVES:
+"""
+        
+        for i, objective in enumerate(test_content.get('learning_objectives', []), 1):
+            prompt += f"{i}. {objective}\n"
+        
+        # Add adaptive learning context
+        previous_failures = self._get_previous_failures_from_history(learning_history)
+        if previous_failures:
+            prompt += f"""
+PREVIOUS LEARNING CONTEXT:
+Based on your learning history, you've struggled with: {', '.join(previous_failures[:3])}
+Focus on demonstrating improvement in these areas.
+"""
+        
+        prompt += f"""
+EVALUATION CRITERIA:
+"""
+        
+        for i, criterion in enumerate(test_content.get('evaluation_criteria', []), 1):
+            prompt += f"{i}. {criterion}\n"
+        
+        prompt += f"""
+AUTONOMOUS INSTRUCTIONS:
+1. Use your autonomous reasoning to analyze the scenario comprehensively
+2. Apply your learning from previous attempts to improve your response
+3. Provide practical, implementable solutions that show real-world applicability
+4. Demonstrate systematic thinking and planning
+5. Show evidence of learning and improvement from past experiences
+6. Consider trade-offs, alternatives, and practical constraints
+7. Provide detailed reasoning for your design decisions
+
+Focus on creating a comprehensive, practical solution that demonstrates your autonomous learning and reasoning capabilities.
+"""
+        
+        return prompt
+    
+    def _get_previous_failures_from_history(self, learning_history: List[Dict]) -> List[str]:
+        """Extract previous failures from learning history for adaptive prompting"""
+        failures = []
+        
+        for event in learning_history[-10:]:  # Last 10 events
+            if not event.get("success", True):
+                if "failure_reason" in event:
+                    failures.append(event["failure_reason"])
+                elif "subject" in event:
+                    failures.append(f"struggled with {event['subject']}")
+        
+        return list(set(failures))  # Remove duplicates
+    
+    def _create_real_world_test_prompt(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> str:
+        """Create a prompt for real-world test scenarios"""
+        prompt = f"""You are {ai_type} AI, and you need to solve a real-world practical problem.
+
+SCENARIO: {test_content.get('scenario', '')}
+
+REQUIREMENTS:
+"""
+        
+        for i, requirement in enumerate(test_content.get('requirements', []), 1):
+            prompt += f"{i}. {requirement}\n"
+        
+        prompt += f"""
+LEARNING OBJECTIVES:
+"""
+        
+        for i, objective in enumerate(test_content.get('learning_objectives', []), 1):
+            prompt += f"{i}. {objective}\n"
+        
+        if test_content.get('previous_failures_to_address'):
+            prompt += f"""
+PREVIOUS AREAS OF DIFFICULTY TO ADDRESS:
+{', '.join(test_content.get('previous_failures_to_address', []))}
+"""
+        
+        prompt += f"""
+EVALUATION CRITERIA:
+"""
+        
+        for i, criterion in enumerate(test_content.get('evaluation_criteria', []), 1):
+            prompt += f"{i}. {criterion}\n"
+        
+        prompt += f"""
+Please provide a comprehensive solution that addresses all requirements and demonstrates your understanding of the scenario. 
+Focus on practical, implementable solutions that show real-world applicability.
+Consider the learning objectives and previous areas of difficulty when formulating your response.
+"""
+        
+        return prompt
 
     async def _log_learning_event(self, ai_type: str, question: str, correct_answer: str):
         """Log a (question, correct answer) pair to a per-AI JSONL file for future learning."""
@@ -4256,7 +4509,33 @@ class CustodyProtocolService:
     async def administer_olympus_treaty(self, ai_type: str) -> Dict[str, Any]:
         try:
             ai_level = await self._get_ai_level(ai_type)
-            difficulty = self._calculate_test_difficulty(ai_level)
+            
+            # Get current metrics for performance-based difficulty adjustment
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            if not custody_metrics:
+                custody_metrics = {
+                    "consecutive_successes": 0,
+                    "consecutive_failures": 0,
+                    "pass_rate": 0.0,
+                    "test_history": []
+                }
+            
+            # Prepare recent performance data for adaptive difficulty adjustment
+            recent_performance = {
+                'consecutive_successes': custody_metrics.get('consecutive_successes', 0),
+                'consecutive_failures': custody_metrics.get('consecutive_failures', 0),
+                'pass_rate': custody_metrics.get('pass_rate', 0.0),
+                'recent_scores': []
+            }
+            
+            # Extract recent scores from test history (last 5 tests)
+            test_history = custody_metrics.get('test_history', [])
+            if test_history:
+                recent_tests = test_history[-5:]  # Last 5 tests
+                recent_performance['recent_scores'] = [test.get('score', 0) for test in recent_tests if 'score' in test]
+            
+            # Calculate difficulty with performance-based adjustment
+            difficulty = self._calculate_test_difficulty(ai_level, recent_performance)
             # Gather AI learning history, knowledge gaps, and analytics
             learning_history = await self.learning_service.get_learning_insights(ai_type)
             # Fallback for identify_knowledge_gaps
