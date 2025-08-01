@@ -37,7 +37,7 @@ from ..core.config import settings
 from .testing_service import TestingService
 from .ai_learning_service import AILearningService
 from .ai_growth_service import AIGrowthService
-from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
+# Removed external API imports - using internal AI agents instead
 from app.services.sckipit_service import SckipitService
 from app.services.unified_ai_service_shared import unified_ai_service_shared
 from app.services.self_generating_ai_service import self_generating_ai_service
@@ -3527,7 +3527,14 @@ Consider the learning objectives and previous areas of difficulty when formulati
             Provide a comprehensive summary of what should be known about this subject in 2024.
             """
             
-            summary = await anthropic_rate_limited_call(summary_prompt, ai_name="custody_protocol")
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            summary_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for summarization
+                prompt=summary_prompt,
+                context={"task": "knowledge_summarization"}
+            )
+            summary = summary_result.get("response", "Knowledge summary unavailable")
             return summary
             
         except Exception as e:
@@ -3593,7 +3600,14 @@ Consider the learning objectives and previous areas of difficulty when formulati
                     Format as JSON array of question objects with 'question' and 'expected_answer' fields.
                     """
                     
-                    response = await anthropic_rate_limited_call(question_prompt, ai_name="custody_protocol")
+                    # Use internal AI agent instead of external API
+                    from app.services.self_generating_ai_service import self_generating_ai_service
+                    response_result = await self_generating_ai_service.generate_ai_response(
+                        ai_type="imperium",  # Use imperium for question generation
+                        prompt=question_prompt,
+                        context={"task": "question_generation", "question_type": question_type}
+                    )
+                    response = response_result.get("response", "")
                     
                     # Parse response and extract questions
                     try:

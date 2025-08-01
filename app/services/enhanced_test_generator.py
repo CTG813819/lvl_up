@@ -33,7 +33,7 @@ from sqlalchemy import text
 
 from ..core.database import get_session
 from ..core.config import settings
-from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
+# Removed external API imports - using internal AI agents instead
 from app.services.unified_ai_service_shared import unified_ai_service_shared
 from app.models.sql_models import CustodyTestResult, InternetKnowledge, AIResponse
 
@@ -1495,12 +1495,14 @@ echo "Scenario validation completed successfully!"
         prompt = self._create_language_code_prompt(language, scenario, ai_knowledge)
         
         try:
-            # Generate code using LLM
-            code_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            code_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for code generation
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=4000
+                context={"task": "code_generation", "language": language}
             )
+            code_response = code_result.get("response", "")
             
             # Parse and structure the response
             structured_code = self._parse_code_response(code_response, language)
@@ -1684,12 +1686,14 @@ Format your response as JSON:
 """
         
         try:
-            # Generate architecture design using LLM
-            architecture_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            architecture_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for architecture design
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=3000
+                context={"task": "architecture_design"}
             )
+            architecture_response = architecture_result.get("response", "")
             
             # Parse architecture response
             return self._parse_architecture_response(architecture_response)
@@ -1756,11 +1760,14 @@ Format as JSON:
 """
         
         try:
-            doc_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            doc_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for documentation
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=2000
+                context={"task": "documentation_generation"}
             )
+            doc_response = doc_result.get("response", "")
             
             return self._parse_documentation_response(doc_response)
             
@@ -1822,11 +1829,14 @@ Format as JSON:
 """
         
         try:
-            test_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            test_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for testing strategy
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "testing_strategy"}
             )
+            test_response = test_result.get("response", "")
             
             return self._parse_testing_response(test_response)
             
@@ -1888,11 +1898,14 @@ Format as JSON:
 """
         
         try:
-            deploy_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            deploy_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for deployment strategy
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "deployment_strategy"}
             )
+            deploy_response = deploy_result.get("response", "")
             
             return self._parse_deployment_response(deploy_response)
             
@@ -1958,11 +1971,14 @@ Format as JSON:
 """
         
         try:
-            security_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            security_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="guardian",  # Use guardian for security measures
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "security_measures"}
             )
+            security_response = security_result.get("response", "")
             
             return self._parse_security_response(security_response)
             
@@ -2026,11 +2042,14 @@ Format as JSON:
 """
         
         try:
-            perf_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            perf_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for performance optimization
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "performance_optimization"}
             )
+            perf_response = perf_result.get("response", "")
             
             return self._parse_performance_response(perf_response)
             
@@ -2239,11 +2258,12 @@ Format as JSON:
     async def _check_claude_tokens_available(self) -> bool:
         """Check if Claude tokens are available for LLM calls"""
         try:
-            # Try a minimal call to check token availability
-            test_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            test_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",
                 prompt="Test",
-                ai_name="enhanced_test_generator",
-                max_tokens=10
+                context={"task": "token_check"}
             )
             return True
         except Exception as e:
