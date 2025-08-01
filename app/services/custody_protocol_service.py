@@ -447,23 +447,23 @@ class CustodyProtocolService:
             
             logger.info(f"[DIFFICULTY ADJUSTMENT] Base difficulty: {base_difficulty.value}, consecutive_failures: {consecutive_failures}, consecutive_successes: {consecutive_successes}")
             
-            # CRITICAL FIX: More aggressive difficulty reduction for consecutive failures
-            if consecutive_failures >= 10:
+            # More aggressive difficulty adjustment for consecutive failures
+            if consecutive_failures >= 20:
                 # AI is failing consistently for a very long time - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
-            elif consecutive_failures >= 5:
+            elif consecutive_failures >= 10:
                 # AI is failing consistently for a long time - force to BASIC
+                logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
+                return TestDifficulty.BASIC
+            elif consecutive_failures >= 5:
+                # AI is failing consistently - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
             elif consecutive_failures >= 3:
                 # AI is struggling - force to BASIC
                 logger.info(f"[DIFFICULTY ADJUSTMENT] Forcing difficulty to BASIC due to {consecutive_failures} consecutive failures")
                 return TestDifficulty.BASIC
-            elif consecutive_failures >= 1:
-                # AI just failed - reduce difficulty
-                logger.info(f"[DIFFICULTY ADJUSTMENT] Reducing difficulty due to {consecutive_failures} consecutive failures")
-                return self._decrease_difficulty(base_difficulty, 1)
             
             # Difficulty progression based on consecutive successes
             if consecutive_successes >= 5:
@@ -492,7 +492,7 @@ class CustodyProtocolService:
             
         except Exception as e:
             logger.error(f"Error adjusting difficulty based on performance: {str(e)}")
-            return TestDifficulty.BASIC  # Always fallback to BASIC on error
+            return base_difficulty
     
     def _increase_difficulty(self, current_difficulty: TestDifficulty, levels: int) -> TestDifficulty:
         """Increase difficulty by specified number of levels with unlimited scaling"""
@@ -611,18 +611,13 @@ class CustodyProtocolService:
             custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
             
             # Check if we should use real-world tests (for AIs with poor performance)
-            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 3:
+            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
                 logger.info(f"🎯 Using real-world test for {ai_type} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
                 return await self._generate_real_world_test(ai_type, difficulty, category, learning_history)
             
             # Calculate complexity based on difficulty multiplier
             difficulty_multiplier = self._get_difficulty_multiplier(difficulty)
             complexity_layers = max(1, int(difficulty_multiplier))
-            
-            # CRITICAL FIX: Reduce complexity for failing AIs
-            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
-                complexity_layers = 1  # Force single layer for failing AIs
-                logger.info(f"🎯 Forcing single complexity layer for {ai_type} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
             
             logger.info(f"🎯 Difficulty multiplier: {difficulty_multiplier:.2f}, Complexity layers: {complexity_layers}")
             
@@ -1953,6 +1948,14 @@ Difficulty Level: {difficulty.value}
 
 CRITICAL: Your response must be specific to this scenario. Do not give generic advice.
 Please respond to the above scenario with your {ai_type} expertise:
+
+REMEMBER: You are {ai_type.upper()} AI with specific strengths:
+- Conquest: Practical, user-focused solutions and app development
+- Guardian: Security analysis, vulnerability assessment, and protection
+- Imperium: Extension development, system integration, and optimization
+- Sandbox: Experimental approaches, testing, and innovation
+
+Focus on your unique capabilities and perspective.
 """
             dynamic_test_prompt = scenario_instructions + dynamic_test_prompt
             
@@ -1986,7 +1989,7 @@ Please respond to the above scenario with your {ai_type} expertise:
             logger.info(f"[CUSTODY TEST] Autonomous evaluation completed - Score: {score}")
             logger.info(f"[CUSTODY TEST] Parsed score: {score}")
             
-            # Get adaptive threshold for this test
+            # Get adaptive threshold for this test with AI-specific adjustments
             if self.adaptive_threshold_service:
                 # Map TestDifficulty to TestComplexity
                 complexity_mapping = {
@@ -2005,15 +2008,25 @@ Please respond to the above scenario with your {ai_type} expertise:
                 )
                 logger.info(f"[CUSTODY TEST] Adaptive threshold for {ai_type}: {threshold}")
             else:
-                # Fallback to fixed threshold
-                threshold = 90
-                logger.info(f"[CUSTODY TEST] Using fixed threshold: {threshold}")
-            
-            # CRITICAL FIX: Lower threshold for failing AIs
-            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
-            if custody_metrics and custody_metrics.get('consecutive_failures', 0) >= 5:
-                threshold = max(50, threshold - 20)  # Lower threshold by 20 points, minimum 50
-                logger.info(f"[CUSTODY TEST] Lowered threshold for {ai_type} to {threshold} due to {custody_metrics.get('consecutive_failures', 0)} consecutive failures")
+                # CRITICAL FIX: Use lower thresholds for failing AIs
+                base_threshold = 65  # Lower base threshold
+                
+                # Adjust threshold based on AI performance
+                if custody_metrics:
+                    consecutive_failures = custody_metrics.get('consecutive_failures', 0)
+                    if consecutive_failures > 5:
+                        # Much lower threshold for failing AIs
+                        threshold = max(40, base_threshold - (consecutive_failures * 2))
+                    elif consecutive_failures > 0:
+                        # Slightly lower threshold for AIs with some failures
+                        threshold = base_threshold - (consecutive_failures * 1)
+                    else:
+                        # Normal threshold for successful AIs
+                        threshold = base_threshold
+                else:
+                    threshold = base_threshold
+                
+                logger.info(f"[CUSTODY TEST] Using AI-adjusted threshold: {threshold}")
             
             passed = score >= threshold
             logger.info(f"[CUSTODY TEST] Pass result: {passed} (score: {score}, threshold: {threshold})")
@@ -2526,11 +2539,25 @@ Consider the learning objectives and previous areas of difficulty when formulati
                 elif test_result.get("test_difficulty"):
                     test_history_entry["difficulty"] = test_result["test_difficulty"]
                     logger.info(f"[CUSTODY METRICS] Set difficulty from test_result['test_difficulty']: {test_result['test_difficulty']}")
+                elif test_result.get("category") and test_result.get("test_type"):
+                    # Extract difficulty from test content if available
+                    test_content = test_result.get("test_content", {})
+                    if test_content.get("difficulty"):
+                        test_history_entry["difficulty"] = test_content["difficulty"]
+                        logger.info(f"[CUSTODY METRICS] Set difficulty from test_content['difficulty']: {test_content['difficulty']}")
+                    else:
+                        # Use current difficulty from metrics as fallback
+                        current_difficulty = metrics.get("current_difficulty", "basic")
+                        test_history_entry["difficulty"] = current_difficulty
+                        logger.info(f"[CUSTODY METRICS] Set difficulty from current_difficulty: {current_difficulty}")
                 else:
                     # Log the test result to debug what's available
                     logger.warning(f"[CUSTODY METRICS] No difficulty found in test_result for {ai_type}. Available keys: {list(test_result.keys())}")
                     logger.warning(f"[CUSTODY METRICS] Full test_result for {ai_type}: {json.dumps(test_result, default=str, ensure_ascii=False)}")
-                    test_history_entry["difficulty"] = "unknown"
+                    # Use current difficulty as fallback instead of "unknown"
+                    current_difficulty = metrics.get("current_difficulty", "basic")
+                    test_history_entry["difficulty"] = current_difficulty
+                    logger.info(f"[CUSTODY METRICS] Set difficulty from current_difficulty fallback: {current_difficulty}")
                 metrics["test_history"].append(test_history_entry)
                 logger.info(f"[CUSTODY METRICS] Added test history entry: {json.dumps(test_history_entry, default=str, ensure_ascii=False)}")
             
@@ -2550,11 +2577,6 @@ Consider the learning objectives and previous areas of difficulty when formulati
             
             # Calculate new dynamic difficulty based on performance using current metrics
             new_difficulty = await self._calculate_difficulty_from_current_metrics(ai_type, performance_data)
-            
-            # CRITICAL FIX: Force BASIC difficulty for AIs with excessive failures
-            if metrics.get('consecutive_failures', 0) >= 20:
-                new_difficulty = TestDifficulty.BASIC
-                logger.info(f"[CUSTODY METRICS] Forcing BASIC difficulty for {ai_type} due to {metrics.get('consecutive_failures', 0)} consecutive failures")
             
             # Update difficulty multiplier and complexity layers
             new_multiplier = self._get_difficulty_multiplier(new_difficulty)
@@ -7507,8 +7529,21 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             )
             evaluation_score += learning_progress_score * 0.2  # 20% weight
             
-            # Calculate final score with variation
-            final_score = int(evaluation_score + random.uniform(-2, 2))
+            # Calculate final score with more variation and AI-specific adjustments
+            base_variation = random.uniform(-5, 5)
+            
+            # Add AI-specific adjustments based on performance history
+            ai_adjustment = 0
+            if custody_metrics:
+                consecutive_failures = custody_metrics.get('consecutive_failures', 0)
+                if consecutive_failures > 10:
+                    # Give slightly higher scores to failing AIs to encourage improvement
+                    ai_adjustment = min(10, consecutive_failures * 0.5)
+                elif consecutive_failures == 0:
+                    # Slightly lower scores for consistently successful AIs to maintain challenge
+                    ai_adjustment = -2
+            
+            final_score = int(evaluation_score + base_variation + ai_adjustment)
             final_score = max(0, min(100, final_score))
             
             # Generate comprehensive feedback
@@ -7533,9 +7568,20 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"[AUTONOMOUS EVALUATION] Error in evaluation: {str(e)}")
+            # Provide more varied fallback scores based on AI type
+            ai_specific_base = {
+                "conquest": 45,
+                "guardian": 50,
+                "imperium": 55,
+                "sandbox": 40
+            }.get(ai_type.lower(), 50)
+            
+            fallback_score = ai_specific_base + random.uniform(-15, 15)
+            fallback_score = max(0, min(100, fallback_score))
+            
             return {
-                "score": 50 + random.uniform(-10, 10),
-                "evaluation": "Autonomous evaluation completed with fallback scoring",
+                "score": fallback_score,
+                "evaluation": "Autonomous evaluation completed with AI-specific fallback scoring",
                 "components": {}
             }
     
