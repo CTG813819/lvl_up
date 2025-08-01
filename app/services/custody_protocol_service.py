@@ -5319,32 +5319,8 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                 if self.sckipit_service:
                     evaluation = await self.sckipit_service.evaluate_test_response(test["scenario"], answer)
                 else:
-                    # Add AI-specific score variation
-                    ai_specific_base = {
-                        "conquest": 45,
-                        "guardian": 50,
-                        "imperium": 55,
-                        "sandbox": 40
-                    }.get(ai.lower(), 50)
-                    
-                    # Add variation based on test difficulty
-                    difficulty_multiplier = {
-                        "basic": 1.0,
-                        "intermediate": 0.9,
-                        "advanced": 0.8,
-                        "expert": 0.7,
-                        "master": 0.6,
-                        "legendary": 0.5
-                    }.get(test.get("difficulty", "basic"), 1.0)
-                    
-                    base_score = ai_specific_base * difficulty_multiplier
-                    variation = random.uniform(-10, 10)
-                    final_score = max(0, min(100, base_score + variation))
-                    
-                    evaluation = {
-                        "score": final_score, 
-                        "feedback": f"AI-specific evaluation: {ai} base score {ai_specific_base}, difficulty multiplier {difficulty_multiplier}, final score {final_score:.1f}"
-                    }
+                    # Generate dynamic evaluation criteria based on the test scenario
+                    evaluation = await self._evaluate_with_dynamic_criteria(ai, test["scenario"], answer, test.get("difficulty", "basic"))
                 
                 passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
                 if passed:
@@ -5395,40 +5371,8 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                 if self.sckipit_service:
                     evaluation = await self.sckipit_service.evaluate_collaborative_response(test["scenario"], responses)
                 else:
-                    # Add AI-specific collaborative score variation
-                    ai_scores = []
-                    for ai in test["ai_types"]:
-                        ai_specific_base = {
-                            "conquest": 45,
-                            "guardian": 50,
-                            "imperium": 55,
-                            "sandbox": 40
-                        }.get(ai.lower(), 50)
-                        
-                        # Add variation based on test difficulty
-                        difficulty_multiplier = {
-                            "basic": 1.0,
-                            "intermediate": 0.9,
-                            "advanced": 0.8,
-                            "expert": 0.7,
-                            "master": 0.6,
-                            "legendary": 0.5
-                        }.get(test.get("difficulty", "basic"), 1.0)
-                        
-                        base_score = ai_specific_base * difficulty_multiplier
-                        variation = random.uniform(-8, 8)
-                        ai_score = max(0, min(100, base_score + variation))
-                        ai_scores.append(ai_score)
-                    
-                    # Calculate collaborative score (average with bonus for collaboration)
-                    avg_score = sum(ai_scores) / len(ai_scores)
-                    collaboration_bonus = min(10, len(test["ai_types"]) * 2)  # Bonus for more AIs
-                    final_score = min(100, avg_score + collaboration_bonus)
-                    
-                    evaluation = {
-                        "score": final_score, 
-                        "feedback": f"Collaborative evaluation: AI scores {ai_scores}, average {avg_score:.1f}, collaboration bonus {collaboration_bonus}, final score {final_score:.1f}"
-                    }
+                    # Generate dynamic collaborative evaluation criteria
+                    evaluation = await self._evaluate_collaborative_with_dynamic_criteria(test["scenario"], responses, test.get("difficulty", "basic"))
                 
                 passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
                 xp_share = 300 // len(test["ai_types"])
@@ -8514,4 +8458,664 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"Error calculating learning rate: {str(e)}")
             return 0.0
+    
+    async def _evaluate_with_dynamic_criteria(self, ai_type: str, scenario: str, response: str, difficulty: str) -> Dict[str, Any]:
+        """Evaluate AI response using dynamically generated criteria based on the test scenario"""
+        try:
+            # Generate dynamic evaluation criteria from the scenario
+            evaluation_criteria = await self._generate_dynamic_criteria(scenario, difficulty, ai_type)
+            
+            # Evaluate response against dynamic criteria
+            evaluation_results = await self._evaluate_against_criteria(response, evaluation_criteria, scenario)
+            
+            # Calculate score based on criteria performance
+            final_score = self._calculate_dynamic_score(evaluation_results, difficulty)
+            
+            # Generate feedback based on dynamic criteria
+            feedback = self._generate_dynamic_feedback(evaluation_results, evaluation_criteria, final_score, ai_type)
+            
+            return {
+                "score": final_score,
+                "feedback": feedback,
+                "criteria": evaluation_criteria,
+                "evaluation_results": evaluation_results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in dynamic evaluation: {str(e)}")
+            return {
+                "score": 50,
+                "feedback": f"Dynamic evaluation error: {str(e)}",
+                "criteria": {},
+                "evaluation_results": {}
+            }
+    
+    async def _generate_dynamic_criteria(self, scenario: str, difficulty: str, ai_type: str) -> Dict[str, Any]:
+        """Generate evaluation criteria dynamically based on the test scenario"""
+        try:
+            criteria = {}
+            
+            # Extract key requirements from scenario
+            requirements = self._extract_scenario_requirements(scenario)
+            criteria["requirements"] = requirements
+            
+            # Generate difficulty-specific criteria
+            difficulty_criteria = self._generate_difficulty_criteria(difficulty, scenario)
+            criteria["difficulty_criteria"] = difficulty_criteria
+            
+            # Generate AI-specific criteria based on scenario
+            ai_criteria = self._generate_ai_specific_criteria(ai_type, scenario)
+            criteria["ai_specific_criteria"] = ai_criteria
+            
+            # Generate technical criteria based on scenario content
+            technical_criteria = self._generate_technical_criteria(scenario, difficulty)
+            criteria["technical_criteria"] = technical_criteria
+            
+            # Generate quality criteria
+            quality_criteria = self._generate_quality_criteria(scenario, difficulty)
+            criteria["quality_criteria"] = quality_criteria
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating dynamic criteria: {str(e)}")
+            return {}
+    
+    def _extract_scenario_requirements(self, scenario: str) -> List[str]:
+        """Extract specific requirements from the scenario"""
+        try:
+            requirements = []
+            
+            # Look for action words that indicate requirements
+            action_words = [
+                "create", "build", "implement", "design", "develop", "solve", "analyze",
+                "optimize", "secure", "test", "deploy", "configure", "integrate", "validate"
+            ]
+            
+            lines = scenario.split('\n')
+            for line in lines:
+                line_lower = line.lower()
+                for action in action_words:
+                    if action in line_lower:
+                        # Extract the requirement
+                        requirement = line.strip()
+                        if requirement and len(requirement) > 10:
+                            requirements.append(requirement)
+            
+            # If no specific requirements found, create general ones
+            if not requirements:
+                requirements = [
+                    "Address the main challenge presented in the scenario",
+                    "Provide a practical and implementable solution",
+                    "Demonstrate understanding of the problem domain"
+                ]
+            
+            return requirements
+            
+        except Exception as e:
+            logger.error(f"Error extracting scenario requirements: {str(e)}")
+            return ["Address the scenario requirements"]
+    
+    def _generate_difficulty_criteria(self, difficulty: str, scenario: str) -> Dict[str, Any]:
+        """Generate criteria based on difficulty level"""
+        try:
+            criteria = {}
+            
+            if difficulty == "basic":
+                criteria = {
+                    "completeness": "Provide a complete basic solution",
+                    "clarity": "Explain the solution clearly",
+                    "correctness": "Ensure the solution is technically correct"
+                }
+            elif difficulty == "intermediate":
+                criteria = {
+                    "completeness": "Provide a comprehensive solution with multiple approaches",
+                    "clarity": "Explain the solution with clear reasoning",
+                    "correctness": "Ensure technical accuracy with error handling",
+                    "efficiency": "Consider basic optimization"
+                }
+            elif difficulty == "advanced":
+                criteria = {
+                    "completeness": "Provide a sophisticated solution with multiple layers",
+                    "clarity": "Explain complex concepts clearly",
+                    "correctness": "Ensure high technical accuracy with robust error handling",
+                    "efficiency": "Demonstrate optimization and performance considerations",
+                    "scalability": "Consider scalability aspects"
+                }
+            elif difficulty == "expert":
+                criteria = {
+                    "completeness": "Provide an expert-level solution with comprehensive coverage",
+                    "clarity": "Explain complex concepts with expert-level clarity",
+                    "correctness": "Ensure expert-level technical accuracy",
+                    "efficiency": "Demonstrate advanced optimization techniques",
+                    "scalability": "Consider enterprise-level scalability",
+                    "innovation": "Show innovative approaches"
+                }
+            elif difficulty == "master":
+                criteria = {
+                    "completeness": "Provide a master-level solution with exceptional coverage",
+                    "clarity": "Explain with master-level communication",
+                    "correctness": "Ensure master-level technical precision",
+                    "efficiency": "Demonstrate master-level optimization",
+                    "scalability": "Consider master-level scalability",
+                    "innovation": "Show groundbreaking innovative approaches",
+                    "leadership": "Demonstrate leadership in solution design"
+                }
+            elif difficulty == "legendary":
+                criteria = {
+                    "completeness": "Provide a legendary solution with unparalleled coverage",
+                    "clarity": "Explain with legendary communication skills",
+                    "correctness": "Ensure legendary technical precision",
+                    "efficiency": "Demonstrate legendary optimization",
+                    "scalability": "Consider legendary scalability",
+                    "innovation": "Show legendary innovative approaches",
+                    "leadership": "Demonstrate legendary leadership",
+                    "vision": "Show visionary thinking"
+                }
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating difficulty criteria: {str(e)}")
+            return {"basic": "Provide a complete solution"}
+    
+    def _generate_ai_specific_criteria(self, ai_type: str, scenario: str) -> Dict[str, Any]:
+        """Generate AI-specific criteria based on the scenario"""
+        try:
+            criteria = {}
+            
+            # Analyze scenario to determine what the AI should focus on
+            scenario_lower = scenario.lower()
+            
+            if ai_type.lower() == "conquest":
+                if any(word in scenario_lower for word in ["app", "application", "user", "interface"]):
+                    criteria["user_focus"] = "Demonstrate user-centric design and practical implementation"
+                if any(word in scenario_lower for word in ["development", "build", "create"]):
+                    criteria["practical_implementation"] = "Show practical, implementable solutions"
+                criteria["conquest_strength"] = "Leverage Conquest's practical and user-focused approach"
+            
+            elif ai_type.lower() == "guardian":
+                if any(word in scenario_lower for word in ["security", "vulnerability", "threat", "attack"]):
+                    criteria["security_focus"] = "Demonstrate security analysis and protection mechanisms"
+                if any(word in scenario_lower for word in ["audit", "review", "assess"]):
+                    criteria["assessment_focus"] = "Show comprehensive security assessment capabilities"
+                criteria["guardian_strength"] = "Leverage Guardian's security and protection expertise"
+            
+            elif ai_type.lower() == "imperium":
+                if any(word in scenario_lower for word in ["performance", "optimization", "efficiency", "scale"]):
+                    criteria["optimization_focus"] = "Demonstrate system optimization and performance enhancement"
+                if any(word in scenario_lower for word in ["integration", "system", "architecture"]):
+                    criteria["integration_focus"] = "Show system integration and architectural expertise"
+                criteria["imperium_strength"] = "Leverage Imperium's optimization and system expertise"
+            
+            elif ai_type.lower() == "sandbox":
+                if any(word in scenario_lower for word in ["experiment", "test", "innovate", "creative"]):
+                    criteria["innovation_focus"] = "Demonstrate experimental and innovative approaches"
+                if any(word in scenario_lower for word in ["explore", "discover", "novel"]):
+                    criteria["exploration_focus"] = "Show exploratory and discovery capabilities"
+                criteria["sandbox_strength"] = "Leverage Sandbox's experimental and innovative approach"
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating AI-specific criteria: {str(e)}")
+            return {"ai_strength": f"Demonstrate {ai_type} capabilities"}
+    
+    def _generate_technical_criteria(self, scenario: str, difficulty: str) -> Dict[str, Any]:
+        """Generate technical criteria based on scenario content"""
+        try:
+            criteria = {}
+            scenario_lower = scenario.lower()
+            
+            # Check for coding requirements
+            if any(word in scenario_lower for word in ["code", "function", "class", "algorithm", "program"]):
+                criteria["code_quality"] = "Provide clean, well-structured code"
+                criteria["code_correctness"] = "Ensure code is technically correct and functional"
+                if difficulty in ["advanced", "expert", "master", "legendary"]:
+                    criteria["code_optimization"] = "Demonstrate code optimization and best practices"
+            
+            # Check for security requirements
+            if any(word in scenario_lower for word in ["security", "vulnerability", "threat", "attack", "secure"]):
+                criteria["security_implementation"] = "Implement appropriate security measures"
+                criteria["threat_analysis"] = "Demonstrate threat analysis capabilities"
+            
+            # Check for performance requirements
+            if any(word in scenario_lower for word in ["performance", "efficiency", "optimization", "speed", "memory"]):
+                criteria["performance_consideration"] = "Consider performance implications"
+                criteria["optimization_techniques"] = "Apply appropriate optimization techniques"
+            
+            # Check for scalability requirements
+            if any(word in scenario_lower for word in ["scale", "scalable", "enterprise", "large", "distributed"]):
+                criteria["scalability_design"] = "Design for scalability"
+                criteria["architecture_consideration"] = "Consider architectural implications"
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating technical criteria: {str(e)}")
+            return {"technical_correctness": "Ensure technical accuracy"}
+    
+    def _generate_quality_criteria(self, scenario: str, difficulty: str) -> Dict[str, Any]:
+        """Generate quality criteria based on scenario and difficulty"""
+        try:
+            criteria = {}
+            
+            # Basic quality criteria
+            criteria["completeness"] = "Address all aspects of the scenario"
+            criteria["clarity"] = "Provide clear and understandable explanations"
+            criteria["relevance"] = "Ensure response is relevant to the scenario"
+            
+            # Difficulty-specific quality criteria
+            if difficulty in ["intermediate", "advanced", "expert", "master", "legendary"]:
+                criteria["depth"] = "Provide in-depth analysis and reasoning"
+                criteria["comprehensiveness"] = "Cover multiple aspects and considerations"
+            
+            if difficulty in ["advanced", "expert", "master", "legendary"]:
+                criteria["innovation"] = "Show innovative thinking and approaches"
+                criteria["expertise"] = "Demonstrate expert-level knowledge"
+            
+            if difficulty in ["expert", "master", "legendary"]:
+                criteria["leadership"] = "Show leadership in solution design"
+                criteria["vision"] = "Demonstrate strategic vision"
+            
+            if difficulty == "legendary":
+                criteria["excellence"] = "Demonstrate legendary excellence in all aspects"
+                criteria["inspiration"] = "Provide inspiring and groundbreaking solutions"
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating quality criteria: {str(e)}")
+            return {"quality": "Ensure high quality response"}
+    
+    async def _evaluate_against_criteria(self, response: str, criteria: Dict[str, Any], scenario: str) -> Dict[str, float]:
+        """Evaluate response against the dynamically generated criteria"""
+        try:
+            results = {}
+            
+            # Evaluate requirements coverage
+            if "requirements" in criteria:
+                results["requirements_coverage"] = self._evaluate_requirements_coverage(response, criteria["requirements"])
+            
+            # Evaluate difficulty criteria
+            if "difficulty_criteria" in criteria:
+                results["difficulty_performance"] = self._evaluate_difficulty_criteria(response, criteria["difficulty_criteria"])
+            
+            # Evaluate AI-specific criteria
+            if "ai_specific_criteria" in criteria:
+                results["ai_specific_performance"] = self._evaluate_ai_criteria(response, criteria["ai_specific_criteria"])
+            
+            # Evaluate technical criteria
+            if "technical_criteria" in criteria:
+                results["technical_performance"] = self._evaluate_technical_criteria(response, criteria["technical_criteria"])
+            
+            # Evaluate quality criteria
+            if "quality_criteria" in criteria:
+                results["quality_performance"] = self._evaluate_quality_criteria(response, criteria["quality_criteria"])
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error evaluating against criteria: {str(e)}")
+            return {"overall": 50.0}
+    
+    def _evaluate_requirements_coverage(self, response: str, requirements: List[str]) -> float:
+        """Evaluate how well the response covers the requirements"""
+        try:
+            if not requirements:
+                return 50.0
+            
+            covered_requirements = 0
+            response_lower = response.lower()
+            
+            for requirement in requirements:
+                # Check if response addresses the requirement
+                requirement_keywords = self._extract_keywords(requirement)
+                if any(keyword in response_lower for keyword in requirement_keywords):
+                    covered_requirements += 1
+            
+            coverage_score = (covered_requirements / len(requirements)) * 100
+            return max(0, min(100, coverage_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating requirements coverage: {str(e)}")
+            return 50.0
+    
+    def _evaluate_difficulty_criteria(self, response: str, criteria: Dict[str, str]) -> float:
+        """Evaluate response against difficulty-specific criteria"""
+        try:
+            if not criteria:
+                return 50.0
+            
+            total_score = 0
+            response_lower = response.lower()
+            
+            for criterion_name, criterion_description in criteria.items():
+                criterion_score = self._evaluate_single_criterion(response_lower, criterion_description)
+                total_score += criterion_score
+            
+            avg_score = total_score / len(criteria) if criteria else 50.0
+            return max(0, min(100, avg_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating difficulty criteria: {str(e)}")
+            return 50.0
+    
+    def _evaluate_ai_criteria(self, response: str, criteria: Dict[str, str]) -> float:
+        """Evaluate response against AI-specific criteria"""
+        try:
+            if not criteria:
+                return 50.0
+            
+            total_score = 0
+            response_lower = response.lower()
+            
+            for criterion_name, criterion_description in criteria.items():
+                criterion_score = self._evaluate_single_criterion(response_lower, criterion_description)
+                total_score += criterion_score
+            
+            avg_score = total_score / len(criteria) if criteria else 50.0
+            return max(0, min(100, avg_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating AI criteria: {str(e)}")
+            return 50.0
+    
+    def _evaluate_technical_criteria(self, response: str, criteria: Dict[str, str]) -> float:
+        """Evaluate response against technical criteria"""
+        try:
+            if not criteria:
+                return 50.0
+            
+            total_score = 0
+            response_lower = response.lower()
+            
+            for criterion_name, criterion_description in criteria.items():
+                criterion_score = self._evaluate_single_criterion(response_lower, criterion_description)
+                total_score += criterion_score
+            
+            avg_score = total_score / len(criteria) if criteria else 50.0
+            return max(0, min(100, avg_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating technical criteria: {str(e)}")
+            return 50.0
+    
+    def _evaluate_quality_criteria(self, response: str, criteria: Dict[str, str]) -> float:
+        """Evaluate response against quality criteria"""
+        try:
+            if not criteria:
+                return 50.0
+            
+            total_score = 0
+            response_lower = response.lower()
+            
+            for criterion_name, criterion_description in criteria.items():
+                criterion_score = self._evaluate_single_criterion(response_lower, criterion_description)
+                total_score += criterion_score
+            
+            avg_score = total_score / len(criteria) if criteria else 50.0
+            return max(0, min(100, avg_score))
+            
+        except Exception as e:
+            logger.error(f"Error evaluating quality criteria: {str(e)}")
+            return 50.0
+    
+    def _evaluate_single_criterion(self, response_lower: str, criterion_description: str) -> float:
+        """Evaluate a single criterion"""
+        try:
+            # Extract keywords from criterion description
+            criterion_keywords = self._extract_keywords(criterion_description)
+            
+            if not criterion_keywords:
+                return 50.0
+            
+            # Check how many keywords are present in response
+            keyword_matches = sum(1 for keyword in criterion_keywords if keyword in response_lower)
+            
+            # Calculate score based on keyword coverage
+            if keyword_matches == 0:
+                return 20.0
+            elif keyword_matches == 1:
+                return 40.0
+            elif keyword_matches == 2:
+                return 60.0
+            elif keyword_matches == 3:
+                return 80.0
+            else:
+                return 100.0
+                
+        except Exception as e:
+            logger.error(f"Error evaluating single criterion: {str(e)}")
+            return 50.0
+    
+    def _calculate_dynamic_score(self, evaluation_results: Dict[str, float], difficulty: str) -> float:
+        """Calculate final score based on evaluation results and difficulty"""
+        try:
+            if not evaluation_results:
+                return 50.0
+            
+            # Weight different evaluation components based on difficulty
+            weights = {
+                "basic": {"requirements": 0.4, "difficulty": 0.3, "ai_specific": 0.2, "technical": 0.1},
+                "intermediate": {"requirements": 0.3, "difficulty": 0.3, "ai_specific": 0.2, "technical": 0.2},
+                "advanced": {"requirements": 0.25, "difficulty": 0.25, "ai_specific": 0.25, "technical": 0.25},
+                "expert": {"requirements": 0.2, "difficulty": 0.2, "ai_specific": 0.3, "technical": 0.3},
+                "master": {"requirements": 0.15, "difficulty": 0.15, "ai_specific": 0.35, "technical": 0.35},
+                "legendary": {"requirements": 0.1, "difficulty": 0.1, "ai_specific": 0.4, "technical": 0.4}
+            }
+            
+            weight = weights.get(difficulty, weights["basic"])
+            total_score = 0
+            total_weight = 0
+            
+            for component, score in evaluation_results.items():
+                if component in weight:
+                    total_score += score * weight[component]
+                    total_weight += weight[component]
+            
+            if total_weight > 0:
+                final_score = total_score / total_weight
+            else:
+                final_score = sum(evaluation_results.values()) / len(evaluation_results) if evaluation_results else 50.0
+            
+            return max(0, min(100, final_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating dynamic score: {str(e)}")
+            return 50.0
+    
+    def _generate_dynamic_feedback(self, evaluation_results: Dict[str, float], criteria: Dict[str, Any], 
+                                  final_score: float, ai_type: str) -> str:
+        """Generate feedback based on dynamic evaluation results"""
+        try:
+            feedback_parts = []
+            
+            # Generate feedback for each evaluation component
+            for component, score in evaluation_results.items():
+                if score >= 80:
+                    feedback_parts.append(f"Excellent {component.replace('_', ' ')}")
+                elif score >= 60:
+                    feedback_parts.append(f"Good {component.replace('_', ' ')}")
+                elif score >= 40:
+                    feedback_parts.append(f"Adequate {component.replace('_', ' ')}")
+                else:
+                    feedback_parts.append(f"Needs improvement in {component.replace('_', ' ')}")
+            
+            # Overall performance feedback
+            if final_score >= 90:
+                overall = "Outstanding performance across all criteria!"
+            elif final_score >= 80:
+                overall = "Very good performance with strong demonstration of capabilities"
+            elif final_score >= 70:
+                overall = "Good performance with room for improvement in specific areas"
+            elif final_score >= 60:
+                overall = "Adequate performance with several areas needing improvement"
+            else:
+                overall = "Performance needs significant improvement across multiple areas"
+            
+            feedback = f"{overall}. {' '.join(feedback_parts)}. Final score: {final_score:.1f}/100"
+            return feedback
+            
+        except Exception as e:
+            logger.error(f"Error generating dynamic feedback: {str(e)}")
+            return f"Dynamic evaluation completed. Final score: {final_score:.1f}/100"
+    
+    async def _evaluate_collaborative_with_dynamic_criteria(self, scenario: str, responses: Dict[str, str], difficulty: str) -> Dict[str, Any]:
+        """Evaluate collaborative response using dynamically generated criteria"""
+        try:
+            # Generate collaborative evaluation criteria
+            collaborative_criteria = await self._generate_collaborative_criteria(scenario, difficulty, responses)
+            
+            # Evaluate each AI's individual contribution
+            individual_evaluations = {}
+            for ai_type, response in responses.items():
+                individual_evaluation = await self._evaluate_with_dynamic_criteria(ai_type, scenario, response, difficulty)
+                individual_evaluations[ai_type] = individual_evaluation
+            
+            # Evaluate collaboration effectiveness
+            collaboration_score = self._evaluate_collaboration_effectiveness(responses, scenario, collaborative_criteria)
+            
+            # Calculate final collaborative score
+            individual_scores = [eval_result["score"] for eval_result in individual_evaluations.values()]
+            avg_individual_score = sum(individual_scores) / len(individual_scores) if individual_scores else 0
+            final_score = min(100, avg_individual_score + collaboration_score)
+            
+            # Generate collaborative feedback
+            feedback = self._generate_collaborative_dynamic_feedback(individual_evaluations, collaboration_score, final_score)
+            
+            return {
+                "score": final_score,
+                "feedback": feedback,
+                "individual_evaluations": individual_evaluations,
+                "collaboration_score": collaboration_score,
+                "collaborative_criteria": collaborative_criteria
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in collaborative dynamic evaluation: {str(e)}")
+            return {
+                "score": 50,
+                "feedback": f"Collaborative dynamic evaluation error: {str(e)}",
+                "individual_evaluations": {},
+                "collaboration_score": 0,
+                "collaborative_criteria": {}
+            }
+    
+    async def _generate_collaborative_criteria(self, scenario: str, difficulty: str, responses: Dict[str, str]) -> Dict[str, Any]:
+        """Generate criteria for evaluating collaborative performance"""
+        try:
+            criteria = {}
+            
+            # Individual contribution criteria
+            criteria["individual_contribution"] = "Each AI should make meaningful individual contributions"
+            
+            # Collaboration criteria
+            criteria["complementary_approaches"] = "AIs should provide complementary approaches and perspectives"
+            criteria["coordination"] = "AIs should demonstrate effective coordination and teamwork"
+            criteria["synergy"] = "The collaborative effort should create synergy beyond individual contributions"
+            
+            # Scenario-specific collaboration criteria
+            if "security" in scenario.lower() and "guardian" in responses:
+                criteria["security_collaboration"] = "Guardian should lead security aspects while others support"
+            
+            if "optimization" in scenario.lower() and "imperium" in responses:
+                criteria["optimization_collaboration"] = "Imperium should lead optimization while others support"
+            
+            if "user" in scenario.lower() and "conquest" in responses:
+                criteria["user_collaboration"] = "Conquest should lead user-focused aspects while others support"
+            
+            if "innovation" in scenario.lower() and "sandbox" in responses:
+                criteria["innovation_collaboration"] = "Sandbox should lead innovative approaches while others support"
+            
+            return criteria
+            
+        except Exception as e:
+            logger.error(f"Error generating collaborative criteria: {str(e)}")
+            return {"collaboration": "Demonstrate effective collaboration"}
+    
+    def _evaluate_collaboration_effectiveness(self, responses: Dict[str, str], scenario: str, criteria: Dict[str, Any]) -> float:
+        """Evaluate the effectiveness of collaboration"""
+        try:
+            collaboration_score = 0
+            
+            # Check for complementary approaches
+            response_texts = list(responses.values())
+            if len(response_texts) >= 2:
+                # Analyze diversity of approaches
+                unique_keywords = set()
+                for response in response_texts:
+                    keywords = self._extract_keywords(response)
+                    unique_keywords.update(keywords)
+                
+                # Bonus for diverse perspectives
+                if len(unique_keywords) > len(response_texts) * 5:
+                    collaboration_score += 10
+                
+                # Bonus for number of participants
+                collaboration_score += min(10, len(responses) * 2)
+                
+                # Check for AI-specific collaboration patterns
+                if "guardian" in responses and any("security" in response.lower() for response in response_texts):
+                    collaboration_score += 5
+                
+                if "imperium" in responses and any("optimization" in response.lower() for response in response_texts):
+                    collaboration_score += 5
+                
+                if "conquest" in responses and any("user" in response.lower() for response in response_texts):
+                    collaboration_score += 5
+                
+                if "sandbox" in responses and any("innovation" in response.lower() for response in response_texts):
+                    collaboration_score += 5
+            
+            return min(20, collaboration_score)  # Cap collaboration bonus at 20
+            
+        except Exception as e:
+            logger.error(f"Error evaluating collaboration effectiveness: {str(e)}")
+            return 0.0
+    
+    def _generate_collaborative_dynamic_feedback(self, individual_evaluations: Dict[str, Dict], 
+                                               collaboration_score: float, final_score: float) -> str:
+        """Generate feedback for collaborative dynamic evaluation"""
+        try:
+            feedback_parts = []
+            
+            # Individual performance feedback
+            for ai_type, evaluation in individual_evaluations.items():
+                score = evaluation.get("score", 0)
+                if score >= 80:
+                    feedback_parts.append(f"{ai_type}: Excellent individual contribution")
+                elif score >= 60:
+                    feedback_parts.append(f"{ai_type}: Good individual contribution")
+                else:
+                    feedback_parts.append(f"{ai_type}: Individual contribution needs improvement")
+            
+            # Collaboration feedback
+            if collaboration_score >= 15:
+                feedback_parts.append("Outstanding collaboration with excellent synergy")
+            elif collaboration_score >= 10:
+                feedback_parts.append("Good collaboration with effective teamwork")
+            elif collaboration_score >= 5:
+                feedback_parts.append("Adequate collaboration with room for improvement")
+            else:
+                feedback_parts.append("Limited collaboration - focus on better coordination")
+            
+            # Overall feedback
+            if final_score >= 90:
+                overall = "Outstanding collaborative performance!"
+            elif final_score >= 80:
+                overall = "Very good collaborative performance"
+            elif final_score >= 70:
+                overall = "Good collaborative performance"
+            elif final_score >= 60:
+                overall = "Adequate collaborative performance"
+            else:
+                overall = "Collaborative performance needs improvement"
+            
+            feedback = f"{overall}. {' '.join(feedback_parts)}. Collaboration bonus: +{collaboration_score:.1f}. Final score: {final_score:.1f}/100"
+            return feedback
+            
+        except Exception as e:
+            logger.error(f"Error generating collaborative dynamic feedback: {str(e)}")
+            return f"Collaborative dynamic evaluation completed. Final score: {final_score:.1f}/100"
 
