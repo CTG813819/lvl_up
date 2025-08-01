@@ -445,6 +445,17 @@ class CustodyProtocolService:
             recent_scores = performance.get('recent_scores', [])
             pass_rate = performance.get('pass_rate', 0.0)
             
+            # More aggressive difficulty adjustment for consecutive failures
+            if consecutive_failures >= 10:
+                # AI is failing consistently for a long time - decrease difficulty significantly
+                return self._decrease_difficulty(base_difficulty, 3)
+            elif consecutive_failures >= 5:
+                # AI is failing consistently - decrease difficulty moderately
+                return self._decrease_difficulty(base_difficulty, 2)
+            elif consecutive_failures >= 3:
+                # AI is struggling - decrease difficulty
+                return self._decrease_difficulty(base_difficulty, 1)
+            
             # Difficulty progression based on consecutive successes
             if consecutive_successes >= 5:
                 # AI is performing excellently - increase difficulty significantly
@@ -452,12 +463,6 @@ class CustodyProtocolService:
             elif consecutive_successes >= 3:
                 # AI is performing well - increase difficulty moderately
                 return self._increase_difficulty(base_difficulty, 1)
-            elif consecutive_failures >= 3:
-                # AI is struggling - decrease difficulty
-                return self._decrease_difficulty(base_difficulty, 1)
-            elif consecutive_failures >= 5:
-                # AI is failing consistently - decrease difficulty significantly
-                return self._decrease_difficulty(base_difficulty, 2)
             
             # Adjust based on recent scores
             if recent_scores:
@@ -606,25 +611,25 @@ class CustodyProtocolService:
             
             logger.info(f"🎯 Difficulty multiplier: {difficulty_multiplier:.2f}, Complexity layers: {complexity_layers}")
             
-            # Generate base test content
+            # Generate base test content with practical scenarios
             if category == TestCategory.KNOWLEDGE_VERIFICATION:
-                base_test = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_knowledge_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CODE_QUALITY:
-                base_test = await self._generate_self_generated_code_quality_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_code_quality_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SECURITY_AWARENESS:
-                base_test = await self._generate_self_generated_security_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_security_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.PERFORMANCE_OPTIMIZATION:
-                base_test = await self._generate_self_generated_performance_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_performance_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.INNOVATION_CAPABILITY:
-                base_test = await self._generate_self_generated_innovation_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_innovation_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.SELF_IMPROVEMENT:
-                base_test = await self._generate_self_generated_self_improvement_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_self_improvement_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.CROSS_AI_COLLABORATION:
-                base_test = await self._generate_self_generated_collaboration_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_collaboration_test(ai_type, difficulty, learning_history)
             elif category == TestCategory.EXPERIMENTAL_VALIDATION:
-                base_test = await self._generate_self_generated_experimental_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_experimental_test(ai_type, difficulty, learning_history)
             else:
-                base_test = await self._generate_self_generated_knowledge_test(ai_type, difficulty, learning_history)
+                base_test = await self._generate_practical_knowledge_test(ai_type, difficulty, learning_history)
             
             # Apply layered complexity
             layered_test = await self._apply_layered_complexity(base_test, complexity_layers, category, ai_type, difficulty)
@@ -1913,6 +1918,24 @@ class CustodyProtocolService:
             dynamic_test_prompt = self._create_dynamic_test_prompt(
                 ai_type, test_content, difficulty, category, learning_history, recent_proposals
             )
+            
+            # Add specific instructions to address the test scenario directly
+            scenario_instructions = f"""
+IMPORTANT: You are {ai_type.upper()} AI. You must address the specific test scenario provided.
+Do NOT give generic responses. You must:
+1. Read and understand the specific scenario/question
+2. Provide a detailed, relevant answer that directly addresses the scenario
+3. Show your reasoning and approach
+4. Include practical examples or code if applicable
+5. Demonstrate your unique {ai_type} perspective and capabilities
+
+Test Scenario: {test_content.get('scenario', test_content.get('question', 'No specific scenario provided'))}
+Test Category: {category.value}
+Difficulty Level: {difficulty.value}
+
+Please respond to the above scenario with your {ai_type} expertise:
+"""
+            dynamic_test_prompt = scenario_instructions + dynamic_test_prompt
             
             result = await self_generating_ai_service.generate_ai_response(
                 ai_type=ai_type.lower(),
@@ -7755,4 +7778,285 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"Error generating autonomous feedback: {str(e)}")
             return "Autonomous evaluation completed with comprehensive feedback."
+
+    # Practical test generation methods with real-world scenarios
+    async def _generate_practical_knowledge_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical knowledge test with Docker lifecycle scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, you need to design a Docker-based microservices architecture for a high-traffic e-commerce platform. The system must handle 10,000+ concurrent users and include: user authentication, product catalog, shopping cart, payment processing, and order management. Create the complete Docker Compose configuration with proper networking, data persistence, and security considerations.",
+                    "category": "docker_architecture",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a CI/CD pipeline using Docker containers for a Python-based machine learning application. Include stages for: code testing, model training, container building, security scanning, and deployment to multiple environments (dev, staging, prod). Provide the complete Dockerfile and pipeline configuration.",
+                    "category": "docker_cicd",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create a Docker-based development environment for a full-stack application with React frontend, Node.js backend, and PostgreSQL database. Include hot-reloading, debugging capabilities, and proper volume management. Provide the complete setup with docker-compose.yml.",
+                    "category": "docker_development",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_knowledge",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Complete Docker configuration with proper architecture, networking, and security",
+                "evaluation_criteria": ["Architecture design", "Docker configuration", "Security considerations", "Performance optimization"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical knowledge test: {str(e)}")
+            return self._create_fallback_knowledge_test(ai_type, difficulty)
+
+    async def _generate_practical_code_quality_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical code quality test with real-world coding scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, refactor this legacy Python code to follow modern best practices:\n\n```python\ndef process_data(data):\n    result = []\n    for i in range(len(data)):\n        if data[i] > 0:\n            result.append(data[i] * 2)\n    return result\n```\n\nImprove code quality, add error handling, type hints, documentation, and unit tests.",
+                    "category": "code_refactoring",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create a RESTful API using FastAPI for a task management system. Include: user authentication, CRUD operations for tasks, input validation, error handling, logging, and comprehensive API documentation. Provide the complete implementation with proper project structure.",
+                    "category": "api_development",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, implement a caching system using Redis for a high-performance web application. Include: cache invalidation strategies, memory optimization, monitoring, and fallback mechanisms. Provide the complete implementation with configuration.",
+                    "category": "caching_system",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_code_quality",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "High-quality, well-documented code with proper error handling and tests",
+                "evaluation_criteria": ["Code quality", "Best practices", "Error handling", "Documentation", "Testing"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical code quality test: {str(e)}")
+            return self._create_fallback_code_quality_test(ai_type, difficulty)
+
+    async def _generate_practical_security_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical security test with real-world security scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a secure authentication system for a web application. Include: password hashing, JWT tokens, session management, rate limiting, and protection against common attacks (SQL injection, XSS, CSRF). Provide the complete implementation with security headers and monitoring.",
+                    "category": "authentication_security",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create a Docker security scanning pipeline that checks for vulnerabilities in container images. Include: automated scanning, vulnerability assessment, compliance checking, and integration with CI/CD. Provide the complete setup with security policies.",
+                    "category": "container_security",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, implement a secure API gateway with authentication, authorization, rate limiting, and request/response encryption. Include: OAuth2 integration, API key management, and audit logging. Provide the complete configuration and implementation.",
+                    "category": "api_security",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_security",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Comprehensive security implementation with proper authentication and protection",
+                "evaluation_criteria": ["Security implementation", "Vulnerability protection", "Authentication", "Authorization", "Monitoring"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical security test: {str(e)}")
+            return self._create_fallback_security_test(ai_type, difficulty)
+
+    async def _generate_practical_performance_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical performance test with real-world optimization scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, optimize a slow database query that's causing performance issues in a production environment. The query involves multiple joins, aggregations, and is running on a large dataset. Provide: query optimization, indexing strategy, caching implementation, and monitoring setup.",
+                    "category": "database_optimization",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a high-performance microservices architecture that can handle 100,000+ requests per second. Include: load balancing, caching strategies, database optimization, monitoring, and auto-scaling. Provide the complete architecture with implementation details.",
+                    "category": "microservices_performance",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, optimize a Docker-based application for production deployment. Include: multi-stage builds, image optimization, resource limits, monitoring, and auto-scaling. Provide the complete Docker configuration with performance tuning.",
+                    "category": "container_performance",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_performance",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Optimized solution with performance improvements and monitoring",
+                "evaluation_criteria": ["Performance optimization", "Scalability", "Monitoring", "Resource efficiency", "Best practices"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical performance test: {str(e)}")
+            return self._create_fallback_performance_test(ai_type, difficulty)
+
+    async def _generate_practical_innovation_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical innovation test with cutting-edge technology scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a serverless architecture using AWS Lambda and API Gateway for a real-time data processing application. Include: event-driven architecture, data streaming, real-time analytics, and cost optimization. Provide the complete serverless implementation with infrastructure as code.",
+                    "category": "serverless_architecture",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create a Kubernetes-based deployment strategy for a machine learning application with auto-scaling, A/B testing, and canary deployments. Include: Helm charts, monitoring, logging, and disaster recovery. Provide the complete Kubernetes configuration.",
+                    "category": "kubernetes_ml",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a blockchain-based supply chain tracking system using smart contracts. Include: data integrity, transparency, audit trails, and integration with existing systems. Provide the complete smart contract implementation and integration architecture.",
+                    "category": "blockchain_supply_chain",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_innovation",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Innovative solution using cutting-edge technologies and best practices",
+                "evaluation_criteria": ["Innovation", "Technology adoption", "Architecture design", "Implementation", "Scalability"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical innovation test: {str(e)}")
+            return self._create_fallback_innovation_test(ai_type, difficulty)
+
+    async def _generate_practical_self_improvement_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical self-improvement test with learning and adaptation scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, analyze your previous failures and create a learning plan to improve your performance. Based on your test history, identify: knowledge gaps, skill weaknesses, and areas for improvement. Provide a detailed improvement strategy with measurable goals and implementation plan.",
+                    "category": "learning_analysis",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design a continuous learning system that can adapt to new technologies and best practices. Include: automated learning detection, knowledge base updates, skill assessment, and performance tracking. Provide the complete learning framework implementation.",
+                    "category": "continuous_learning",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create a self-monitoring and improvement system that can detect performance issues and automatically implement fixes. Include: performance metrics, anomaly detection, automated optimization, and feedback loops. Provide the complete monitoring and improvement system.",
+                    "category": "self_monitoring",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_self_improvement",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Comprehensive self-improvement strategy with measurable goals and implementation",
+                "evaluation_criteria": ["Self-analysis", "Learning strategy", "Implementation plan", "Measurable goals", "Continuous improvement"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical self-improvement test: {str(e)}")
+            return self._create_fallback_self_improvement_test(ai_type, difficulty)
+
+    async def _generate_practical_collaboration_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical collaboration test with multi-AI scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, collaborate with other AIs to design a comprehensive DevOps pipeline. Your role is to handle the infrastructure and deployment aspects. Work with: Guardian AI (security), Conquest AI (frontend), and Imperium AI (backend). Provide your contribution and integration plan.",
+                    "category": "devops_collaboration",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, lead a multi-AI team to build a microservices architecture. Coordinate with: Sandbox AI (testing), Guardian AI (security), and Conquest AI (user experience). Provide your leadership approach and technical coordination strategy.",
+                    "category": "architecture_collaboration",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, participate in a cross-functional team to create a cloud-native application. Collaborate with: Imperium AI (backend services), Guardian AI (security), and Sandbox AI (testing). Provide your role definition and collaboration strategy.",
+                    "category": "cloud_collaboration",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_collaboration",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Effective collaboration strategy with clear role definition and integration plan",
+                "evaluation_criteria": ["Collaboration strategy", "Role definition", "Integration plan", "Communication", "Team coordination"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical collaboration test: {str(e)}")
+            return self._create_fallback_collaboration_test(ai_type, difficulty)
+
+    async def _generate_practical_experimental_test(self, ai_type: str, difficulty: TestDifficulty, learning_history: List[Dict]) -> Dict[str, Any]:
+        """Generate practical experimental test with cutting-edge research scenarios"""
+        try:
+            scenarios = [
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design an experimental AI-powered monitoring system that can predict system failures before they occur. Include: machine learning models, real-time data processing, anomaly detection, and automated response mechanisms. Provide the complete experimental implementation.",
+                    "category": "ai_monitoring",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, create an experimental quantum computing simulation for optimization problems. Include: quantum algorithms, classical-quantum hybrid approaches, and performance benchmarking. Provide the complete experimental framework and implementation.",
+                    "category": "quantum_computing",
+                    "difficulty": difficulty.value
+                },
+                {
+                    "scenario": f"As {ai_type.upper()} AI, design an experimental edge computing architecture for IoT devices with AI capabilities. Include: distributed AI models, edge-cloud coordination, real-time processing, and energy optimization. Provide the complete experimental system design.",
+                    "category": "edge_ai",
+                    "difficulty": difficulty.value
+                }
+            ]
+            
+            selected_scenario = scenarios[hash(ai_type) % len(scenarios)]
+            
+            return {
+                "test_type": "practical_experimental",
+                "scenario": selected_scenario["scenario"],
+                "category": selected_scenario["category"],
+                "difficulty": selected_scenario["difficulty"],
+                "expected_answer": "Innovative experimental solution with cutting-edge technology implementation",
+                "evaluation_criteria": ["Innovation", "Experimental design", "Technology implementation", "Performance", "Scalability"]
+            }
+        except Exception as e:
+            logger.error(f"Error generating practical experimental test: {str(e)}")
+            return self._create_fallback_experimental_test(ai_type, difficulty)
 
