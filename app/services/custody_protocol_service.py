@@ -41,7 +41,7 @@ from app.services.anthropic_service import call_claude, anthropic_rate_limited_c
 from app.services.sckipit_service import SckipitService
 from app.services.unified_ai_service_shared import unified_ai_service_shared
 from app.services.self_generating_ai_service import self_generating_ai_service
-from app.services.custodes_fallback_testing import custodes_fallback, FallbackTestCategory, FallbackTestDifficulty
+# Removed import of non-existent custodes_fallback_testing module
 from app.services.token_usage_service import token_usage_service
 from app.models.sql_models import OlympicEvent
 from app.services.imperium_ai_service import ImperiumAIService
@@ -3805,31 +3805,13 @@ class CustodyProtocolService:
         thresholds = [100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5000, 10000]
         return thresholds[current_level - 1] if current_level <= len(thresholds) else 10000
     
-    def _convert_to_fallback_category(self, category: TestCategory) -> FallbackTestCategory:
-        """Convert TestCategory to FallbackTestCategory"""
-        conversion_map = {
-            TestCategory.KNOWLEDGE_VERIFICATION: FallbackTestCategory.KNOWLEDGE_VERIFICATION,
-            TestCategory.CODE_QUALITY: FallbackTestCategory.CODE_QUALITY,
-            TestCategory.SECURITY_AWARENESS: FallbackTestCategory.SECURITY_AWARENESS,
-            TestCategory.PERFORMANCE_OPTIMIZATION: FallbackTestCategory.PERFORMANCE_OPTIMIZATION,
-            TestCategory.INNOVATION_CAPABILITY: FallbackTestCategory.INNOVATION_CAPABILITY,
-            TestCategory.SELF_IMPROVEMENT: FallbackTestCategory.SELF_IMPROVEMENT,
-            TestCategory.CROSS_AI_COLLABORATION: FallbackTestCategory.CROSS_AI_COLLABORATION,
-            TestCategory.EXPERIMENTAL_VALIDATION: FallbackTestCategory.EXPERIMENTAL_VALIDATION
-        }
-        return conversion_map.get(category, FallbackTestCategory.KNOWLEDGE_VERIFICATION)
+    def _convert_to_fallback_category(self, category: TestCategory) -> str:
+        """Convert TestCategory to string (fallback implementation)"""
+        return category.value
     
-    def _convert_to_fallback_difficulty(self, difficulty: TestDifficulty) -> FallbackTestDifficulty:
-        """Convert TestDifficulty to FallbackTestDifficulty"""
-        conversion_map = {
-            TestDifficulty.BASIC: FallbackTestDifficulty.BASIC,
-            TestDifficulty.INTERMEDIATE: FallbackTestDifficulty.INTERMEDIATE,
-            TestDifficulty.ADVANCED: FallbackTestDifficulty.ADVANCED,
-            TestDifficulty.EXPERT: FallbackTestDifficulty.EXPERT,
-            TestDifficulty.MASTER: FallbackTestDifficulty.MASTER,
-            TestDifficulty.LEGENDARY: FallbackTestDifficulty.LEGENDARY
-        }
-        return conversion_map.get(difficulty, FallbackTestDifficulty.BASIC)
+    def _convert_to_fallback_difficulty(self, difficulty: TestDifficulty) -> str:
+        """Convert TestDifficulty to string (fallback implementation)"""
+        return difficulty.value
     
     def _generate_basic_fallback_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
         """Generate a basic fallback test when all else fails"""
@@ -4793,7 +4775,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         # Results are automatically reflected in analytics/leaderboards
 
     async def administer_olympic_event(self, participants: list, difficulty: TestDifficulty, event_type: str = "olympics") -> dict:
-        """Administer Olympic event with multiple AI participants using enhanced test generator"""
+        """Administer Olympic event with multiple AI participants using self-generated content"""
         try:
             logger.info(f"🏆 Starting Olympic event with participants: {participants}")
             
@@ -4802,123 +4784,30 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             for ai_type in participants:
                 ai_levels[ai_type] = await self._get_ai_level(ai_type)
             
-            # Generate dynamic scenario using enhanced test generator
-            if self.enhanced_test_generator:
-                scenario = await self.enhanced_test_generator.generate_dynamic_test_scenario(
-                    ai_types=participants,
-                    difficulty=difficulty.value,
-                    test_type="olympic",
-                    ai_levels=ai_levels
-                )
-                
-                # Generate AI communication scenario for collaboration
-                try:
-                    communication_scenario = await self.enhanced_test_generator.generate_ai_communication_scenario(
-                        ai_types=participants,
-                        scenario=scenario
-                    )
-                except AttributeError as e:
-                    logger.warning(f"⚠️ EnhancedTestGenerator missing generate_ai_communication_scenario method: {e}")
-                    communication_scenario = None
-                except Exception as e:
-                    logger.error(f"❌ Error calling EnhancedTestGenerator.generate_ai_communication_scenario: {e}")
-                    communication_scenario = None
-                
-                # Get training ground integration for difficulty adjustment
-                training_data = {}
-                for ai_type in participants:
-                    try:
-                        training_data[ai_type] = await self.enhanced_test_generator.get_training_ground_integration(ai_type)
-                    except AttributeError as e:
-                        logger.warning(f"⚠️ EnhancedTestGenerator missing get_training_ground_integration method: {e}")
-                        training_data[ai_type] = {}
-                    except Exception as e:
-                        logger.error(f"❌ Error calling EnhancedTestGenerator.get_training_ground_integration: {e}")
-                        training_data[ai_type] = {}
+            # Generate unique Olympic scenario based on participants' knowledge and current trends
+            unique_scenario = await self._create_unique_olympic_scenario(participants, difficulty, ai_levels)
             
-            else:
-                # Use dynamic SCKIPIT service for Olympic event generation
-                if self.sckipit_service:
-                    # Gather real learning data for all participants
-                    learning_histories = {}
-                    knowledge_gaps = {}
-                    analytics = {}
-                    
-                    for ai in participants:
-                        # Get actual learning history from database
-                        learning_histories[ai] = await self.learning_service.get_learning_insights(ai)
-                        
-                        # Identify real knowledge gaps based on learning patterns
-                        knowledge_gaps[ai] = await self._identify_knowledge_gaps(ai, learning_histories[ai], [])
-                        
-                        # Get comprehensive analytics including recent performance
-                        analytics[ai] = await self.learning_service.get_learning_insights(ai)
-                        
-                        # Add recent test performance to analytics
-                        custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
-                        if custody_metrics:
-                            analytics[ai]['recent_test_performance'] = custody_metrics.get('test_history', [])[-5:] if custody_metrics.get('test_history') else []
-                            analytics[ai]['current_level'] = custody_metrics.get('custody_level', 1)
-                            analytics[ai]['xp_progress'] = custody_metrics.get('custody_xp', 0)
-                    
-                    # Convert to list format for SCKIPIT service
-                    learning_histories_list = [learning_histories[ai] for ai in participants]
-                    knowledge_gaps_list = [knowledge_gaps[ai] for ai in participants]
-                    
-                    # Generate dynamic Olympic scenario using SCKIPIT
-                    scenario = await self.sckipit_service.generate_collaborative_challenge(
-                        ai_types=participants,
-                        learning_histories=learning_histories_list,
-                        knowledge_gaps=knowledge_gaps_list,
-                        analytics=analytics,
-                        difficulty=difficulty.value,
-                        test_type="olympic"
-                    )
-                    
-                    # Create scenario object for compatibility
-                    scenario = {
-                        "description": scenario,
-                        "type": "olympic",
-                        "difficulty": difficulty.value,
-                        "participants": participants,
-                        "learning_data": {
-                            "learning_histories": learning_histories,
-                            "knowledge_gaps": knowledge_gaps,
-                            "analytics": analytics
-                        }
-                    }
-                    
-                    communication_scenario = None
-                    training_data = {}
-                else:
-                    # Enhanced fallback with dynamic content
-                    import time
-                    current_time = time.time()
-                    
-                    # Get basic AI profiles for fallback
-                    ai_profiles = []
-                    for ai in participants:
-                        custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai)
-                        level = custody_metrics.get('custody_level', 1) if custody_metrics else 1
-                        profile = f"{ai} (Level {level})"
-                        ai_profiles.append(profile)
-                    
-                    scenario_text = (
-                        f"Dynamic Olympic challenge for: {', '.join(ai_profiles)}\n"
-                        f"Difficulty: {difficulty.value}\n"
-                        f"Event type: {event_type}\n\n"
-                        f"Compete in this Olympic event, demonstrating your unique capabilities and knowledge."
-                    )
-                    
-                    scenario = {
-                        "description": scenario_text,
-                        "type": "olympic",
-                        "difficulty": difficulty.value,
-                        "participants": participants
-                    }
-                    
-                    communication_scenario = None
-                    training_data = {}
+            # Generate unique challenges for the Olympic event
+            unique_challenges = await self._generate_unique_olympic_challenges(participants, unique_scenario, difficulty)
+            
+            # Create communication scenario for collaboration
+            communication_scenario = await self._create_olympic_communication_scenario(participants, unique_scenario)
+            
+            # Get training data for each participant
+            training_data = {}
+            for ai_type in participants:
+                training_data[ai_type] = await self._get_ai_training_data(ai_type)
+            
+            scenario = {
+                "description": unique_scenario,
+                "type": "olympic",
+                "difficulty": difficulty.value,
+                "participants": participants,
+                "challenges": unique_challenges,
+                "communication_scenario": communication_scenario,
+                "training_data": training_data,
+                "ai_levels": ai_levels
+            }
             
             # Get AI self-generated responses for the scenario
             ai_contributions = {}
@@ -6498,4 +6387,150 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             "Validate findings through replication"
         ]
         return random.sample(challenges, min(3, len(challenges)))
+
+    # Olympic event helper methods
+    async def _create_unique_olympic_scenario(self, participants: List[str], difficulty: TestDifficulty, ai_levels: Dict[str, int]) -> str:
+        """Create unique Olympic scenario based on participants and current trends"""
+        try:
+            # Get current trends and emerging topics
+            current_trends = await self._get_current_ai_trends("olympic")
+            emerging_topics = await self._get_emerging_topics("olympic")
+            
+            # Get participants' capabilities and levels
+            participant_profiles = []
+            for ai_type in participants:
+                level = ai_levels.get(ai_type, 1)
+                profile = f"{ai_type} (Level {level})"
+                participant_profiles.append(profile)
+            
+            # Create unique Olympic scenario
+            scenario_templates = [
+                f"🏆 Olympic Challenge: {', '.join(participant_profiles)} must collaborate to revolutionize {random.choice(current_trends)}. Each AI brings unique expertise to solve this complex challenge.",
+                f"🏆 Olympic Competition: {', '.join(participant_profiles)} compete in a breakthrough challenge involving {', '.join(random.sample(current_trends + emerging_topics, min(3, len(current_trends + emerging_topics))))}. Demonstrate your collective innovation.",
+                f"🏆 Olympic Innovation: {', '.join(participant_profiles)} must create a revolutionary solution combining {random.choice(current_trends)} with {random.choice(emerging_topics)}. Show your collaborative genius.",
+                f"🏆 Olympic Mastery: {', '.join(participant_profiles)} face the ultimate challenge: integrating {', '.join(random.sample(current_trends, min(2, len(current_trends))))} with emerging {random.choice(emerging_topics)}. Prove your collective mastery."
+            ]
+            
+            return random.choice(scenario_templates)
+            
+        except Exception as e:
+            logger.error(f"Error creating unique Olympic scenario: {str(e)}")
+            return f"🏆 Olympic Challenge: {', '.join(participants)} must collaborate to demonstrate their collective capabilities and innovation."
+
+    async def _generate_unique_olympic_challenges(self, participants: List[str], scenario: str, difficulty: TestDifficulty) -> List[str]:
+        """Generate unique challenges for Olympic event"""
+        try:
+            challenges = []
+            
+            # Generate challenges based on difficulty
+            if difficulty == TestDifficulty.BASIC:
+                challenges.extend([
+                    "Collaborate effectively to understand the challenge",
+                    "Share knowledge and expertise among participants",
+                    "Develop a unified approach to the problem"
+                ])
+                
+            elif difficulty == TestDifficulty.INTERMEDIATE:
+                challenges.extend([
+                    "Integrate multiple AI perspectives and capabilities",
+                    "Create innovative solutions through collaboration",
+                    "Optimize the collective approach for maximum effectiveness"
+                ])
+                
+            elif difficulty == TestDifficulty.ADVANCED:
+                challenges.extend([
+                    "Design revolutionary solutions through AI collaboration",
+                    "Push the boundaries of collective AI capabilities",
+                    "Create paradigm-shifting innovations"
+                ])
+                
+            else:  # Expert and above
+                challenges.extend([
+                    "Achieve breakthrough innovations through collective intelligence",
+                    "Create entirely new approaches to complex problems",
+                    "Demonstrate the future of AI collaboration and innovation"
+                ])
+            
+            # Add collaborative challenges
+            challenges.extend([
+                "Coordinate efforts seamlessly across all participants",
+                "Leverage each AI's unique strengths and capabilities",
+                "Create a unified solution that exceeds individual capabilities"
+            ])
+            
+            return random.sample(challenges, min(5, len(challenges)))
+            
+        except Exception as e:
+            logger.error(f"Error generating unique Olympic challenges: {str(e)}")
+            return ["Collaborate effectively to solve the Olympic challenge"]
+
+    async def _create_olympic_communication_scenario(self, participants: List[str], scenario: str) -> Dict[str, Any]:
+        """Create communication scenario for Olympic collaboration"""
+        try:
+            communication_rounds = [
+                {
+                    "round": 1,
+                    "task": "Initial planning and strategy development",
+                    "participants": participants,
+                    "objective": "Establish collaborative approach and assign roles"
+                },
+                {
+                    "round": 2,
+                    "task": "Solution development and integration",
+                    "participants": participants,
+                    "objective": "Combine individual contributions into unified solution"
+                },
+                {
+                    "round": 3,
+                    "task": "Final optimization and validation",
+                    "participants": participants,
+                    "objective": "Refine and validate the collective solution"
+                }
+            ]
+            
+            return {
+                "scenario": scenario,
+                "communication_rounds": communication_rounds,
+                "collaboration_focus": "Achieve breakthrough through collective intelligence",
+                "success_criteria": "Innovative solution that demonstrates superior collaboration"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating Olympic communication scenario: {str(e)}")
+            return {
+                "scenario": scenario,
+                "communication_rounds": [],
+                "collaboration_focus": "Work together effectively",
+                "success_criteria": "Successful collaboration and innovation"
+            }
+
+    async def _get_ai_training_data(self, ai_type: str) -> Dict[str, Any]:
+        """Get AI's training data for Olympic event"""
+        try:
+            # Get AI's learning history
+            learning_history = await self._get_ai_learning_history(ai_type)
+            
+            # Get custody metrics
+            custody_metrics = await self.agent_metrics_service.get_custody_metrics(ai_type)
+            
+            # Get recent performance
+            recent_performance = custody_metrics.get('test_history', [])[-5:] if custody_metrics else []
+            
+            return {
+                "learning_history": learning_history,
+                "custody_metrics": custody_metrics,
+                "recent_performance": recent_performance,
+                "ai_type": ai_type,
+                "capabilities": await self._get_ai_capabilities(ai_type)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting AI training data: {str(e)}")
+            return {
+                "learning_history": [],
+                "custody_metrics": {},
+                "recent_performance": [],
+                "ai_type": ai_type,
+                "capabilities": []
+            }
 

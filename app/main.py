@@ -1,7 +1,9 @@
 from fastapi import FastAPI, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
-from app.routers import imperium_learning, notifications, missions, imperium, guardian, conquest, sandbox, learning, growth, proposals, notify, oath_papers, codex, agents, analytics, github_webhook, code, approval, experiments, plugin, enhanced_learning, terra_extensions, training_data, anthropic_test, optimized_services, token_usage, weekly_notifications, custody_protocol, black_library, imperium_extensions, enhanced_ai_router, system_status, ai, agent_metrics, scheduling, enhanced_adversarial_testing, project_berserk, universal_hub, offline_chaos_router
+from app.routers import imperium_learning, notifications, missions, imperium, guardian, conquest, sandbox, learning, growth, proposals, notify, oath_papers, codex, agents, analytics, github_webhook, code, approval, experiments, plugin, enhanced_learning, terra_extensions, training_data, anthropic_test, optimized_services, token_usage, weekly_notifications, custody_protocol, black_library, imperium_extensions, enhanced_ai_router, system_status, ai, agent_metrics, scheduling, enhanced_adversarial_testing, offline_chaos_router
+# from app.routers import universal_hub  # Temporarily disabled - missing nmap dependency
+# from app.routers import project_berserk  # Temporarily disabled
 from app.core.database import init_database, create_tables, create_indexes
 from dotenv import load_dotenv
 import asyncio
@@ -29,12 +31,12 @@ from sqlalchemy import text
 import logging
 import structlog
 from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
-from app.core.watchdog import start_watchdog
+# from app.core.watchdog import start_watchdog  # Temporarily disabled - psutil not installing properly in Railway
 from app.routers.ai import router as ai_router
 from app.routers.weapons import router as weapons
 from app.services.custody_protocol_service import CustodyProtocolService
 from app.routers.scheduling import router as scheduling_router
-from app.routers.project_berserk import router as project_berserk_router
+# from app.routers.project_berserk import router as project_berserk_router  # Temporarily disabled
 
 logger = structlog.get_logger()
 
@@ -168,8 +170,8 @@ app.include_router(weapons)
 app.include_router(agent_metrics.router, prefix="/api/agent-metrics", tags=["agent-metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
 app.include_router(enhanced_adversarial_testing.router, prefix="/api", tags=["Enhanced Adversarial Testing"])
-app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
-app.include_router(universal_hub.router, prefix="/api/project-warmaster/universal-hub", tags=["Universal Hub"])
+# app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])  # Temporarily disabled
+# app.include_router(universal_hub.router, prefix="/api/project-warmaster/universal-hub", tags=["Universal Hub"])  # Temporarily disabled - missing nmap dependency
 app.include_router(offline_chaos_router.router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
 @app.websocket("/ws/imperium/learning-analytics")
