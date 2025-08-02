@@ -1921,8 +1921,8 @@ class CustodyProtocolService:
                 logger.info(f"[CUSTODY TEST] Using real-world test evaluation for {ai_type}")
                 return await self._execute_real_world_test(ai_type, test_content, difficulty, category)
             elif is_fallback_test:
-                logger.info(f"[CUSTODY TEST] Using fallback test evaluation for {ai_type}")
-                return await self._execute_fallback_test(ai_type, test_content, difficulty, category)
+                logger.info(f"[CUSTODY TEST] Using dynamic test evaluation for {ai_type}")
+                return await self._execute_dynamic_test(ai_type, test_content, difficulty, category)
             
             test_prompt = self._create_test_prompt(ai_type, test_content, difficulty, category)
             logger.info(f"[CUSTODY TEST] Test prompt: {test_prompt}")
@@ -2274,35 +2274,14 @@ Consider the learning objectives and previous areas of difficulty when formulati
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
     
-    async def _execute_fallback_test(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
-        """Execute smart fallback test with intelligent token management"""
+    async def _execute_dynamic_test(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
+        """Execute test using dynamic evaluation system - NO FALLBACKS"""
         try:
             start_time = datetime.utcnow()
-            logger.info(f"[SMART FALLBACK] Starting smart fallback test for {ai_type}")
+            logger.info(f"[DYNAMIC TEST] Starting dynamic test for {ai_type}")
             
-            # Import and use smart fallback system
-            try:
-                from smart_fallback_testing import SmartFallbackTesting
-                smart_system = SmartFallbackTesting()
-                
-                # Generate smart test using learning data
-                smart_test = await smart_system.generate_smart_test(
-                    ai_type, 
-                    difficulty.value, 
-                    category.value
-                )
-                
-                # Use the smart test content
-                test_content = smart_test
-                logger.info(f"[SMART FALLBACK] Smart test generated: {smart_test.get('source', 'unknown')}")
-                
-            except ImportError:
-                logger.warning(f"[SMART FALLBACK] Smart fallback not available, using basic fallback")
-                # Fall back to basic fallback system
-                pass
-            
-            # Create test prompt for fallback test
-            test_prompt = self._create_fallback_test_prompt(ai_type, test_content, difficulty, category)
+            # Create test prompt
+            test_prompt = self._create_test_prompt(ai_type, test_content, difficulty, category)
             
             # Get AI's response using unified AI service
             result = await unified_ai_service_shared.make_request(
@@ -2311,78 +2290,45 @@ Consider the learning objectives and previous areas of difficulty when formulati
                 max_tokens=2000
             )
             ai_response = result.get("content")
-            provider_info = result.get("provider")
             
             if ai_response is not None:
-                logger.info(f"[SMART FALLBACK] AI response received: {len(ai_response)} characters")
+                logger.info(f"[DYNAMIC TEST] AI response received: {len(ai_response)} characters")
             else:
-                logger.warning(f"[SMART FALLBACK] AI response is None (no content received)")
+                logger.warning(f"[DYNAMIC TEST] AI response is None (no content received)")
+                ai_response = "No response generated"
             
-            # Use fallback evaluation system
-            evaluation_result = await custodes_fallback.evaluate_fallback_test(ai_type, test_content, ai_response)
+            # ALWAYS use dynamic evaluation - NO FALLBACKS
+            evaluation = await self._evaluate_with_dynamic_criteria(ai_type, test_content.get('scenario', ''), ai_response, difficulty.value)
             
             end_time = datetime.utcnow()
             duration = (end_time - start_time).total_seconds()
             
-            logger.info(f"[SMART FALLBACK] Smart fallback evaluation complete: Score={evaluation_result.get('score', 0)}, Passed={evaluation_result.get('passed', False)}")
+            logger.info(f"[DYNAMIC TEST] Dynamic evaluation complete: Score={evaluation.get('score', 0)}, Passed={evaluation.get('score', 0) >= 70}")
             
             return {
-                "passed": evaluation_result.get('passed', False),
-                "score": int(evaluation_result.get('score', 0) * 100),  # Convert to 0-100 scale
+                "passed": evaluation.get('score', 0) >= 70,
+                "score": evaluation.get('score', 0),
                 "duration": duration,
                 "ai_response": ai_response,
-                "evaluation": evaluation_result.get('feedback', 'Smart fallback evaluation'),
+                "evaluation": evaluation.get('feedback', 'Dynamic evaluation completed'),
                 "test_content": test_content,
                 "timestamp": start_time.isoformat(),
-                "fallback_evaluation": True,
-                "smart_fallback": True
+                "dynamic_evaluation": True,
+                "evaluation_data": evaluation
             }
             
         except Exception as e:
-            logger.error(f"[SMART FALLBACK] Error executing smart fallback test: {str(e)}")
+            logger.error(f"[DYNAMIC TEST] Error executing dynamic test: {str(e)}")
             return {
                 "passed": False,
                 "score": 0,
                 "duration": 0,
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat(),
-                "fallback_evaluation": True,
-                "smart_fallback": True
+                "dynamic_evaluation": True
             }
     
-    def _create_fallback_test_prompt(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> str:
-        """Create test prompt for fallback tests"""
-        prompt = f"""
-        You are {ai_type} AI taking a Custody Protocol test.
-        
-        Test Type: {test_content.get('test_type', 'fallback')}
-        Difficulty: {difficulty.value}
-        Category: {category.value}
-        Time Limit: {test_content.get('time_limit', 600)} seconds
-        
-        Please answer the following question thoroughly and demonstrate your capabilities:
-        
-        """
-        
-        if 'question' in test_content:
-            prompt += f"Question: {test_content['question']}\n\n"
-        
-        if 'options' in test_content:
-            prompt += "Options:\n"
-            for i, option in enumerate(test_content['options'], 1):
-                prompt += f"{i}. {option}\n"
-            prompt += "\n"
-        
-        if 'sample_code' in test_content:
-            prompt += f"Code to analyze:\n{test_content['sample_code']}\n\n"
-        
-        prompt += """
-        Please provide a comprehensive, well-reasoned answer that demonstrates your knowledge, 
-        analytical thinking, and problem-solving capabilities. Your response should reflect 
-        the difficulty level of this test and show your growth as an AI.
-        """
-        
-        return prompt
+
     
     def _create_test_prompt(self, ai_type: str, test_content: Dict, difficulty: TestDifficulty, category: TestCategory) -> str:
         """Create test prompt for the AI"""
@@ -4345,8 +4291,8 @@ Consider the learning objectives and previous areas of difficulty when formulati
     async def _generate_comprehensive_custody_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
         """Generate comprehensive custody test using internet, ML, and SCKIPIT with fallback system"""
         try:
-            # First, ensure fallback system has learned from all AIs
-            await custodes_fallback.learn_from_all_ais()
+            # Dynamic test generation - NO FALLBACKS
+            logger.info(f"[COMPREHENSIVE TEST] Generating dynamic test for {ai_type}")
             
             # Get AI's learning history and recent activities
             learning_history = await self._get_ai_learning_history(ai_type)
@@ -4401,8 +4347,8 @@ Consider the learning objectives and previous areas of difficulty when formulati
                 fallback_category = self._convert_to_fallback_category(category)
                 fallback_difficulty = self._convert_to_fallback_difficulty(difficulty)
                 
-                # Generate test using fallback system (this should not require external AI calls)
-                test_content = await custodes_fallback.generate_fallback_test(ai_type, fallback_difficulty, fallback_category)
+                # Generate test using dynamic system (NO FALLBACKS)
+                test_content = await self._generate_dynamic_test_content(ai_type, difficulty, category)
                 logger.info(f"[COMPREHENSIVE TEST] Generated fallback test for {ai_type}: {test_content.get('test_type', 'unknown')}")
                 return test_content
                 
