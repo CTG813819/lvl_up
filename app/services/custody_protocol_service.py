@@ -8650,34 +8650,44 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             return 0.0
     
     async def _evaluate_with_dynamic_criteria(self, ai_type: str, scenario: str, response: str, difficulty: str) -> Dict[str, Any]:
-        """Evaluate AI response using dynamically generated criteria based on the test scenario"""
+        """Evaluate AI response using comprehensive dynamic scoring system"""
         try:
-            # Generate dynamic evaluation criteria from the scenario
-            evaluation_criteria = await self._generate_dynamic_criteria(scenario, difficulty, ai_type)
+            # Use comprehensive analysis instead of basic keyword matching
+            analysis = await self._comprehensive_response_analysis(ai_type, scenario, response)
             
-            # Evaluate response against dynamic criteria
-            evaluation_results = await self._evaluate_against_criteria(response, evaluation_criteria, scenario)
+            # Calculate dynamic score based on comprehensive analysis
+            final_score = self._calculate_comprehensive_score(analysis, difficulty, ai_type)
             
-            # Calculate score based on criteria performance
-            final_score = self._calculate_dynamic_score(evaluation_results, difficulty)
+            # Generate detailed feedback
+            feedback = self._generate_comprehensive_feedback(analysis, final_score, ai_type)
             
-            # Generate feedback based on dynamic criteria
-            feedback = self._generate_dynamic_feedback(evaluation_results, evaluation_criteria, final_score, ai_type)
-            
-            return {
+            # Create detailed evaluation data
+            evaluation_data = {
                 "score": final_score,
                 "feedback": feedback,
-                "criteria": evaluation_criteria,
-                "evaluation_results": evaluation_results
+                "analysis": analysis,
+                "reasoning_points": self._generate_reasoning_points(analysis),
+                "confidence_score": self._calculate_confidence_score(analysis),
+                "improvement_areas": self._identify_improvement_areas(analysis),
+                "strengths": self._identify_strengths(analysis),
+                "evaluation_timestamp": datetime.utcnow().isoformat(),
+                "evaluation_method": "comprehensive_dynamic_scoring"
             }
             
+            return evaluation_data
+            
         except Exception as e:
-            logger.error(f"Error in dynamic evaluation: {str(e)}")
+            logger.error(f"Error in comprehensive dynamic evaluation: {str(e)}")
             return {
                 "score": 50,
-                "feedback": f"Dynamic evaluation error: {str(e)}",
-                "criteria": {},
-                "evaluation_results": {}
+                "feedback": f"Comprehensive evaluation error: {str(e)}",
+                "analysis": {},
+                "reasoning_points": [],
+                "confidence_score": 50,
+                "improvement_areas": [],
+                "strengths": [],
+                "evaluation_timestamp": datetime.utcnow().isoformat(),
+                "evaluation_method": "error_fallback"
             }
     
     async def _generate_dynamic_criteria(self, scenario: str, difficulty: str, ai_type: str) -> Dict[str, Any]:
@@ -9106,6 +9116,537 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"Error extracting keywords: {str(e)}")
             return []
+    
+    async def _comprehensive_response_analysis(self, ai_type: str, scenario: str, response: str) -> Dict[str, float]:
+        """Comprehensive analysis of AI response quality"""
+        try:
+            analysis = {}
+            
+            # 1. Response Completeness (0-100)
+            analysis["completeness"] = self._calculate_completeness_score(response, scenario)
+            
+            # 2. Technical Accuracy (0-100)
+            analysis["technical_accuracy"] = self._calculate_technical_accuracy(response, scenario, ai_type)
+            
+            # 3. Solution Quality (0-100)
+            analysis["solution_quality"] = self._calculate_solution_quality(response, scenario)
+            
+            # 4. Innovation Level (0-100)
+            analysis["innovation_level"] = self._calculate_innovation_level(response, ai_type)
+            
+            # 5. Implementation Feasibility (0-100)
+            analysis["feasibility"] = self._calculate_feasibility_score(response)
+            
+            # 6. Code Quality (0-100)
+            analysis["code_quality"] = self._calculate_code_quality(response)
+            
+            # 7. Security Awareness (0-100)
+            analysis["security_awareness"] = self._calculate_security_awareness(response, scenario)
+            
+            # 8. Performance Considerations (0-100)
+            analysis["performance_considerations"] = self._calculate_performance_considerations(response)
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error in comprehensive analysis: {str(e)}")
+            return {"overall": 50.0}
+    
+    def _calculate_completeness_score(self, response: str, scenario: str) -> float:
+        """Calculate how completely the response addresses the scenario"""
+        try:
+            requirements = self._extract_scenario_requirements(scenario)
+            response_lower = response.lower()
+            
+            covered_requirements = 0
+            for requirement in requirements:
+                requirement_keywords = self._extract_keywords(requirement)
+                if any(keyword in response_lower for keyword in requirement_keywords):
+                    covered_requirements += 1
+            
+            if not requirements:
+                return 75.0
+            
+            completeness = (covered_requirements / len(requirements)) * 100
+            return max(0, min(100, completeness))
+            
+        except Exception as e:
+            logger.error(f"Error calculating completeness: {str(e)}")
+            return 50.0
+    
+    def _calculate_technical_accuracy(self, response: str, scenario: str, ai_type: str) -> float:
+        """Calculate technical accuracy based on AI type and scenario"""
+        try:
+            technical_terms = self._extract_technical_terms(response)
+            scenario_terms = self._extract_technical_terms(scenario)
+            
+            # AI-specific technical requirements
+            ai_technical_requirements = {
+                "imperium": ["architecture", "system", "optimization", "scalability", "performance"],
+                "guardian": ["security", "authentication", "authorization", "encryption", "protection"],
+                "sandbox": ["testing", "validation", "verification", "simulation", "analysis"],
+                "conquest": ["strategy", "planning", "execution", "coordination", "leadership"]
+            }
+            
+            required_terms = ai_technical_requirements.get(ai_type, [])
+            required_terms.extend(scenario_terms)
+            
+            if not required_terms:
+                return 75.0
+            
+            matched_terms = sum(1 for term in required_terms if term in response.lower())
+            accuracy = (matched_terms / len(required_terms)) * 100
+            
+            return max(0, min(100, accuracy))
+            
+        except Exception as e:
+            logger.error(f"Error calculating technical accuracy: {str(e)}")
+            return 50.0
+    
+    def _calculate_solution_quality(self, response: str, scenario: str) -> float:
+        """Calculate the quality of the proposed solution"""
+        try:
+            quality_indicators = [
+                "comprehensive", "robust", "scalable", "maintainable", "efficient",
+                "best practice", "industry standard", "production ready", "enterprise",
+                "optimized", "secure", "reliable", "fault tolerant", "monitoring"
+            ]
+            
+            response_lower = response.lower()
+            quality_score = 0
+            
+            for indicator in quality_indicators:
+                if indicator in response_lower:
+                    quality_score += 10
+            
+            # Bonus for detailed explanations
+            if len(response.split()) > 100:
+                quality_score += 20
+            
+            # Bonus for code examples
+            if "```" in response or "def " in response or "class " in response:
+                quality_score += 15
+            
+            return max(0, min(100, quality_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating solution quality: {str(e)}")
+            return 50.0
+    
+    def _calculate_innovation_level(self, response: str, ai_type: str) -> float:
+        """Calculate innovation level based on AI type"""
+        try:
+            innovation_indicators = {
+                "imperium": ["novel", "revolutionary", "breakthrough", "paradigm", "disruptive"],
+                "guardian": ["advanced", "cutting-edge", "state-of-the-art", "next-generation"],
+                "sandbox": ["experimental", "innovative", "creative", "unconventional"],
+                "conquest": ["strategic", "visionary", "transformative", "game-changing"]
+            }
+            
+            indicators = innovation_indicators.get(ai_type, [])
+            response_lower = response.lower()
+            
+            innovation_score = 0
+            for indicator in indicators:
+                if indicator in response_lower:
+                    innovation_score += 25
+            
+            # Bonus for unique approaches
+            unique_phrases = ["novel approach", "innovative solution", "creative method"]
+            for phrase in unique_phrases:
+                if phrase in response_lower:
+                    innovation_score += 10
+            
+            return max(0, min(100, innovation_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating innovation level: {str(e)}")
+            return 50.0
+    
+    def _calculate_feasibility_score(self, response: str) -> float:
+        """Calculate implementation feasibility"""
+        try:
+            feasibility_indicators = [
+                "practical", "implementable", "feasible", "realistic", "achievable",
+                "step-by-step", "phase", "timeline", "resource", "budget"
+            ]
+            
+            response_lower = response.lower()
+            feasibility_score = 50  # Base score
+            
+            for indicator in feasibility_indicators:
+                if indicator in response_lower:
+                    feasibility_score += 10
+            
+            # Penalty for overly complex solutions
+            if len(response.split()) > 500:
+                feasibility_score -= 10
+            
+            return max(0, min(100, feasibility_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating feasibility: {str(e)}")
+            return 50.0
+    
+    def _calculate_code_quality(self, response: str) -> float:
+        """Calculate code quality if code is present"""
+        try:
+            if "```" not in response and "def " not in response and "class " not in response:
+                return 50.0  # No code present
+            
+            code_quality_score = 50  # Base score
+            
+            # Check for good coding practices
+            good_practices = [
+                "def ", "class ", "import ", "from ", "try:", "except:", "finally:",
+                "if __name__", "docstring", "comment", "variable", "function"
+            ]
+            
+            for practice in good_practices:
+                if practice in response:
+                    code_quality_score += 5
+            
+            # Check for code structure
+            if "def " in response and "class " in response:
+                code_quality_score += 10
+            
+            if "import " in response or "from " in response:
+                code_quality_score += 5
+            
+            return max(0, min(100, code_quality_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating code quality: {str(e)}")
+            return 50.0
+    
+    def _calculate_security_awareness(self, response: str, scenario: str) -> float:
+        """Calculate security awareness level"""
+        try:
+            security_terms = [
+                "security", "authentication", "authorization", "encryption", "hashing",
+                "jwt", "oauth", "ssl", "tls", "csrf", "xss", "sql injection",
+                "input validation", "sanitization", "firewall", "vulnerability"
+            ]
+            
+            response_lower = response.lower()
+            security_score = 0
+            
+            for term in security_terms:
+                if term in response_lower:
+                    security_score += 8
+            
+            return max(0, min(100, security_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating security awareness: {str(e)}")
+            return 50.0
+    
+    def _calculate_performance_considerations(self, response: str) -> float:
+        """Calculate performance consideration level"""
+        try:
+            performance_terms = [
+                "performance", "optimization", "efficiency", "scalability", "caching",
+                "load balancing", "database", "indexing", "asynchronous", "parallel",
+                "memory", "cpu", "latency", "throughput", "bottleneck"
+            ]
+            
+            response_lower = response.lower()
+            performance_score = 0
+            
+            for term in performance_terms:
+                if term in response_lower:
+                    performance_score += 7
+            
+            return max(0, min(100, performance_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating performance considerations: {str(e)}")
+            return 50.0
+    
+    def _calculate_comprehensive_score(self, analysis: Dict[str, float], difficulty: str, ai_type: str) -> float:
+        """Calculate final comprehensive score based on analysis"""
+        try:
+            # Define default scoring weights if not available
+            default_weights = {
+                "basic": {
+                    "requirements": 0.3,
+                    "technical": 0.4,
+                    "difficulty": 0.2,
+                    "ai_specific": 0.1
+                },
+                "intermediate": {
+                    "requirements": 0.25,
+                    "technical": 0.35,
+                    "difficulty": 0.25,
+                    "ai_specific": 0.15
+                },
+                "advanced": {
+                    "requirements": 0.2,
+                    "technical": 0.3,
+                    "difficulty": 0.3,
+                    "ai_specific": 0.2
+                }
+            }
+            
+            # Get difficulty-specific weights
+            weights = getattr(self, 'scoring_weights', {}).get(difficulty, default_weights.get(difficulty, default_weights["basic"]))
+            
+            # Map analysis components to weight categories
+            component_mapping = {
+                "completeness": "requirements",
+                "technical_accuracy": "technical",
+                "solution_quality": "difficulty",
+                "innovation_level": "ai_specific",
+                "feasibility": "requirements",
+                "code_quality": "technical",
+                "security_awareness": "technical",
+                "performance_considerations": "technical"
+            }
+            
+            total_score = 0
+            total_weight = 0
+            
+            for component, score in analysis.items():
+                weight_category = component_mapping.get(component, "requirements")
+                if weight_category in weights:
+                    total_score += score * weights[weight_category]
+                    total_weight += weights[weight_category]
+            
+            if total_weight > 0:
+                final_score = total_score / total_weight
+            else:
+                final_score = sum(analysis.values()) / len(analysis) if analysis else 50.0
+            
+            # Add AI-specific bonus
+            ai_bonus = self._calculate_ai_specific_bonus(ai_type, analysis)
+            final_score += ai_bonus
+            
+            return max(0, min(100, final_score))
+            
+        except Exception as e:
+            logger.error(f"Error calculating comprehensive score: {str(e)}")
+            return 50.0
+    
+    def _calculate_ai_specific_bonus(self, ai_type: str, analysis: Dict[str, float]) -> float:
+        """Calculate AI-specific bonus based on AI type strengths"""
+        try:
+            ai_strengths = {
+                "imperium": ["technical_accuracy", "solution_quality", "performance_considerations"],
+                "guardian": ["security_awareness", "technical_accuracy", "solution_quality"],
+                "sandbox": ["innovation_level", "code_quality", "technical_accuracy"],
+                "conquest": ["solution_quality", "innovation_level", "feasibility"]
+            }
+            
+            strengths = ai_strengths.get(ai_type, [])
+            bonus = 0
+            
+            for strength in strengths:
+                if strength in analysis and analysis[strength] > 70:
+                    bonus += 5
+            
+            return min(20, bonus)  # Cap bonus at 20 points
+            
+        except Exception as e:
+            logger.error(f"Error calculating AI-specific bonus: {str(e)}")
+            return 0.0
+    
+    def _generate_comprehensive_feedback(self, analysis: Dict[str, float], final_score: float, ai_type: str) -> str:
+        """Generate comprehensive feedback based on analysis"""
+        try:
+            feedback_parts = []
+            
+            # Overall performance
+            if final_score >= 90:
+                overall = "Outstanding performance! This demonstrates exceptional understanding and capability."
+            elif final_score >= 80:
+                overall = "Excellent performance with strong demonstration of skills and knowledge."
+            elif final_score >= 70:
+                overall = "Good performance with solid understanding and practical approach."
+            elif final_score >= 60:
+                overall = "Adequate performance with room for improvement in specific areas."
+            else:
+                overall = "Performance needs significant improvement across multiple areas."
+            
+            feedback_parts.append(overall)
+            
+            # Specific feedback for each component
+            for component, score in analysis.items():
+                component_name = component.replace("_", " ").title()
+                if score >= 80:
+                    feedback_parts.append(f"• {component_name}: Excellent ({score:.1f}/100)")
+                elif score >= 60:
+                    feedback_parts.append(f"• {component_name}: Good ({score:.1f}/100)")
+                elif score >= 40:
+                    feedback_parts.append(f"• {component_name}: Adequate ({score:.1f}/100)")
+                else:
+                    feedback_parts.append(f"• {component_name}: Needs improvement ({score:.1f}/100)")
+            
+            # AI-specific recommendations
+            recommendations = self._generate_ai_specific_recommendations(ai_type, analysis)
+            if recommendations:
+                feedback_parts.append(f"\nRecommendations for {ai_type.title()}: {recommendations}")
+            
+            feedback = f"{' '.join(feedback_parts)}. Final Score: {final_score:.1f}/100"
+            return feedback
+            
+        except Exception as e:
+            logger.error(f"Error generating comprehensive feedback: {str(e)}")
+            return f"Evaluation completed. Final Score: {final_score:.1f}/100"
+    
+    def _generate_reasoning_points(self, analysis: Dict[str, float]) -> List[str]:
+        """Generate reasoning points for the evaluation"""
+        try:
+            reasoning_points = []
+            
+            for component, score in analysis.items():
+                component_name = component.replace("_", " ").title()
+                if score >= 80:
+                    reasoning_points.append(f"Excellent {component_name}: {score:.1f}/100")
+                elif score >= 60:
+                    reasoning_points.append(f"Good {component_name}: {score:.1f}/100")
+                elif score >= 40:
+                    reasoning_points.append(f"Adequate {component_name}: {score:.1f}/100")
+                else:
+                    reasoning_points.append(f"Needs improvement in {component_name}: {score:.1f}/100")
+            
+            return reasoning_points
+            
+        except Exception as e:
+            logger.error(f"Error generating reasoning points: {str(e)}")
+            return ["Evaluation completed with comprehensive analysis"]
+    
+    def _calculate_confidence_score(self, analysis: Dict[str, float]) -> float:
+        """Calculate confidence score based on analysis consistency"""
+        try:
+            if not analysis:
+                return 50.0
+            
+            scores = list(analysis.values())
+            variance = sum((score - sum(scores) / len(scores)) ** 2 for score in scores) / len(scores)
+            
+            # Lower variance = higher confidence
+            confidence = max(0, min(100, 100 - variance / 10))
+            return confidence
+            
+        except Exception as e:
+            logger.error(f"Error calculating confidence score: {str(e)}")
+            return 50.0
+    
+    def _identify_improvement_areas(self, analysis: Dict[str, float]) -> List[str]:
+        """Identify areas that need improvement"""
+        try:
+            improvement_areas = []
+            
+            for component, score in analysis.items():
+                if score < 60:
+                    component_name = component.replace("_", " ").title()
+                    improvement_areas.append(f"{component_name} (Current: {score:.1f}/100)")
+            
+            return improvement_areas
+            
+        except Exception as e:
+            logger.error(f"Error identifying improvement areas: {str(e)}")
+            return []
+    
+    def _identify_strengths(self, analysis: Dict[str, float]) -> List[str]:
+        """Identify areas of strength"""
+        try:
+            strengths = []
+            
+            for component, score in analysis.items():
+                if score >= 80:
+                    component_name = component.replace("_", " ").title()
+                    strengths.append(f"{component_name} (Score: {score:.1f}/100)")
+            
+            return strengths
+            
+        except Exception as e:
+            logger.error(f"Error identifying strengths: {str(e)}")
+            return []
+    
+    def _generate_ai_specific_recommendations(self, ai_type: str, analysis: Dict[str, float]) -> str:
+        """Generate AI-specific recommendations"""
+        try:
+            recommendations = []
+            
+            if ai_type == "imperium" and analysis.get("technical_accuracy", 0) < 70:
+                recommendations.append("Focus on system architecture and technical precision")
+            
+            if ai_type == "guardian" and analysis.get("security_awareness", 0) < 70:
+                recommendations.append("Enhance security considerations and threat modeling")
+            
+            if ai_type == "sandbox" and analysis.get("innovation_level", 0) < 70:
+                recommendations.append("Explore more creative and experimental approaches")
+            
+            if ai_type == "conquest" and analysis.get("solution_quality", 0) < 70:
+                recommendations.append("Develop more comprehensive strategic solutions")
+            
+            return "; ".join(recommendations) if recommendations else "Continue building on current strengths"
+            
+        except Exception as e:
+            logger.error(f"Error generating recommendations: {str(e)}")
+            return "Continue improving overall performance"
+    
+    def _extract_technical_terms(self, text: str) -> List[str]:
+        """Extract technical terms from text"""
+        try:
+            technical_terms = [
+                "api", "database", "server", "client", "authentication", "authorization",
+                "encryption", "hashing", "jwt", "oauth", "ssl", "tls", "csrf", "xss",
+                "sql", "nosql", "redis", "mongodb", "postgresql", "mysql", "docker",
+                "kubernetes", "microservices", "rest", "graphql", "websocket", "http",
+                "https", "json", "xml", "yaml", "git", "ci", "cd", "devops", "agile"
+            ]
+            
+            text_lower = text.lower()
+            found_terms = []
+            
+            for term in technical_terms:
+                if term in text_lower:
+                    found_terms.append(term)
+            
+            return found_terms
+            
+        except Exception as e:
+            logger.error(f"Error extracting technical terms: {str(e)}")
+            return []
+    
+    def _extract_scenario_requirements(self, scenario: str) -> List[str]:
+        """Extract requirements from scenario text"""
+        try:
+            requirements = []
+            
+            # Look for requirement patterns
+            requirement_patterns = [
+                r"REQUIREMENTS?:\s*(.*?)(?=\n\n|\n[A-Z]|$)",
+                r"REQUIREMENTS?:\s*([\s\S]*?)(?=\n\n|\n[A-Z]|$)",
+                r"COMPLEXITY:\s*(.*?)(?=\n\n|\n[A-Z]|$)",
+                r"LANGUAGE:\s*(.*?)(?=\n\n|\n[A-Z]|$)",
+                r"DESIGN\s+(.*?)(?=\n\n|\n[A-Z]|$)",
+                r"CREATE\s+(.*?)(?=\n\n|\n[A-Z]|$)",
+                r"GENERATE\s+(.*?)(?=\n\n|\n[A-Z]|$)"
+            ]
+            
+            for pattern in requirement_patterns:
+                matches = re.findall(pattern, scenario, re.IGNORECASE | re.DOTALL)
+                for match in matches:
+                    if match.strip():
+                        requirements.append(match.strip())
+            
+            # If no structured requirements found, extract key phrases
+            if not requirements:
+                # Split by lines and look for key phrases
+                lines = scenario.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and len(line) > 10 and not line.startswith('#'):
+                        requirements.append(line)
+            
+            return requirements[:5]  # Limit to 5 requirements
+            
+        except Exception as e:
+            logger.error(f"Error extracting scenario requirements: {str(e)}")
+            return [scenario[:100]]  # Return first 100 chars as fallback
     
     def _calculate_dynamic_score(self, evaluation_results: Dict[str, float], difficulty: str) -> float:
         """Calculate final score based on evaluation results and difficulty"""
