@@ -1605,7 +1605,7 @@ Format your response as JSON with the following structure:
         except Exception as e:
             logger.error(f"Error parsing JSON response: {str(e)}")
         
-        # Fallback parsing
+        # Fallback parsing with proper type handling
         sections = {
             'main_code': '',
             'dependencies': [],
@@ -1637,13 +1637,21 @@ Format your response as JSON with the following structure:
             elif 'config' in line.lower():
                 current_section = 'configuration'
             
+            # Ensure proper type handling for each section
             if current_section == 'main_code':
                 sections['main_code'] += line + '\n'
             elif current_section == 'dependencies':
                 if line.strip() and not line.startswith('#'):
                     sections['dependencies'].append(line.strip())
+            elif current_section == 'configuration':
+                # Handle configuration as dict
+                if ':' in line and line.strip():
+                    key, value = line.split(':', 1)
+                    sections['configuration'][key.strip()] = value.strip()
             else:
-                sections[current_section] += line + '\n'
+                # Handle string sections properly
+                if isinstance(sections[current_section], str):
+                    sections[current_section] += line + '\n'
         
         return sections
     
