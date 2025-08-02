@@ -5315,12 +5315,8 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                 ai_response = await self._get_ai_answer(ai, test["scenario"])
                 answer = ai_response.get("answer", "No answer generated")
                 
-                # Use autonomous SCKIPIT evaluation (no LLM dependency)
-                if self.sckipit_service:
-                    evaluation = await self.sckipit_service.evaluate_test_response(test["scenario"], answer)
-                else:
-                    # Generate dynamic evaluation criteria based on the test scenario
-                    evaluation = await self._evaluate_with_dynamic_criteria(ai, test["scenario"], answer, test.get("difficulty", "basic"))
+                # ALWAYS use dynamic evaluation - no fallback to SCKIPIT
+                evaluation = await self._evaluate_with_dynamic_criteria(ai, test["scenario"], answer, test.get("difficulty", "basic"))
                 
                 passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
                 if passed:
@@ -5342,7 +5338,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     "learning_score_awarded": 100 if passed else 0,
                     "evaluation": evaluation,
                     "explainability_data": {
-                        "reasoning_trace": "Autonomous evaluation completed",
+                        "reasoning_trace": "Dynamic evaluation completed",
                         "confidence_score": evaluation.get("score", 50),
                         "self_assessment": evaluation.get("self_assessment", {}),
                         "uncertainty_areas": evaluation.get("uncertainty_areas", [])
@@ -5351,7 +5347,9 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     "duration": test_duration,
                     "test_type": "single",
                     "difficulty": test.get("difficulty", "basic"),
-                    "complexity": test.get("complexity", "x1")
+                    "complexity": test.get("complexity", "x1"),
+                    "dynamic_evaluation": True,
+                    "criteria_used": evaluation.get("criteria", {})
                 }
                 
                 # Store test result in database
@@ -5367,12 +5365,8 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                     ai_response = await self._get_ai_answer(ai, test["scenario"])
                     responses[ai] = ai_response.get("answer", "No answer generated")
                 
-                # Use autonomous SCKIPIT evaluation (no LLM dependency)
-                if self.sckipit_service:
-                    evaluation = await self.sckipit_service.evaluate_collaborative_response(test["scenario"], responses)
-                else:
-                    # Generate dynamic collaborative evaluation criteria
-                    evaluation = await self._evaluate_collaborative_with_dynamic_criteria(test["scenario"], responses, test.get("difficulty", "basic"))
+                # ALWAYS use dynamic collaborative evaluation - no fallback to SCKIPIT
+                evaluation = await self._evaluate_collaborative_with_dynamic_criteria(test["scenario"], responses, test.get("difficulty", "basic"))
                 
                 passed = evaluation.get("score", 0) >= 70  # Lower threshold for autonomous system
                 xp_share = 300 // len(test["ai_types"])
@@ -5824,19 +5818,19 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             # Local import to avoid circular import
             if ai_type.lower() == "imperium":
                 from app.services.imperium_ai_service import ImperiumAIService
-                ai_service = ImperiumAIService()
+                ai_service = await ImperiumAIService.initialize()
             elif ai_type.lower() == "guardian":
                 from app.services.guardian_ai_service import GuardianAIService
-                ai_service = GuardianAIService()
+                ai_service = await GuardianAIService.initialize()
             elif ai_type.lower() == "sandbox":
                 from app.services.sandbox_ai_service import SandboxAIService
-                ai_service = SandboxAIService()
+                ai_service = await SandboxAIService.initialize()
             elif ai_type.lower() == "conquest":
                 from app.services.conquest_ai_service import ConquestAIService
-                ai_service = ConquestAIService()
+                ai_service = await ConquestAIService.initialize()
             else:
                 from app.services.sandbox_ai_service import SandboxAIService
-                ai_service = SandboxAIService()
+                ai_service = await SandboxAIService.initialize()
             answer = await ai_service.answer_prompt(prompt)
             if not answer or answer.strip().lower() in ["no answer generated", "not implemented", "error"]:
                 logger.warning(f"AI {ai_type} failed to answer, returning best-effort fallback.")
@@ -8888,6 +8882,34 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
         except Exception as e:
             logger.error(f"Error evaluating single criterion: {str(e)}")
             return 50.0
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """Extract keywords from text for evaluation"""
+        try:
+            # Remove common words and extract meaningful keywords
+            stop_words = {
+                'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+                'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+                'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those',
+                'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+                'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'his', 'hers', 'ours', 'theirs'
+            }
+            
+            # Split text into words and filter
+            words = text.lower().split()
+            keywords = []
+            
+            for word in words:
+                # Remove punctuation
+                clean_word = ''.join(c for c in word if c.isalnum())
+                if clean_word and len(clean_word) > 2 and clean_word not in stop_words:
+                    keywords.append(clean_word)
+            
+            return keywords
+            
+        except Exception as e:
+            logger.error(f"Error extracting keywords: {str(e)}")
+            return []
     
     def _calculate_dynamic_score(self, evaluation_results: Dict[str, float], difficulty: str) -> float:
         """Calculate final score based on evaluation results and difficulty"""

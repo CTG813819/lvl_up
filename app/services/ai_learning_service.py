@@ -1600,40 +1600,82 @@ class AILearningService:
                    improvements_count=len(improvements))
     
     async def get_learning_insights(self, ai_type: str) -> Dict[str, Any]:
-        """Get AI learning insights using ML analysis"""
+        """Get learning insights for a specific AI type"""
         try:
-            if ai_type not in self._learning_states:
-                return {'error': 'No learning data available'}
+            # Get learning stats
+            stats = await self.get_learning_stats(ai_type)
             
-            state = self._learning_states[ai_type]
+            # Get recent learning patterns
+            recent_patterns = await self._get_recent_learning_patterns(ai_type)
             
-            # Analyze learning patterns
-            total_events = len(state['learning_events'])
-            total_improvements = len(state['improvements_learned'])
+            # Get failure analysis
+            failure_analytics = await self.get_failure_learning_analytics(ai_type)
             
-            # Calculate learning efficiency
-            learning_efficiency = total_improvements / max(total_events, 1)
+            # Get explainability analytics
+            explainability = await self.get_explainability_analytics(ai_type)
             
-            # Get recent learning activity
-            recent_events = state['learning_events'][-5:] if state['learning_events'] else []
-            
-            insights = {
-                'ai_type': ai_type,
-                'total_learning_events': total_events,
-                'total_improvements_learned': total_improvements,
-                'learning_efficiency': learning_efficiency,
-                'recent_learning_events': recent_events,
-                'failure_patterns': state.get('failure_patterns', []),
-                'success_patterns': state.get('success_patterns', []),
-                'last_learning': state.get('last_learning'),
-                'ml_model_status': 'active' if 'failure_predictor' in self._ml_models else 'inactive'
+            return {
+                "learning_stats": stats,
+                "recent_patterns": recent_patterns,
+                "failure_analytics": failure_analytics,
+                "explainability": explainability,
+                "ai_type": ai_type,
+                "timestamp": datetime.now().isoformat()
             }
-            
-            return insights
-            
         except Exception as e:
-            logger.error(f"Error getting learning insights: {str(e)}")
-            return {'error': str(e)}
+            logger.error(f"Error getting learning insights for {ai_type}: {str(e)}")
+            return {
+                "learning_stats": {},
+                "recent_patterns": [],
+                "failure_analytics": {},
+                "explainability": {},
+                "ai_type": ai_type,
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e)
+            }
+
+    async def get_learning_log(self, ai_type: str) -> str:
+        """Get learning log as a string for AI services"""
+        try:
+            # Get learning insights
+            insights = await self.get_learning_insights(ai_type)
+            
+            # Convert insights to a readable string format
+            learning_log = f"""
+AI Type: {ai_type}
+Learning Stats: {insights.get('learning_stats', {})}
+Recent Patterns: {insights.get('recent_patterns', [])}
+Failure Analytics: {insights.get('failure_analytics', {})}
+Explainability: {insights.get('explainability', {})}
+Timestamp: {insights.get('timestamp', '')}
+"""
+            return learning_log
+        except Exception as e:
+            logger.error(f"Error getting learning log for {ai_type}: {str(e)}")
+            return f"AI Type: {ai_type}\nLearning data unavailable due to error: {str(e)}"
+
+    async def _get_recent_learning_patterns(self, ai_type: str) -> List[Dict[str, Any]]:
+        """Get recent learning patterns for an AI type"""
+        try:
+            # This is a placeholder implementation
+            # In a real implementation, you would query the database for recent learning patterns
+            return [
+                {
+                    "pattern": "code_optimization",
+                    "frequency": 5,
+                    "last_occurrence": datetime.now().isoformat(),
+                    "success_rate": 0.8
+                },
+                {
+                    "pattern": "security_analysis", 
+                    "frequency": 3,
+                    "last_occurrence": datetime.now().isoformat(),
+                    "success_rate": 0.7
+                }
+            ]
+        except Exception as e:
+            logger.error(f"Error getting recent learning patterns for {ai_type}: {str(e)}")
+            return []
     
     async def learn_from_proposal(self, proposal_id: str, status: str, feedback_reason: str = None) -> Dict[str, Any]:
         """Learn from a proposal's outcome"""
