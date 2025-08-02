@@ -2012,8 +2012,11 @@ Focus on your unique capabilities and perspective.
                 base_threshold = 65  # Lower base threshold
                 
                 # Adjust threshold based on AI performance
-                if custody_metrics:
-                    consecutive_failures = custody_metrics.get('consecutive_failures', 0)
+                try:
+                    custody_metrics = await self._load_custody_metrics_from_database()
+                    ai_metrics = custody_metrics.get(ai_type, {})
+                    consecutive_failures = ai_metrics.get('consecutive_failures', 0)
+                    
                     if consecutive_failures > 5:
                         # Much lower threshold for failing AIs
                         threshold = max(40, base_threshold - (consecutive_failures * 2))
@@ -2023,7 +2026,8 @@ Focus on your unique capabilities and perspective.
                     else:
                         # Normal threshold for successful AIs
                         threshold = base_threshold
-                else:
+                except Exception as e:
+                    logger.warning(f"Could not load custody metrics for threshold adjustment: {str(e)}")
                     threshold = base_threshold
                 
                 logger.info(f"[CUSTODY TEST] Using AI-adjusted threshold: {threshold}")
@@ -2518,15 +2522,21 @@ Consider the learning objectives and previous areas of difficulty when formulati
                     # Try to parse the timestamp to ensure it's valid
                     from datetime import datetime
                     timestamp_str = test_history_entry["timestamp"]
-                    if timestamp_str and ":" in timestamp_str:
-                        # Check if timestamp has invalid hour values (like 65:00:00)
-                        time_parts = timestamp_str.split(":")
-                        if len(time_parts) >= 2:
-                            hour = int(time_parts[0])
-                            if hour > 23:
-                                # Fix corrupted timestamp
-                                logger.warning(f"[CUSTODY METRICS] Fixing corrupted timestamp for {ai_type}: {timestamp_str}")
-                                test_history_entry["timestamp"] = datetime.utcnow().isoformat()
+                    if timestamp_str:
+                        # Check if timestamp is complete (should have seconds)
+                        if timestamp_str.count(":") >= 2:  # Should have hours:minutes:seconds
+                            # Check if timestamp has invalid hour values (like 65:00:00)
+                            time_parts = timestamp_str.split(":")
+                            if len(time_parts) >= 2:
+                                hour = int(time_parts[0])
+                                if hour > 23:
+                                    # Fix corrupted timestamp
+                                    logger.warning(f"[CUSTODY METRICS] Fixing corrupted timestamp for {ai_type}: {timestamp_str}")
+                                    test_history_entry["timestamp"] = datetime.utcnow().isoformat()
+                        else:
+                            # Timestamp is incomplete, fix it
+                            logger.warning(f"[CUSTODY METRICS] Fixing incomplete timestamp for {ai_type}: {timestamp_str}")
+                            test_history_entry["timestamp"] = datetime.utcnow().isoformat()
                 except Exception as e:
                     logger.warning(f"[CUSTODY METRICS] Error validating timestamp for {ai_type}: {str(e)}")
                     from datetime import datetime
@@ -7534,14 +7544,21 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
             # Add AI-specific adjustments based on performance history
             ai_adjustment = 0
-            if custody_metrics:
-                consecutive_failures = custody_metrics.get('consecutive_failures', 0)
+            try:
+                # Get current custody metrics for this AI
+                custody_metrics = await self._load_custody_metrics_from_database()
+                ai_metrics = custody_metrics.get(ai_type, {})
+                consecutive_failures = ai_metrics.get('consecutive_failures', 0)
+                
                 if consecutive_failures > 10:
                     # Give slightly higher scores to failing AIs to encourage improvement
                     ai_adjustment = min(10, consecutive_failures * 0.5)
                 elif consecutive_failures == 0:
                     # Slightly lower scores for consistently successful AIs to maintain challenge
                     ai_adjustment = -2
+            except Exception as e:
+                logger.warning(f"Could not load custody metrics for {ai_type}: {str(e)}")
+                ai_adjustment = 0
             
             final_score = int(evaluation_score + base_variation + ai_adjustment)
             final_score = max(0, min(100, final_score))
