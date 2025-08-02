@@ -7585,20 +7585,10 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"[AUTONOMOUS EVALUATION] Error in evaluation: {str(e)}")
-            # Provide more varied fallback scores based on AI type
-            ai_specific_base = {
-                "conquest": 45,
-                "guardian": 50,
-                "imperium": 55,
-                "sandbox": 40
-            }.get(ai_type.lower(), 50)
-            
-            fallback_score = ai_specific_base + random.uniform(-15, 15)
-            fallback_score = max(0, min(100, fallback_score))
-            
+            # NO FALLBACK - Let the AI handle the evaluation autonomously
             return {
-                "score": fallback_score,
-                "evaluation": "Autonomous evaluation completed with AI-specific fallback scoring",
+                "score": 0,
+                "evaluation": "Autonomous evaluation failed - AI must handle evaluation independently",
                 "components": {}
             }
     
@@ -7619,7 +7609,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"Error evaluating content quality: {str(e)}")
-            return 50.0
+            return 0  # NO FALLBACK - AI must evaluate autonomously
     
     async def _evaluate_knowledge_accuracy(self, response: str, ai_type: str, 
                                          learning_history: List[Dict], recent_proposals: List[Dict]) -> float:
@@ -7647,7 +7637,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             if response_concepts:
                 accuracy_score = (aligned_concepts / len(response_concepts)) * 100
             else:
-                accuracy_score = 50.0
+                accuracy_score = 0  # NO FALLBACK - AI must demonstrate knowledge
             
             # Add learning history bonus
             if learning_history:
@@ -7659,7 +7649,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"Error evaluating knowledge accuracy: {str(e)}")
-            return 50.0
+            return 0  # NO FALLBACK - AI must evaluate knowledge autonomously
     
     async def _evaluate_technical_correctness(self, response: str, category: TestCategory, 
                                             test_content: Dict) -> float:
@@ -7686,7 +7676,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"Error evaluating technical correctness: {str(e)}")
-            return 50.0
+            return 0  # NO FALLBACK - AI must evaluate technical correctness autonomously
     
     async def _evaluate_learning_progress(self, ai_type: str, response: str, 
                                         learning_history: List[Dict], difficulty: TestDifficulty) -> float:
@@ -7716,7 +7706,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
         except Exception as e:
             logger.error(f"Error evaluating learning progress: {str(e)}")
-            return 50.0
+            return 0  # NO FALLBACK - AI must evaluate learning progress autonomously
     
     async def _extract_response_features(self, response: str, category: TestCategory, difficulty: TestDifficulty) -> List[float]:
         """Extract features from response for ML evaluation"""
@@ -7820,32 +7810,50 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             return ['quality', 'standards']
     
     async def _calculate_response_score(self, response: str, difficulty: TestDifficulty) -> float:
-        """Calculate base response score"""
+        """Calculate base response score with improved algorithm"""
         try:
-            base_score = 50.0
+            # Enhanced base scoring based on response quality
+            base_score = 60.0  # Increased from 50.0
             
             # Complexity scoring based on difficulty
             complexity_multiplier = {
                 TestDifficulty.BASIC: 1.0,
-                TestDifficulty.INTERMEDIATE: 1.2,
-                TestDifficulty.ADVANCED: 1.5,
-                TestDifficulty.EXPERT: 2.0,
-                TestDifficulty.MASTER: 2.5,
-                TestDifficulty.LEGENDARY: 3.0
+                TestDifficulty.INTERMEDIATE: 1.1,
+                TestDifficulty.ADVANCED: 1.3,
+                TestDifficulty.EXPERT: 1.6,
+                TestDifficulty.MASTER: 2.0,
+                TestDifficulty.LEGENDARY: 2.5
             }
             
             multiplier = complexity_multiplier.get(difficulty, 1.0)
             
-            # Calculate complexity indicators
+            # Enhanced complexity indicators
             technical_terms = len([word for word in response.split() if len(word) > 8])
-            technical_score = min(30, technical_terms * 2)
+            code_blocks = response.count('```')
+            technical_score = min(25, technical_terms * 1.5 + code_blocks * 5)
             
-            final_score = (base_score + technical_score) * multiplier
-            return max(0, min(100, final_score))
+            # Content quality indicators
+            response_length = len(response)
+            if response_length > 500:
+                content_bonus = 10
+            elif response_length > 200:
+                content_bonus = 5
+            else:
+                content_bonus = 0
+            
+            # Structure indicators
+            has_structure = any(marker in response.lower() for marker in ['1.', '2.', '3.', '•', '-', '*'])
+            structure_bonus = 5 if has_structure else 0
+            
+            # Calculate final score with better distribution
+            final_score = (base_score + technical_score + content_bonus + structure_bonus) * multiplier
+            final_score = max(40, min(95, final_score))  # Ensure reasonable range
+            
+            return final_score
             
         except Exception as e:
             logger.error(f"Error calculating response score: {str(e)}")
-            return 50.0
+            return 0  # NO FALLBACK - AI must calculate score autonomously
     
     def _generate_autonomous_feedback(self, content_quality: float, knowledge_accuracy: float,
                                     technical_correctness: float, learning_progress: float,

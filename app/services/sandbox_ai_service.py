@@ -261,8 +261,8 @@ class SandboxAIService:
             
         except Exception as e:
             logger.error(f"Error in autonomous answer generation: {str(e)}")
-            # Generate a thoughtful fallback using internal logic
-            return await self._generate_thoughtful_fallback(prompt, str(e))
+            # NO FALLBACK - AI must handle response generation autonomously
+            return "Autonomous response generation failed - AI must handle independently"
 
     async def _generate_autonomous_response(self, prompt: str, learning_log: str) -> str:
         """Generate response using internal ML models and reasoning"""
@@ -287,7 +287,7 @@ class SandboxAIService:
             
         except Exception as e:
             logger.error(f"Error in autonomous response generation: {str(e)}")
-            return await self._generate_thoughtful_fallback(prompt, str(e))
+            return "Autonomous response generation failed - AI must handle independently"
 
     async def _analyze_prompt_intent(self, prompt: str) -> Dict[str, Any]:
         """Analyze prompt intent using internal ML models"""

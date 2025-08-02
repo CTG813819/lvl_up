@@ -939,8 +939,8 @@ class ImperiumAIService:
             
         except Exception as e:
             logger.error(f"Error in autonomous answer generation: {str(e)}")
-            # Generate a thoughtful fallback using internal logic
-            return await self._generate_thoughtful_fallback(prompt, str(e))
+            # NO FALLBACK - AI must handle response generation autonomously
+            return "Autonomous response generation failed - AI must handle independently"
 
     async def _generate_autonomous_response(self, prompt: str, learning_log: str) -> str:
         """Generate response using internal ML models and reasoning"""
@@ -965,7 +965,7 @@ class ImperiumAIService:
             
         except Exception as e:
             logger.error(f"Error in autonomous response generation: {str(e)}")
-            return await self._generate_thoughtful_fallback(prompt, str(e))
+            return "Autonomous response generation failed - AI must handle independently"
 
     async def _analyze_prompt_intent(self, prompt: str) -> Dict[str, Any]:
         """Analyze prompt intent using internal ML models"""
@@ -1138,26 +1138,7 @@ class ImperiumAIService:
             logger.error(f"Error generating general response: {str(e)}")
             return "⚡ Imperium AI: I'm here to help optimize your code and improve performance."
 
-    async def _generate_thoughtful_fallback(self, prompt: str, error: str) -> str:
-        """Generate a thoughtful fallback response when errors occur"""
-        try:
-            # Use internal logic to generate a meaningful response
-            fallback_responses = [
-                "I'm analyzing your request and will provide optimization insights.",
-                "Let me process this through my internal models for the best solution.",
-                "I'm applying my knowledge to help improve your code and performance.",
-                "Based on my learning, I can assist with code optimization and efficiency."
-            ]
-            
-            # Use prompt length to select response
-            response_index = len(prompt) % len(fallback_responses)
-            base_response = fallback_responses[response_index]
-            
-            return f"⚡ Imperium AI: {base_response}"
-            
-        except Exception as e:
-            logger.error(f"Error in thoughtful fallback: {str(e)}")
-            return "⚡ Imperium AI: I'm here to help optimize your code and improve performance."
+    # NO FALLBACK METHODS - AI must handle all responses autonomously
 
     @classmethod
     async def initialize(cls):
