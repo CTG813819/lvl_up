@@ -1590,9 +1590,20 @@ Format your response as JSON with the following structure:
         try:
             # Try to parse as JSON first
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'main_code': str(parsed_json.get('main_code', '')),
+                    'dependencies': parsed_json.get('dependencies', []) if isinstance(parsed_json.get('dependencies'), list) else [],
+                    'configuration': parsed_json.get('configuration', {}) if isinstance(parsed_json.get('configuration'), dict) else {},
+                    'tests': str(parsed_json.get('tests', '')),
+                    'documentation': str(parsed_json.get('documentation', '')),
+                    'error_handling': str(parsed_json.get('error_handling', '')),
+                    'performance_optimizations': str(parsed_json.get('performance_optimizations', '')),
+                    'security_measures': str(parsed_json.get('security_measures', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing JSON response: {str(e)}")
         
         # Fallback parsing
         sections = {
@@ -1707,9 +1718,23 @@ Format your response as JSON:
         
         try:
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'system_overview': str(parsed_json.get('system_overview', '')),
+                    'components': parsed_json.get('components', []) if isinstance(parsed_json.get('components'), list) else [],
+                    'data_flow': str(parsed_json.get('data_flow', '')),
+                    'api_design': str(parsed_json.get('api_design', '')),
+                    'database_schema': str(parsed_json.get('database_schema', '')),
+                    'security_architecture': str(parsed_json.get('security_architecture', '')),
+                    'scalability': str(parsed_json.get('scalability', '')),
+                    'deployment': str(parsed_json.get('deployment', '')),
+                    'technology_stack': parsed_json.get('technology_stack', []) if isinstance(parsed_json.get('technology_stack'), list) else [],
+                    'monitoring': str(parsed_json.get('monitoring', '')),
+                    'disaster_recovery': str(parsed_json.get('disaster_recovery', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing architecture JSON response: {str(e)}")
         
         # Fallback parsing
         return {
@@ -1780,9 +1805,20 @@ Format as JSON:
         
         try:
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'readme': str(parsed_json.get('readme', '')),
+                    'api_docs': str(parsed_json.get('api_docs', '')),
+                    'architecture_docs': str(parsed_json.get('architecture_docs', '')),
+                    'deployment_guide': str(parsed_json.get('deployment_guide', '')),
+                    'troubleshooting': str(parsed_json.get('troubleshooting', '')),
+                    'contributing': str(parsed_json.get('contributing', '')),
+                    'security': str(parsed_json.get('security', '')),
+                    'performance': str(parsed_json.get('performance', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing documentation JSON response: {str(e)}")
         
         return {
             'readme': response[:300],
