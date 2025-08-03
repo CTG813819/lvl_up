@@ -1,0 +1,99 @@
+/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:318: UserWarning: Valid config keys have changed in V2:
+* 'allow_population_by_field_name' has been renamed to 'populate_by_name'
+  warnings.warn(message, UserWarning)
+/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:318: UserWarning: Valid config keys have changed in V2:
+* 'allow_population_by_field_name' has been renamed to 'populate_by_name'
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+2025-07-16 15:43:23 [info     ] ENHANCED ML models initialized for AI learning and proposal improvement
+INFO:     Started server process [25940]
+INFO:     Waiting for application startup.
+⚠️ Local model not found, using template generation
+2025-07-16 15:43:24 [info     ] Initializing PostgreSQL database connection
+2025-07-16 15:43:24 [info     ] PostgreSQL database connection established successfully
+2025-07-16 15:43:24 [info     ] Connection pool monitoring active
+2025-07-16 15:43:24 [info     ] Database health check passed
+2025-07-16 15:43:25 [info     ] Database tables created successfully
+2025-07-16 15:43:25 [info     ] Database indexes created successfully
+2025-07-16 15:43:25 [info     ] Initializing PostgreSQL database connection
+2025-07-16 15:43:25 [info     ] PostgreSQL database connection established successfully
+2025-07-16 15:43:25 [info     ] GitHub service initialized     repo=CTG813819/Lvl_UP
+2025-07-16 15:43:25 [info     ] AI Learning Service initialized with ENHANCED ML capabilities
+2025-07-16 15:43:25 [info     ] AI Agent Service initialized
+2025-07-16 15:43:25 [info     ] GitHub service initialized     repo=CTG813819/Lvl_UP
+2025-07-16 15:43:25 [info     ] AI Learning Service initialized with ENHANCED ML capabilities
+2025-07-16 15:43:25 [info     ] Background Service initialized
+2025-07-16 15:43:25 [info     ] GitHub service initialized     repo=CTG813819/Lvl_UP
+2025-07-16 15:43:25 [info     ] AI Learning Service initialized with ENHANCED ML capabilities
+2025-07-16 15:43:25 [info     ] AI Agent Service initialized
+2025-07-16 15:43:25 [info     ] 🔄 Proposal Cycle Service initialized
+2025-07-16 15:43:25 [info     ] Connection pool monitoring active
+2025-07-16 15:43:26 [info     ] Token Usage Service initialized with rate limiting
+2025-07-16 15:43:26 [info     ] Scheduled Notification Service initialized
+✅ Application startup complete
+2025-07-16 15:43:26 [info     ] [FEEDBACK_LOOP] Feedback loop scheduler started.
+2025-07-16 15:43:26 [info     ] 🤖 Starting autonomous AI cycle...
+2025-07-16 15:43:26 [info     ] Starting weekly notification scheduler
+INFO:     Application startup complete.
+2025-07-16 15:43:26 [info     ] 📡 Monitoring GitHub for changes...
+2025-07-16 15:43:26 [info     ] 🧠 Running learning cycle...
+2025-07-16 15:43:26 [info     ] 📚 Learning insights for Imperium insights={'error': 'No learning data available'}
+2025-07-16 15:43:26 [info     ] 📚 Learning insights for Guardian insights={'error': 'No learning data available'}
+2025-07-16 15:43:26 [info     ] 📚 Learning insights for Sandbox insights={'error': 'No learning data available'}
+2025-07-16 15:43:26 [info     ] 📚 Learning insights for Conquest insights={'error': 'No learning data available'}
+2025-07-16 15:43:26 [error    ] Error checking ML retraining   error="'AILearningService' object has no attribute 'get_session'"
+2025-07-16 15:43:26 [info     ] 💓 Running health check...
+2025-07-16 15:43:26 [info     ] 🛡️ Imperium AI running full system audit...
+2025-07-16 15:43:26 [error    ] Failed to run backend audit script: Expecting value: line 1 column 1 (char 0)
+2025-07-16 15:43:26 [info     ] [Codex] Imperium AI Audit Log  audit={'all_ok': False, 'timestamp': '2025-07-16T15:43:26.580384', 'summary': 'Backend audit script failed: Expecting value: line 1 column 1 (char 0)', 'details': []} suggestions=['Review failed endpoints and logs.']
+2025-07-16 15:43:26 [info     ] 🛡️ Guardian AI running self-healing check...
+2025-07-16 15:43:26 [info     ] Next weekly notification scheduled for 2025-07-21T09:00:00 (in 113.3 hours)
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
+INFO:     Waiting for application shutdown.
+2025-07-16 15:43:26 [info     ] 🤖 Autonomous AI cycle stopped
+INFO:     Application shutdown complete.
+✅ Application shutdown complete
+2025-07-16 15:43:26 [info     ] Weekly scheduler cancelled
+Unhandled exception in event loop
+Traceback (most recent call last):
+  File "/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/uvicorn/server.py", line 160, in startup
+    server = await loop.create_server(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1794, in create_server
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1512, in uvloop.loop.Loop.run_until_complete
+  File "uvloop/loop.pyx", line 1505, in uvloop.loop.Loop.run_until_complete
+  File "uvloop/loop.pyx", line 1379, in uvloop.loop.Loop.run_forever
+  File "uvloop/loop.pyx", line 557, in uvloop.loop.Loop._run
+  File "uvloop/loop.pyx", line 476, in uvloop.loop.Loop._on_idle
+  File "uvloop/cbhandles.pyx", line 83, in uvloop.loop.Handle._run
+  File "uvloop/cbhandles.pyx", line 63, in uvloop.loop.Handle._run
+  File "/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/uvicorn/server.py", line 78, in serve
+    await self.startup(sockets=sockets)
+  File "/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/uvicorn/server.py", line 170, in startup
+    sys.exit(1)
+SystemExit: 1
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "uvloop/dns.pyx", line 448, in uvloop.loop.__on_addrinfo_resolved
+  File "uvloop/loop.pyx", line 928, in uvloop.loop.Loop._getaddrinfo.callback
+  File "uvloop/loop.pyx", line 1281, in uvloop.loop.Loop.call_soon
+  File "uvloop/loop.pyx", line 669, in uvloop.loop.Loop._call_soon
+  File "uvloop/loop.pyx", line 678, in uvloop.loop.Loop._call_soon_handle
+  File "uvloop/loop.pyx", line 673, in uvloop.loop.Loop._append_ready_handle
+  File "uvloop/loop.pyx", line 705, in uvloop.loop.Loop._check_closed
+RuntimeError: Event loop is closed
+Task was destroyed but it is pending!
+task: <Task pending name='Task-30' coro=<Connection._cancel() done, defined at /home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/asyncpg/connection.py:1581> wait_for=<Future pending cb=[Task.task_wakeup()]>>

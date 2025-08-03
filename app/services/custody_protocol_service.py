@@ -37,6 +37,7 @@ class CustodyProtocolService:
     def __init__(self):
         self.test_history = {}
         self.ai_metrics = {}
+        self.custody_metrics = {}
         logger.info("Custody Protocol Service initialized")
     
     @classmethod
@@ -166,54 +167,40 @@ class CustodyProtocolService:
             logger.error(f"Error checking proposal eligibility for {ai_type}: {str(e)}")
             return False
     
-    async def administer_olympic_event(self, participants: List[str], event_type: str = "code_quality") -> Dict[str, Any]:
-        """Administer an Olympic event for AI participants"""
+    async def _get_ai_level(self, ai_type: str) -> int:
+        """Get the current level of an AI"""
         try:
-            logger.info(f"Administering Olympic event: {event_type} for participants: {participants}")
+            # Get metrics for the AI
+            metrics = await self.get_ai_metrics(ai_type)
+            total_tests = metrics.get('total_tests', 0)
             
-            results = {}
-            for participant in participants:
-                # Generate a test for each participant
-                test = await self.generate_test(participant, TestDifficulty.ADVANCED)
-                
-                # Simulate participant response and evaluation
-                response = f"Olympic event response from {participant}"
-                evaluation = await self.evaluate_response(test["test_id"], response, participant)
-                
-                results[participant] = {
-                    "score": evaluation["score"],
-                    "passed": evaluation["passed"],
-                    "medal": "gold" if evaluation["score"] >= 90 else "silver" if evaluation["score"] >= 75 else "bronze"
-                }
-            
-            logger.info(f"Olympic event completed with {len(results)} participants")
-            return {
-                "event_type": event_type,
-                "participants": participants,
-                "results": results,
-                "completed_at": datetime.utcnow().isoformat()
-            }
-            
+            # Calculate level based on tests passed
+            if total_tests == 0:
+                return 1
+            elif total_tests < 5:
+                return 2
+            elif total_tests < 10:
+                return 3
+            elif total_tests < 20:
+                return 4
+            else:
+                return 5
         except Exception as e:
-            logger.error(f"Error administering Olympic event: {str(e)}")
-            return {
-                "event_type": event_type,
-                "participants": participants,
-                "results": {},
-                "error": str(e),
-                "completed_at": datetime.utcnow().isoformat()
-            }
+            logger.error(f"Error getting AI level for {ai_type}: {str(e)}")
+            return 1
     
-    async def _execute_collaborative_test(self, participants: List[str], task_description: str) -> Dict[str, Any]:
+
+    
+    async def _execute_collaborative_test(self, participants: List[str], scenario: str, context: dict = None) -> Dict[str, Any]:
         """Execute a collaborative test for multiple AI participants"""
         try:
-            logger.info(f"Executing collaborative test for {participants}: {task_description}")
+            logger.info(f"Executing collaborative test for {participants}: {scenario}")
             
             # Generate collaborative test
             test_id = f"collab_test_{'_'.join(participants)}_{datetime.utcnow().timestamp()}"
             
             # Simulate collaborative response
-            collaborative_response = f"Collaborative response from {', '.join(participants)}: {task_description}"
+            collaborative_response = f"Collaborative response from {', '.join(participants)}: {scenario}"
             
             # Evaluate the collaborative effort
             evaluation = await self.evaluate_response(test_id, collaborative_response, "collaborative")
@@ -225,7 +212,8 @@ class CustodyProtocolService:
             result = {
                 "test_id": test_id,
                 "participants": participants,
-                "task_description": task_description,
+                "scenario": scenario,
+                "context": context or {},
                 "team_score": team_score,
                 "passed": passed,
                 "evaluation": evaluation["evaluation"],
@@ -240,7 +228,8 @@ class CustodyProtocolService:
             return {
                 "test_id": "collab_test_failed",
                 "participants": participants,
-                "task_description": task_description,
+                "scenario": scenario,
+                "context": context or {},
                 "team_score": 0,
                 "passed": False,
                 "error": str(e),
@@ -261,12 +250,14 @@ class CustodyProtocolService:
             
             # Generate test
             test = await self.generate_test(ai_type, difficulty)
+            logger.info(f"Generated test for {ai_type}: {test['test_id']}")
             
             # Simulate AI response
             ai_response = f"Custody test response from {ai_type} for {test_type} test"
             
             # Evaluate response
             evaluation = await self.evaluate_response(test["test_id"], ai_response, ai_type)
+            logger.info(f"Evaluated response for {ai_type}: Score {evaluation['score']}, Passed {evaluation['passed']}")
             
             result = {
                 "ai_type": ai_type,

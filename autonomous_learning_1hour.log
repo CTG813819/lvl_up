@@ -1,0 +1,12 @@
+🚀 Starting Simplified Autonomous Subject Learning Service...
+🤖 AIs will learn autonomously and grow intuitively!
+📚 Subjects available: 41
+⏰ Learning cycles: Every 2 hours, daily at 5:00 AM, 12:00 PM, 5:00 PM
+============================================================
+2025-07-16 16:25:44 [info     ] 🚀 Starting simplified autonomous subject learning service
+/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/schedule/__init__.py:101: RuntimeWarning: coroutine 'SimplifiedAutonomousSubjectLearningService.evening_learning_cycle' was never awaited
+  self._run_job(job)
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+/home/ubuntu/ai-backend-python/venv/lib/python3.12/site-packages/schedule/__init__.py:101: RuntimeWarning: coroutine 'SimplifiedAutonomousSubjectLearningService.trigger_learning_cycle' was never awaited
+  self._run_job(job)
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback

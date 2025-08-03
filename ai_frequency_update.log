@@ -1,0 +1,25 @@
+2025-07-17 16:39:16,258 [INFO] Starting AI Agent Frequency Update...
+2025-07-17 16:39:16,258 [INFO] Creating Updated AI Agents Router with New Frequencies...
+2025-07-17 16:39:16,259 [INFO] Created updated AI agents router: app\routers\ai_agents_updated.py
+2025-07-17 16:39:16,259 [INFO] Updating main app to use new AI agents router...
+2025-07-17 16:39:16,259 [INFO] Created updated main app: main_updated.py
+2025-07-17 16:39:16,259 [INFO] Creating updated startup script...
+2025-07-17 16:39:16,260 [INFO] Created updated startup script: start_updated_backend.sh
+2025-07-17 16:39:16,260 [INFO] Creating deployment script...
+2025-07-17 16:39:16,261 [INFO] Created deployment script: deploy_updated_frequencies.sh
+2025-07-17 16:39:16,261 [INFO] AI Agent Frequency Update completed successfully!
+2025-07-17 16:39:16,261 [INFO] Created files:
+2025-07-17 16:39:16,262 [INFO] * app/routers/ai_agents_updated.py
+2025-07-17 16:39:16,262 [INFO] * main_updated.py
+2025-07-17 16:39:16,262 [INFO] * start_updated_backend.sh
+2025-07-17 16:39:16,262 [INFO] * deploy_updated_frequencies.sh
+2025-07-17 16:39:16,262 [INFO] 
+2025-07-17 16:39:16,262 [INFO] To deploy:
+2025-07-17 16:39:16,262 [INFO] 1. Run: chmod +x deploy_updated_frequencies.sh
+2025-07-17 16:39:16,262 [INFO] 2. Run: ./deploy_updated_frequencies.sh
+2025-07-17 16:39:16,262 [INFO] 
+2025-07-17 16:39:16,262 [INFO] New Schedule:
+2025-07-17 16:39:16,262 [INFO] * Imperium: Every 1.5 hours (starts immediately)
+2025-07-17 16:39:16,262 [INFO] * Sandbox: Every 2 hours (starts 30min after Imperium)
+2025-07-17 16:39:16,263 [INFO] * Guardian: Every 5 hours (starts 1hr after Imperium)
+2025-07-17 16:39:16,263 [INFO] * Custodes: Every 1.5 hours (starts 1.5hr after Imperium, tests others)
