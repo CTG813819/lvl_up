@@ -3085,8 +3085,7 @@ Timestamp: {insights.get('timestamp', '')}
 
     async def get_explainability_analytics(self, ai_type: str = None) -> Dict[str, Any]:
         """
-        Get analytics about AI explainability and transparency.
-        Now loads data from both memory and database for comprehensive analytics.
+        Get comprehensive explainability analytics for AI learning
         
         Args:
             ai_type: Optional specific AI type, otherwise returns data for all AIs
@@ -3110,6 +3109,61 @@ Timestamp: {insights.get('timestamp', '')}
         except Exception as e:
             logger.error(f"Error getting explainability analytics: {str(e)}")
             return {}
+
+    async def record_learning_event(self, ai_type: str, event_type: str, event_data: Dict[str, Any]):
+        """Record a learning event for the AI"""
+        try:
+            # Store in memory
+            if ai_type not in self._learning_states:
+                self._learning_states[ai_type] = {}
+            
+            if 'learning_events' not in self._learning_states[ai_type]:
+                self._learning_states[ai_type]['learning_events'] = []
+            
+            learning_event = {
+                'event_type': event_type,
+                'event_data': event_data,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            self._learning_states[ai_type]['learning_events'].append(learning_event)
+            
+            # Keep only last 100 events
+            if len(self._learning_states[ai_type]['learning_events']) > 100:
+                self._learning_states[ai_type]['learning_events'] = self._learning_states[ai_type]['learning_events'][-100:]
+            
+            logger.info(f"Recorded learning event for {ai_type}: {event_type}")
+            
+        except Exception as e:
+            logger.error(f"Error recording learning event for {ai_type}: {str(e)}")
+
+    async def record_test_result(self, ai_type: str, test_type: str, score: float, feedback: str):
+        """Record a test result for the AI"""
+        try:
+            # Store in memory
+            if ai_type not in self._learning_states:
+                self._learning_states[ai_type] = {}
+            
+            if 'test_results' not in self._learning_states[ai_type]:
+                self._learning_states[ai_type]['test_results'] = []
+            
+            test_result = {
+                'test_type': test_type,
+                'score': score,
+                'feedback': feedback,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            self._learning_states[ai_type]['test_results'].append(test_result)
+            
+            # Keep only last 50 test results
+            if len(self._learning_states[ai_type]['test_results']) > 50:
+                self._learning_states[ai_type]['test_results'] = self._learning_states[ai_type]['test_results'][-50:]
+            
+            logger.info(f"Recorded test result for {ai_type}: {test_type} - Score: {score}")
+            
+        except Exception as e:
+            logger.error(f"Error recording test result for {ai_type}: {str(e)}")
 
     async def _get_ai_explainability_analytics(self, ai_type: str) -> Dict[str, Any]:
         """Get explainability analytics for a specific AI from both memory and database"""

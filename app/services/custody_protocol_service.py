@@ -339,7 +339,7 @@ class CustodyProtocolService:
                 logger.info(f"[ADMINISTER TEST] Claude verification completed")
             except Exception as e:
                 logger.warning(f"[ADMINISTER TEST] Claude verification error: {str(e)}")
-            
+    
             result = {
                 "ai_type": ai_type,
                 "test_difficulty": difficulty.value,
@@ -4547,7 +4547,7 @@ Consider the learning objectives and previous areas of difficulty when formulati
     
     def _generate_basic_fallback_test(self, ai_type: str, difficulty: TestDifficulty, category: TestCategory) -> Dict[str, Any]:
         """Generate a basic fallback test when all else fails"""
-        return {
+            return {
             "test_type": "basic_fallback",
             "ai_type": ai_type,
             "difficulty": difficulty.value,
@@ -7457,7 +7457,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
                                    expected_improvement: int) -> str:
         """Generate personalized evaluation criteria"""
         try:
-            base_criteria = {
+        base_criteria = {
                 TestCategory.KNOWLEDGE_VERIFICATION: "Understanding, accuracy, depth of knowledge",
                 TestCategory.CODE_QUALITY: "Code quality, documentation, best practices",
                 TestCategory.SECURITY_AWARENESS: "Security considerations, vulnerability awareness",
@@ -7533,7 +7533,7 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             
             logger.info(f"[SCENARIO EVALUATION] Enhanced evaluation completed for {ai_type} - Score: {final_score:.1f}, Passed: {passed}")
             
-            return {
+        return {
                 "score": final_score,
                 "passed": passed,
                 "evaluation": reasoning,
@@ -9684,3 +9684,4 @@ Provide a detailed step-by-step approach to exploit the vulnerabilities and achi
             logger.error(f"Error generating collaborative dynamic feedback: {str(e)}")
             return f"Collaborative dynamic evaluation completed. Final score: {final_score:.1f}/100"
 
+            

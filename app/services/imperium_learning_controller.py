@@ -37,7 +37,6 @@ from app.core.database import init_database
 from app.models.sql_models import Proposal
 from sqlalchemy import select, update
 from app.services.testing_service import TestingService
-from app.routers.proposals import trigger_learning_from_failure, generate_improved_proposal_from_learning
 from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
 
 logger = structlog.get_logger()

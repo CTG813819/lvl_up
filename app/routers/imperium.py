@@ -21,8 +21,19 @@ from app.models.proposal import ProposalResponse
 from typing import Optional
 import logging
 from app.services.imperium_ai_service import ImperiumAIService
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import structlog
+
+from app.core.database import get_session
+from app.models.sql_models import Proposal
+from app.services.enhanced_proposal_service import enhanced_proposal_service
+from app.services.agent_metrics_service import AgentMetricsService
 
 logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -144,19 +155,107 @@ async def get_imperium_status(session: AsyncSession = Depends(get_db)):
         return {"status": "error", "message": str(e)}
 
 @router.get("/proposals")
-async def get_imperium_proposals(session: AsyncSession = Depends(get_db)):
-    """Get only pending Imperium AI proposals from the database"""
+async def get_imperium_proposals(
+    limit: int = 10,
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_session)
+):
+    """Get Imperium AI proposals"""
     try:
-        result = await session.execute(
-            select(Proposal).where(Proposal.ai_type == "Imperium", Proposal.status == "pending")
-        )
-        proposals = result.scalars().all()
+        query = db.query(Proposal).filter(Proposal.ai_type == "imperium")
+        
+        if status:
+            query = query.filter(Proposal.status == status)
+        
+        proposals = query.order_by(Proposal.created_at.desc()).limit(limit).all()
+        
         return {
-            "status": "success",
-            "proposals": [ProposalResponse.from_orm(p) for p in proposals]
+            "proposals": [
+                {
+                    "id": str(p.id),
+                    "file_path": p.file_path,
+                    "status": p.status,
+                    "ai_reasoning": p.ai_reasoning,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "improvement_focus": p.learning_context.get("improvement_focus") if p.learning_context else None,
+                    "confidence": p.learning_context.get("confidence") if p.learning_context else None
+                }
+                for p in proposals
+            ],
+            "total": len(proposals)
         }
+        
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        logger.error(f"Error getting Imperium proposals: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/proposals/generate")
+async def generate_imperium_proposal(
+    file_path: str,
+    current_code: str,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_session)
+):
+    """Generate a new Imperium AI proposal"""
+    try:
+        logger.info(f"🎯 Generating Imperium proposal for {file_path}")
+        
+        # Generate enhanced proposal
+        proposal_data = await enhanced_proposal_service.generate_enhanced_proposal(
+            ai_type="imperium",
+            file_path=file_path,
+            current_code=current_code
+        )
+        
+        # Create proposal in database
+        proposal = await enhanced_proposal_service.create_proposal_in_database(proposal_data)
+        
+        logger.info(f"✅ Generated Imperium proposal {proposal.id}")
+        
+        return {
+            "proposal_id": str(proposal.id),
+            "status": "created",
+            "improvement_focus": proposal_data["improvement_focus"],
+            "confidence": proposal_data["confidence"],
+            "message": "Imperium proposal generated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating Imperium proposal: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/proposals/{proposal_id}")
+async def get_imperium_proposal(
+    proposal_id: str,
+    db: AsyncSession = Depends(get_session)
+):
+    """Get a specific Imperium AI proposal"""
+    try:
+        proposal = db.query(Proposal).filter(
+            Proposal.id == proposal_id,
+            Proposal.ai_type == "imperium"
+        ).first()
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        
+        return {
+            "id": str(proposal.id),
+            "file_path": proposal.file_path,
+            "code_before": proposal.code_before,
+            "code_after": proposal.code_after,
+            "status": proposal.status,
+            "ai_reasoning": proposal.ai_reasoning,
+            "created_at": proposal.created_at.isoformat() if proposal.created_at else None,
+            "improvement_focus": proposal.learning_context.get("improvement_focus") if proposal.learning_context else None,
+            "confidence": proposal.learning_context.get("confidence") if proposal.learning_context else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting Imperium proposal {proposal_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/proposals/{proposal_id}/approve")
 async def approve_proposal(proposal_id: str, session: AsyncSession = Depends(get_db)):

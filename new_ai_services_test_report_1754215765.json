@@ -1,0 +1,85 @@
+{
+  "test_summary": {
+    "total_tests": 12,
+    "passed_tests": 11,
+    "failed_tests": 1,
+    "success_rate": "91.7%",
+    "duration_seconds": "4.96",
+    "timestamp": "2025-08-03T10:09:25.620480"
+  },
+  "service_results": {
+    "project_horus": {
+      "chaos_generation": {
+        "passed": true,
+        "chaos_id": "chaos_1754215763_1469",
+        "complexity": 1.05,
+        "learning_progress": 0.1
+      },
+      "assimilation": {
+        "passed": true,
+        "patterns_learned": 0,
+        "frameworks_identified": 0
+      },
+      "repository": {
+        "passed": true,
+        "total_codes": 1,
+        "knowledge_base_size": 45
+      }
+    },
+    "olympic_ai": {
+      "registration": {
+        "passed": true,
+        "competitor1_id": "olympic_imperium_1754215763",
+        "competitor2_id": "olympic_guardian_1754215763"
+      },
+      "competition": {
+        "passed": false,
+        "competition_id": null,
+        "participants": 0,
+        "medals_awarded": 0
+      },
+      "leaderboard": {
+        "passed": true,
+        "total_competitors": 2,
+        "total_events": 1
+      }
+    },
+    "collaborative_ai": {
+      "team_creation": {
+        "passed": true,
+        "team_id": "collab_team_1754215764_7485",
+        "participants": 2
+      },
+      "session": {
+        "passed": true,
+        "session_id": "session_collab_team_1754215764_7485_1754215764",
+        "knowledge_shared": 0.08497996102035679
+      },
+      "statistics": {
+        "passed": true,
+        "total_sessions": 1,
+        "total_knowledge_shared": 0.08497996102035679
+      }
+    },
+    "custodes_ai": {
+      "security_test": {
+        "passed": true,
+        "test_id": "custodes_security_audit_imperium_1754215765",
+        "overall_score": 49.32665570508584,
+        "vulnerabilities_found": 1
+      },
+      "performance_test": {
+        "passed": true,
+        "test_id": "custodes_performance_test_guardian_1754215765",
+        "overall_score": 64.68158241180686
+      },
+      "history": {
+        "passed": true,
+        "total_tests": 2,
+        "passed_tests": 0,
+        "failed_tests": 2
+      }
+    }
+  },
+  "overall_status": "PASSED"
+}

@@ -29,6 +29,12 @@ from app.routers.auto_apply import router as auto_apply_router
 from app.routers.optimized_services import router as optimized_services_router
 from app.routers.proposals import periodic_proposal_generation
 
+# Import new AI service routers
+from app.routers.project_horus import router as project_horus_router
+from app.routers.olympic_ai import router as olympic_ai_router
+from app.routers.collaborative_ai import router as collaborative_ai_router
+from app.routers.custodes_ai import router as custodes_ai_router
+
 # Import services
 from app.services.ai_learning_service import AILearningService
 from app.services.ml_service import MLService
@@ -46,6 +52,12 @@ from app.services.auto_apply_service import auto_apply_service
 from app.services.cache_service import CacheService
 from app.services.data_collection_service import DataCollectionService
 from app.services.analysis_service import AnalysisService
+
+# Initialize new AI services
+from app.services.project_horus_service import project_horus_service
+from app.services.olympic_ai_service import olympic_ai_service
+from app.services.collaborative_ai_service import collaborative_ai_service
+from app.services.custodes_ai_service import custodes_ai_service
 
 # Setup logging
 setup_logging()
@@ -83,16 +95,19 @@ async def lifespan(app: FastAPI):
     await DataCollectionService.initialize()
     await AnalysisService.initialize()
     
-    # Only start background jobs if RUN_BACKGROUND_JOBS=1
-    if os.getenv("RUN_BACKGROUND_JOBS", "0") == "1":
+    # Initialize new AI services
+    logger.info("Initializing new AI services: Project Horus, Olympic AI, Collaborative AI, Custodes AI")
+    
+    # Start background jobs by default (changed from requiring RUN_BACKGROUND_JOBS=1)
+    # Only disable if explicitly set to 0
+    if os.getenv("RUN_BACKGROUND_JOBS", "1") != "0":
         # Start autonomous AI cycle in background
         background_service = BackgroundService()
         asyncio.create_task(background_service.start_autonomous_cycle())
         
         # Start enhanced autonomous learning service with custody protocol
-        from app.services.enhanced_autonomous_learning_service import EnhancedAutonomousLearningService
-        enhanced_learning_service = EnhancedAutonomousLearningService()
-        asyncio.create_task(enhanced_learning_service.start_enhanced_autonomous_learning())
+        from app.services.enhanced_learning_service import enhanced_learning_service
+        asyncio.create_task(enhanced_learning_service.start_enhanced_learning())
         
         # Start auto-apply monitoring
         asyncio.create_task(auto_apply_service.start_monitoring())
@@ -100,9 +115,11 @@ async def lifespan(app: FastAPI):
         # Start periodic proposal generation feedback loop (ensure DB is ready)
         asyncio.create_task(periodic_proposal_generation())
         
-        print("✅ Background jobs started")
+        print("✅ Background jobs started - Learning cycles active")
+        logger.info("✅ Background jobs started - Learning cycles active")
     else:
-        print("⚠️ Background jobs NOT started (RUN_BACKGROUND_JOBS != 1)")
+        print("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
+        logger.warning("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
     
     # Start enhanced adversarial testing service on port 8001
     try:
@@ -344,6 +361,12 @@ app.include_router(plugin_router, tags=["plugins"])
 app.include_router(auto_apply_router, tags=["Auto-Apply Service"])
 app.include_router(optimized_services_router, tags=["Optimized Services"])
 app.include_router(custody_protocol, prefix="/api/custody", tags=["Custody Protocol"])
+
+# Include new AI service routers
+app.include_router(project_horus_router, tags=["Project Horus"])
+app.include_router(olympic_ai_router, tags=["Olympic AI"])
+app.include_router(collaborative_ai_router, tags=["Collaborative AI"])
+app.include_router(custodes_ai_router, tags=["Custodes AI"])
 
 # Add extra mounts for /api/ai/* compatibility
 app.include_router(imperium, prefix="/api/ai/imperium", tags=["ai-imperium"])
