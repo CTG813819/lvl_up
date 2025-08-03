@@ -773,5 +773,42 @@ class EnhancedLearningService:
             logger.error(f"Error getting learning statistics: {str(e)}")
             return {"error": str(e)}
 
+    async def get_ai_learning_status(self, ai_type: str) -> Dict[str, Any]:
+        """Get AI learning status for a specific AI type"""
+        try:
+            # Get recent learning events for this AI
+            ai_events = [event for event in self.learning_events if event.get("ai_type") == ai_type]
+            
+            # Check if AI has completed a learning cycle recently
+            recent_events = [event for event in ai_events if event.get("timestamp", 0) > datetime.utcnow().timestamp() - 3600]  # Last hour
+            
+            cycle_completed = len(recent_events) > 0
+            
+            # Get learning progress
+            total_events = len(ai_events)
+            recent_progress = len(recent_events)
+            
+            return {
+                "ai_type": ai_type,
+                "cycle_completed": cycle_completed,
+                "total_learning_events": total_events,
+                "recent_learning_events": recent_progress,
+                "learning_progress": min(100.0, (total_events / 10) * 100),  # Progress based on events
+                "last_learning_event": max([event.get("timestamp", 0) for event in ai_events]) if ai_events else 0,
+                "status": "active" if cycle_completed else "inactive"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting AI learning status for {ai_type}: {str(e)}")
+            return {
+                "ai_type": ai_type,
+                "cycle_completed": False,
+                "total_learning_events": 0,
+                "recent_learning_events": 0,
+                "learning_progress": 0.0,
+                "last_learning_event": 0,
+                "status": "error"
+            }
+
 # Global instance
 enhanced_learning_service = EnhancedLearningService() 

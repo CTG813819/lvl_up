@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import structlog
 from dataclasses import dataclass
+from sqlalchemy import select
 
 from app.core.database import get_session
 from app.models.sql_models import Proposal, AgentMetrics
@@ -572,6 +573,41 @@ class EnhancedProposalService:
         except Exception as e:
             logger.error(f"Error creating proposal in database: {str(e)}")
             raise
+
+    async def get_recent_proposals(self, ai_type: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Get recent proposals for a specific AI type"""
+        try:
+            # Get recent proposals from database
+            async with get_session() as session:
+                recent_proposals = await session.execute(
+                    select(Proposal)
+                    .where(Proposal.ai_type == ai_type)
+                    .order_by(Proposal.created_at.desc())
+                    .limit(limit)
+                )
+                
+                proposals = recent_proposals.scalars().all()
+                
+                # Convert to dictionary format
+                proposal_list = []
+                for proposal in proposals:
+                    proposal_dict = {
+                        "proposal_id": proposal.proposal_id,
+                        "ai_type": proposal.ai_type,
+                        "file_path": proposal.file_path,
+                        "improvement_focus": proposal.improvement_focus,
+                        "confidence": proposal.confidence,
+                        "status": proposal.status,
+                        "created_at": proposal.created_at.isoformat() if proposal.created_at else None,
+                        "updated_at": proposal.updated_at.isoformat() if proposal.updated_at else None
+                    }
+                    proposal_list.append(proposal_dict)
+                
+                return proposal_list
+                
+        except Exception as e:
+            logger.error(f"Error getting recent proposals for {ai_type}: {str(e)}")
+            return []
 
 # Global instance
 enhanced_proposal_service = EnhancedProposalService() 

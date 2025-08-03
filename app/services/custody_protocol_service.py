@@ -68,7 +68,7 @@ class CustodyProtocolService:
                 "time_limit": 300,
                 "generated_at": datetime.utcnow().isoformat()
             }
-            
+    
             logger.info(f"Generated test for {ai_type} with difficulty {difficulty.value}")
             return test_content
             
@@ -304,7 +304,7 @@ class CustodyProtocolService:
                 test_difficulty = TestDifficulty.ADVANCED
                 if difficulty == "expert":
                     test_difficulty = TestDifficulty.EXPERT
-                elif difficulty == "master":
+            elif difficulty == "master":
                     test_difficulty = TestDifficulty.MASTER
                 
                 test = await self.generate_test(participant, test_difficulty)
