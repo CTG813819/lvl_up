@@ -155,6 +155,97 @@ class CustodyProtocolService:
         metrics["last_test"] = test_result.get("evaluated_at")
         
         logger.info(f"Updated metrics for {ai_type}")
+    
+    async def _check_proposal_eligibility(self, ai_type: str) -> bool:
+        """Check if an AI is eligible for proposal generation"""
+        try:
+            # Basic eligibility check - always return True for now
+            logger.info(f"Checking proposal eligibility for {ai_type}")
+            return True
+        except Exception as e:
+            logger.error(f"Error checking proposal eligibility for {ai_type}: {str(e)}")
+            return False
+    
+    async def administer_olympic_event(self, participants: List[str], event_type: str = "code_quality") -> Dict[str, Any]:
+        """Administer an Olympic event for AI participants"""
+        try:
+            logger.info(f"Administering Olympic event: {event_type} for participants: {participants}")
+            
+            results = {}
+            for participant in participants:
+                # Generate a test for each participant
+                test = await self.generate_test(participant, TestDifficulty.ADVANCED)
+                
+                # Simulate participant response and evaluation
+                response = f"Olympic event response from {participant}"
+                evaluation = await self.evaluate_response(test["test_id"], response, participant)
+                
+                results[participant] = {
+                    "score": evaluation["score"],
+                    "passed": evaluation["passed"],
+                    "medal": "gold" if evaluation["score"] >= 90 else "silver" if evaluation["score"] >= 75 else "bronze"
+                }
+            
+            logger.info(f"Olympic event completed with {len(results)} participants")
+            return {
+                "event_type": event_type,
+                "participants": participants,
+                "results": results,
+                "completed_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error administering Olympic event: {str(e)}")
+            return {
+                "event_type": event_type,
+                "participants": participants,
+                "results": {},
+                "error": str(e),
+                "completed_at": datetime.utcnow().isoformat()
+            }
+    
+    async def _execute_collaborative_test(self, participants: List[str], task_description: str) -> Dict[str, Any]:
+        """Execute a collaborative test for multiple AI participants"""
+        try:
+            logger.info(f"Executing collaborative test for {participants}: {task_description}")
+            
+            # Generate collaborative test
+            test_id = f"collab_test_{'_'.join(participants)}_{datetime.utcnow().timestamp()}"
+            
+            # Simulate collaborative response
+            collaborative_response = f"Collaborative response from {', '.join(participants)}: {task_description}"
+            
+            # Evaluate the collaborative effort
+            evaluation = await self.evaluate_response(test_id, collaborative_response, "collaborative")
+            
+            # Calculate team score
+            team_score = evaluation["score"]
+            passed = team_score >= 65
+            
+            result = {
+                "test_id": test_id,
+                "participants": participants,
+                "task_description": task_description,
+                "team_score": team_score,
+                "passed": passed,
+                "evaluation": evaluation["evaluation"],
+                "completed_at": datetime.utcnow().isoformat()
+            }
+            
+            logger.info(f"Collaborative test completed for {participants} - Score: {team_score}, Passed: {passed}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error executing collaborative test for {participants}: {str(e)}")
+            return {
+                "test_id": "collab_test_failed",
+                "participants": participants,
+                "task_description": task_description,
+                "team_score": 0,
+                "passed": False,
+                "error": str(e),
+                "completed_at": datetime.utcnow().isoformat()
+            }
 
 # Global instance
 custody_protocol_service = CustodyProtocolService() 
