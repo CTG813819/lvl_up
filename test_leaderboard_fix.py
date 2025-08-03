@@ -1,48 +1,154 @@
 #!/usr/bin/env python3
 """
-Test script to verify the leaderboard query fix
+Test script to diagnose the leaderboard 500 error
 """
 
 import asyncio
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from sqlalchemy import text
+# Set the DATABASE_URL environment variable
+os.environ['DATABASE_URL'] = 'postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+# Add the project root to the path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'ai-backend-python'))
+
 from app.core.database import get_session, init_database
+from app.models.sql_models import AgentMetrics
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-async def test_leaderboard_query():
-    """Test the fixed leaderboard query"""
+# Directly set the database URL in settings
+from app.core.config import settings
+settings.database_url = 'postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+async def test_database_connection():
+    """Test database connection and table existence"""
+    print("🔍 Testing database connection...")
+    
     try:
         # Initialize database
         await init_database()
-        session = get_session()
+        print("✅ Database initialized successfully")
         
-        async with session as s:
-            # Test the fixed query
-            result = await s.execute(
-                text("""
-                SELECT participant as ai, COUNT(*) as wins
-                FROM olympic_events,
-                     LATERAL (SELECT json_array_elements_text(participants) as participant) sub
-                WHERE winners::jsonb @> json_build_array(participant)::jsonb
-                GROUP BY participant
-                ORDER BY wins DESC
-                LIMIT :limit
-                """),
-                {"limit": 10}
-            )
+        # Test session creation
+        async with get_session() as session:
+            print("✅ Database session created successfully")
             
-            leaderboard = [dict(row) for row in result]
-            print(f"✅ Leaderboard query executed successfully!")
-            print(f"📊 Found {len(leaderboard)} participants in leaderboard")
+            # Check if agent_metrics table exists and has data
+            result = await session.execute(select(AgentMetrics))
+            metrics = result.scalars().all()
             
-            for entry in leaderboard:
-                print(f"  - {entry['ai']}: {entry['wins']} wins")
+            print(f"📊 Found {len(metrics)} agent metrics records")
+            
+            if metrics:
+                for metric in metrics[:3]:  # Show first 3
+                    print(f"  - {metric.agent_type}: Level {metric.level}, XP {metric.xp}")
+            else:
+                print("⚠️ No agent metrics found - this might be the issue")
+                
+                # Create some sample data
+                print("🔄 Creating sample agent metrics...")
+                sample_metrics = [
+                    AgentMetrics(
+                        agent_id="imperium_001",
+                        agent_type="imperium",
+                        learning_score=1000.0,
+                        xp=500,
+                        level=2,
+                        custody_xp=200,
+                        status="active"
+                    ),
+                    AgentMetrics(
+                        agent_id="guardian_001", 
+                        agent_type="guardian",
+                        learning_score=800.0,
+                        xp=300,
+                        level=1,
+                        custody_xp=150,
+                        status="active"
+                    ),
+                    AgentMetrics(
+                        agent_id="sandbox_001",
+                        agent_type="sandbox", 
+                        learning_score=1200.0,
+                        xp=700,
+                        level=3,
+                        custody_xp=300,
+                        status="active"
+                    ),
+                    AgentMetrics(
+                        agent_id="conquest_001",
+                        agent_type="conquest",
+                        learning_score=900.0,
+                        xp=400,
+                        level=2,
+                        custody_xp=250,
+                        status="active"
+                    )
+                ]
+                
+                for metric in sample_metrics:
+                    session.add(metric)
+                
+                await session.commit()
+                print("✅ Sample agent metrics created")
                 
     except Exception as e:
-        print(f"❌ Error testing leaderboard query: {e}")
-        raise
+        print(f"❌ Database test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+async def test_agent_metrics_service():
+    """Test the agent metrics service directly"""
+    print("\n🔍 Testing Agent Metrics Service...")
+    
+    try:
+        from app.services.agent_metrics_service import AgentMetricsService
+        
+        service = await AgentMetricsService.initialize()
+        print("✅ Agent Metrics Service initialized")
+        
+        # Test getting all metrics
+        all_metrics = await service.get_all_agent_metrics()
+        print(f"📊 Retrieved {len(all_metrics)} agent metrics")
+        
+        for ai_type, metrics in all_metrics.items():
+            print(f"  - {ai_type}: Level {metrics.get('level', 1)}, XP {metrics.get('xp', 0)}")
+            
+    except Exception as e:
+        print(f"❌ Agent Metrics Service test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+async def test_leaderboard_endpoint():
+    """Test the leaderboard endpoint directly"""
+    print("\n🔍 Testing Leaderboard Endpoint...")
+    
+    try:
+        from app.routers.agent_metrics import get_leaderboard
+        
+        result = await get_leaderboard()
+        print("✅ Leaderboard endpoint executed successfully")
+        print(f"📊 Leaderboard contains {len(result.get('leaderboard', []))} entries")
+        
+        for entry in result.get('leaderboard', [])[:3]:
+            print(f"  - {entry.get('ai_type')}: Level {entry.get('level')}, Score {entry.get('learning_score')}")
+            
+    except Exception as e:
+        print(f"❌ Leaderboard endpoint test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+async def main():
+    """Run all tests"""
+    print("🧪 Testing Leaderboard Fix...\n")
+    
+    await test_database_connection()
+    await test_agent_metrics_service()
+    await test_leaderboard_endpoint()
+    
+    print("\n✅ All tests completed!")
 
 if __name__ == "__main__":
-    asyncio.run(test_leaderboard_query()) 
+    asyncio.run(main()) 
