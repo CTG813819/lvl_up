@@ -308,41 +308,127 @@ class EnhancedLearningService:
     
     async def _generate_learning_content(self, ai_type: str, subject: str, level: int) -> Dict[str, Any]:
         """Generate learning content for an AI type and subject"""
+        
+        # Enhanced content templates with realistic scenarios
         content_templates = {
             "imperium": {
-                "meta-learning": "Study advanced meta-learning techniques and AI self-improvement mechanisms",
-                "ai-governance": "Learn about AI governance frameworks and ethical decision-making",
-                "autonomous-systems": "Explore autonomous system design and multi-agent coordination"
+                "meta-learning": {
+                    "scenario": "Design a self-improving AI system that can learn from its own mistakes",
+                    "challenge": "Create an autonomous learning framework that adapts to new problem domains",
+                    "content": "Study advanced meta-learning techniques and AI self-improvement mechanisms",
+                    "outcome": "Enhanced meta-learning capabilities and autonomous improvement"
+                },
+                "ai-governance": {
+                    "scenario": "Develop governance protocols for multi-AI systems",
+                    "challenge": "Create ethical decision-making frameworks for AI coordination",
+                    "content": "Learn about AI governance frameworks and ethical decision-making",
+                    "outcome": "Improved AI governance and ethical decision-making"
+                },
+                "autonomous-systems": {
+                    "scenario": "Design autonomous systems that can operate independently",
+                    "challenge": "Create multi-agent coordination protocols for complex tasks",
+                    "content": "Explore autonomous system design and multi-agent coordination",
+                    "outcome": "Enhanced autonomous system capabilities"
+                }
             },
             "guardian": {
-                "security-testing": "Master advanced security testing methodologies and vulnerability assessment",
-                "vulnerability-detection": "Learn cutting-edge vulnerability detection techniques",
-                "secure-coding": "Study secure coding practices and security architecture design"
+                "security-testing": {
+                    "scenario": "Conduct comprehensive security audit of a web application",
+                    "challenge": "Identify and exploit vulnerabilities while suggesting fixes",
+                    "content": "Master advanced security testing methodologies and vulnerability assessment",
+                    "outcome": "Enhanced security testing and vulnerability detection"
+                },
+                "vulnerability-detection": {
+                    "scenario": "Analyze code for security vulnerabilities and suggest improvements",
+                    "challenge": "Detect SQL injection, XSS, and other common vulnerabilities",
+                    "content": "Learn cutting-edge vulnerability detection techniques",
+                    "outcome": "Improved vulnerability detection and security analysis"
+                },
+                "secure-coding": {
+                    "scenario": "Review and improve code security in a production application",
+                    "challenge": "Implement secure coding practices and security architecture",
+                    "content": "Study secure coding practices and security architecture design",
+                    "outcome": "Better secure coding practices and security awareness"
+                }
             },
             "sandbox": {
-                "experimental-design": "Design and conduct innovative experiments in AI research",
-                "innovation-frameworks": "Apply creative problem-solving frameworks and breakthrough thinking",
-                "creative-problem-solving": "Develop novel approaches to complex AI challenges"
+                "experimental-design": {
+                    "scenario": "Design innovative algorithms for complex problem solving",
+                    "challenge": "Create novel approaches to optimization problems",
+                    "content": "Design and conduct innovative experiments in AI research",
+                    "outcome": "Enhanced experimental design and innovation capabilities"
+                },
+                "innovation-frameworks": {
+                    "scenario": "Develop new frameworks for creative problem solving",
+                    "challenge": "Create innovative solutions to technical challenges",
+                    "content": "Apply creative problem-solving frameworks and breakthrough thinking",
+                    "outcome": "Improved innovation and creative thinking"
+                },
+                "creative-problem-solving": {
+                    "scenario": "Solve complex AI challenges with novel approaches",
+                    "challenge": "Develop creative solutions to technical problems",
+                    "content": "Develop novel approaches to complex AI challenges",
+                    "outcome": "Enhanced creative problem-solving abilities"
+                }
             },
             "conquest": {
-                "app-development": "Master advanced app development techniques and user experience design",
-                "user-experience": "Learn user-centered design principles and interface optimization",
-                "performance-optimization": "Study app performance optimization and scalability design"
+                "app-development": {
+                    "scenario": "Build a full-stack application with modern technologies",
+                    "challenge": "Create a scalable, user-friendly application with optimal performance",
+                    "content": "Master advanced app development techniques and user experience design",
+                    "outcome": "Enhanced app development and user experience skills"
+                },
+                "user-experience": {
+                    "scenario": "Design intuitive user interfaces for complex applications",
+                    "challenge": "Create user-centered design principles and interface optimization",
+                    "content": "Learn user-centered design principles and interface optimization",
+                    "outcome": "Better user experience design and interface optimization"
+                },
+                "performance-optimization": {
+                    "scenario": "Optimize application performance and user experience",
+                    "challenge": "Improve loading times, responsiveness, and overall efficiency",
+                    "content": "Study app performance optimization and scalability design",
+                    "outcome": "Better performance optimization and user experience"
+                }
             }
         }
         
         templates = content_templates.get(ai_type, {})
-        content = templates.get(subject, f"Learn about {subject} for {ai_type} AI")
+        template = templates.get(subject, {
+            "scenario": f"Learn about {subject} for {ai_type} AI",
+            "challenge": f"Apply {subject} concepts in practice",
+            "content": f"Study {subject} fundamentals and advanced techniques",
+            "outcome": f"Enhanced {subject} capabilities"
+        })
         
         return {
             "subject": subject,
-            "content": content,
+            "scenario": template["scenario"],
+            "challenge": template["challenge"],
+            "content": template["content"],
+            "outcome": template["outcome"],
             "level": level,
             "complexity": self._get_complexity_for_level(level),
             "learning_objectives": [
                 f"Master {subject} concepts",
                 f"Apply {subject} in practical scenarios",
-                f"Improve {ai_type} capabilities"
+                f"Improve {ai_type} capabilities",
+                f"Create innovative {subject} solutions"
+            ],
+            "resources": [
+                f"Advanced {subject} documentation",
+                f"{subject} best practices guide",
+                f"Real-world {subject} examples"
+            ],
+            "exercises": [
+                f"Implement {subject} solution",
+                f"Analyze {subject} case study",
+                f"Optimize {subject} performance"
+            ],
+            "expected_outcomes": [
+                f"Improved {subject} understanding",
+                f"Enhanced {subject} capabilities",
+                f"Better {subject} decision-making"
             ]
         }
     
