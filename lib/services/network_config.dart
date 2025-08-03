@@ -3,7 +3,7 @@ import 'dart:io';
 class NetworkConfig {
   // Railway Backend URL (Primary)
   static const String railwayUrl =
-      'https://ai-backend-railway-production.up.railway.app';
+      'https://lvlup-production.up.railway.app';
 
   // API Endpoints
   static const String apiUrl = '$railwayUrl/api';

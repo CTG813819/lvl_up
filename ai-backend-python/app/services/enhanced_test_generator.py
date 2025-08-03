@@ -33,7 +33,7 @@ from sqlalchemy import text
 
 from ..core.database import get_session
 from ..core.config import settings
-from app.services.anthropic_service import call_claude, anthropic_rate_limited_call
+# Removed external API imports - using internal AI agents instead
 from app.services.unified_ai_service_shared import unified_ai_service_shared
 from app.models.sql_models import CustodyTestResult, InternetKnowledge, AIResponse
 
@@ -1495,12 +1495,14 @@ echo "Scenario validation completed successfully!"
         prompt = self._create_language_code_prompt(language, scenario, ai_knowledge)
         
         try:
-            # Generate code using LLM
-            code_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            code_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for code generation
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=4000
+                context={"task": "code_generation", "language": language}
             )
+            code_response = code_result.get("response", "")
             
             # Parse and structure the response
             structured_code = self._parse_code_response(code_response, language)
@@ -1588,11 +1590,22 @@ Format your response as JSON with the following structure:
         try:
             # Try to parse as JSON first
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'main_code': str(parsed_json.get('main_code', '')),
+                    'dependencies': parsed_json.get('dependencies', []) if isinstance(parsed_json.get('dependencies'), list) else [],
+                    'configuration': parsed_json.get('configuration', {}) if isinstance(parsed_json.get('configuration'), dict) else {},
+                    'tests': str(parsed_json.get('tests', '')),
+                    'documentation': str(parsed_json.get('documentation', '')),
+                    'error_handling': str(parsed_json.get('error_handling', '')),
+                    'performance_optimizations': str(parsed_json.get('performance_optimizations', '')),
+                    'security_measures': str(parsed_json.get('security_measures', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing JSON response: {str(e)}")
         
-        # Fallback parsing
+        # Fallback parsing with proper type handling
         sections = {
             'main_code': '',
             'dependencies': [],
@@ -1624,13 +1637,21 @@ Format your response as JSON with the following structure:
             elif 'config' in line.lower():
                 current_section = 'configuration'
             
+            # Ensure proper type handling for each section
             if current_section == 'main_code':
                 sections['main_code'] += line + '\n'
             elif current_section == 'dependencies':
                 if line.strip() and not line.startswith('#'):
                     sections['dependencies'].append(line.strip())
+            elif current_section == 'configuration':
+                # Handle configuration as dict
+                if ':' in line and line.strip():
+                    key, value = line.split(':', 1)
+                    sections['configuration'][key.strip()] = value.strip()
             else:
-                sections[current_section] += line + '\n'
+                # Handle string sections properly
+                if isinstance(sections[current_section], str):
+                    sections[current_section] += line + '\n'
         
         return sections
     
@@ -1684,12 +1705,14 @@ Format your response as JSON:
 """
         
         try:
-            # Generate architecture design using LLM
-            architecture_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            architecture_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for architecture design
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=3000
+                context={"task": "architecture_design"}
             )
+            architecture_response = architecture_result.get("response", "")
             
             # Parse architecture response
             return self._parse_architecture_response(architecture_response)
@@ -1703,9 +1726,23 @@ Format your response as JSON:
         
         try:
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'system_overview': str(parsed_json.get('system_overview', '')),
+                    'components': parsed_json.get('components', []) if isinstance(parsed_json.get('components'), list) else [],
+                    'data_flow': str(parsed_json.get('data_flow', '')),
+                    'api_design': str(parsed_json.get('api_design', '')),
+                    'database_schema': str(parsed_json.get('database_schema', '')),
+                    'security_architecture': str(parsed_json.get('security_architecture', '')),
+                    'scalability': str(parsed_json.get('scalability', '')),
+                    'deployment': str(parsed_json.get('deployment', '')),
+                    'technology_stack': parsed_json.get('technology_stack', []) if isinstance(parsed_json.get('technology_stack'), list) else [],
+                    'monitoring': str(parsed_json.get('monitoring', '')),
+                    'disaster_recovery': str(parsed_json.get('disaster_recovery', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing architecture JSON response: {str(e)}")
         
         # Fallback parsing
         return {
@@ -1756,11 +1793,14 @@ Format as JSON:
 """
         
         try:
-            doc_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            doc_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for documentation
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=2000
+                context={"task": "documentation_generation"}
             )
+            doc_response = doc_result.get("response", "")
             
             return self._parse_documentation_response(doc_response)
             
@@ -1773,9 +1813,20 @@ Format as JSON:
         
         try:
             if response.strip().startswith('{'):
-                return json.loads(response)
-        except:
-            pass
+                parsed_json = json.loads(response)
+                # Ensure all values are properly typed
+                return {
+                    'readme': str(parsed_json.get('readme', '')),
+                    'api_docs': str(parsed_json.get('api_docs', '')),
+                    'architecture_docs': str(parsed_json.get('architecture_docs', '')),
+                    'deployment_guide': str(parsed_json.get('deployment_guide', '')),
+                    'troubleshooting': str(parsed_json.get('troubleshooting', '')),
+                    'contributing': str(parsed_json.get('contributing', '')),
+                    'security': str(parsed_json.get('security', '')),
+                    'performance': str(parsed_json.get('performance', ''))
+                }
+        except Exception as e:
+            logger.error(f"Error parsing documentation JSON response: {str(e)}")
         
         return {
             'readme': response[:300],
@@ -1822,11 +1873,14 @@ Format as JSON:
 """
         
         try:
-            test_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            test_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for testing strategy
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "testing_strategy"}
             )
+            test_response = test_result.get("response", "")
             
             return self._parse_testing_response(test_response)
             
@@ -1888,11 +1942,14 @@ Format as JSON:
 """
         
         try:
-            deploy_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            deploy_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for deployment strategy
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "deployment_strategy"}
             )
+            deploy_response = deploy_result.get("response", "")
             
             return self._parse_deployment_response(deploy_response)
             
@@ -1958,11 +2015,14 @@ Format as JSON:
 """
         
         try:
-            security_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            security_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="guardian",  # Use guardian for security measures
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "security_measures"}
             )
+            security_response = security_result.get("response", "")
             
             return self._parse_security_response(security_response)
             
@@ -2026,11 +2086,14 @@ Format as JSON:
 """
         
         try:
-            perf_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            perf_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",  # Use imperium for performance optimization
                 prompt=prompt,
-                ai_name="enhanced_test_generator",
-                max_tokens=1500
+                context={"task": "performance_optimization"}
             )
+            perf_response = perf_result.get("response", "")
             
             return self._parse_performance_response(perf_response)
             
@@ -2239,11 +2302,12 @@ Format as JSON:
     async def _check_claude_tokens_available(self) -> bool:
         """Check if Claude tokens are available for LLM calls"""
         try:
-            # Try a minimal call to check token availability
-            test_response = await anthropic_rate_limited_call(
+            # Use internal AI agent instead of external API
+            from app.services.self_generating_ai_service import self_generating_ai_service
+            test_result = await self_generating_ai_service.generate_ai_response(
+                ai_type="imperium",
                 prompt="Test",
-                ai_name="enhanced_test_generator",
-                max_tokens=10
+                context={"task": "token_check"}
             )
             return True
         except Exception as e:

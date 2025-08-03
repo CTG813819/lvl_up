@@ -1,0 +1,76 @@
+{
+  "test_summary": {
+    "total_tests": 11,
+    "passed_tests": 9,
+    "failed_tests": 2,
+    "success_rate": "81.8%",
+    "duration_seconds": "4.74",
+    "timestamp": "2025-08-03T10:06:36.916893"
+  },
+  "service_results": {
+    "project_horus": {
+      "chaos_generation": {
+        "passed": true,
+        "chaos_id": "chaos_1754215595_7091",
+        "complexity": 1.05,
+        "learning_progress": 0.1
+      },
+      "assimilation": {
+        "passed": true,
+        "patterns_learned": 0,
+        "frameworks_identified": 0
+      },
+      "repository": {
+        "passed": true,
+        "total_codes": 1,
+        "knowledge_base_size": 45
+      }
+    },
+    "olympic_ai": {
+      "registration": {
+        "passed": true,
+        "competitor1_id": "olympic_imperium_1754215595",
+        "competitor2_id": "olympic_guardian_1754215595"
+      },
+      "competition": {},
+      "leaderboard": {}
+    },
+    "collaborative_ai": {
+      "team_creation": {
+        "passed": true,
+        "team_id": "collab_team_1754215595_4374",
+        "participants": 2
+      },
+      "session": {
+        "passed": false,
+        "session_id": null,
+        "knowledge_shared": 0
+      },
+      "statistics": {
+        "passed": true,
+        "total_sessions": 0,
+        "total_knowledge_shared": 0
+      }
+    },
+    "custodes_ai": {
+      "security_test": {
+        "passed": true,
+        "test_id": "custodes_security_audit_imperium_1754215595",
+        "overall_score": 73.29189871435106,
+        "vulnerabilities_found": 4
+      },
+      "performance_test": {
+        "passed": true,
+        "test_id": "custodes_performance_test_guardian_1754215596",
+        "overall_score": 65.90789246027967
+      },
+      "history": {
+        "passed": true,
+        "total_tests": 2,
+        "passed_tests": 1,
+        "failed_tests": 1
+      }
+    }
+  },
+  "overall_status": "PASSED"
+}

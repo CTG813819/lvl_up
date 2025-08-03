@@ -301,8 +301,7 @@ class BackgroundService:
                             
                             collaborative_result = await custody_service._execute_collaborative_test(
                                 participants=participants,
-                                scenario=scenario,
-                                context={"difficulty": "intermediate"}
+                                task_description=scenario
                             )
                             
                             if collaborative_result and not collaborative_result.get('error'):

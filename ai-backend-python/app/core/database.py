@@ -184,19 +184,15 @@ async def close_database():
 
 
 async def _monitor_connection_pool():
-    """Monitor connection pool and log status periodically"""
+    """Monitor connection pool health with reduced frequency"""
     while True:
         try:
-            if engine:
-                # Log basic pool status
-                logger.info("Connection pool monitoring active")
-                
-                # Check for potential issues
-                await _check_pool_health()
-            await asyncio.sleep(60)  # Check every minute
+            await _check_pool_health()
+            # Reduced monitoring frequency from 30 seconds to 5 minutes
+            await asyncio.sleep(300)  # Check every 5 minutes instead of 30 seconds
         except Exception as e:
-            logger.error("Error monitoring connection pool", error=str(e))
-            await asyncio.sleep(60)
+            logger.error("Pool monitoring error", error=str(e))
+            await asyncio.sleep(600)  # Wait 10 minutes on error instead of 60 seconds
 
 
 async def _health_check_monitor():

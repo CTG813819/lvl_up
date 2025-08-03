@@ -597,3 +597,217 @@ class EnhancedTrainingScheduler:
         except Exception as e:
             logger.error(f"Error calculating training efficiency: {str(e)}")
             return {} 
+    
+    async def _check_ai_learning_cycle_triggers(self) -> List[TrainingTrigger]:
+        """Check for AI learning cycle triggers (NEW: Live AI learning integration)"""
+        try:
+            triggers = []
+            
+            # Check if AIs have generated new learning insights
+            ai_learning_triggers = await self._check_ai_learning_insights()
+            if ai_learning_triggers:
+                triggers.extend(ai_learning_triggers)
+            
+            # Check if AIs have completed learning cycles
+            learning_cycle_triggers = await self._check_ai_learning_cycles()
+            if learning_cycle_triggers:
+                triggers.extend(learning_cycle_triggers)
+            
+            # Check if AIs have generated new knowledge
+            knowledge_generation_triggers = await self._check_ai_knowledge_generation()
+            if knowledge_generation_triggers:
+                triggers.extend(knowledge_generation_triggers)
+            
+            return triggers
+            
+        except Exception as e:
+            logger.error(f"Error checking AI learning cycle triggers: {str(e)}")
+            return []
+    
+    async def _check_ai_learning_insights(self) -> List[TrainingTrigger]:
+        """Check if AIs have generated new learning insights"""
+        try:
+            # Check recent AI learning insights
+            from .ai_learning_service import AILearningService
+            ai_learning_service = AILearningService()
+            
+            ai_types = ["imperium", "guardian", "sandbox", "conquest"]
+            insights_count = 0
+            
+            for ai_type in ai_types:
+                try:
+                    insights = await ai_learning_service.get_learning_insights(ai_type)
+                    if insights and "recent_patterns" in insights:
+                        insights_count += len(insights["recent_patterns"])
+                except Exception as e:
+                    logger.warning(f"Error getting insights for {ai_type}: {str(e)}")
+            
+            # If we have significant new insights, trigger training
+            if insights_count >= 5:
+                logger.info(f"AI learning insights trigger: {insights_count} new insights")
+                return [TrainingTrigger.CROSS_AI_LEARNING]
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error checking AI learning insights: {str(e)}")
+            return []
+    
+    async def _check_ai_learning_cycles(self) -> List[TrainingTrigger]:
+        """Check if AIs have completed learning cycles"""
+        try:
+            # Check recent learning cycles
+            from .enhanced_learning_service import enhanced_learning_service
+            
+            ai_types = ["imperium", "guardian", "sandbox", "conquest"]
+            completed_cycles = 0
+            
+            for ai_type in ai_types:
+                try:
+                    # Check if AI has completed a learning cycle
+                    learning_status = await enhanced_learning_service.get_ai_learning_status(ai_type)
+                    if learning_status and learning_status.get("cycle_completed", False):
+                        completed_cycles += 1
+                except Exception as e:
+                    logger.warning(f"Error checking learning cycle for {ai_type}: {str(e)}")
+            
+            # If multiple AIs have completed cycles, trigger training
+            if completed_cycles >= 2:
+                logger.info(f"AI learning cycles trigger: {completed_cycles} cycles completed")
+                return [TrainingTrigger.CROSS_AI_LEARNING]
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error checking AI learning cycles: {str(e)}")
+            return []
+    
+    async def _check_ai_knowledge_generation(self) -> List[TrainingTrigger]:
+        """Check if AIs have generated new knowledge"""
+        try:
+            # Check recent knowledge generation
+            from .enhanced_proposal_service import enhanced_proposal_service
+            
+            ai_types = ["imperium", "guardian", "sandbox", "conquest"]
+            new_knowledge_count = 0
+            
+            for ai_type in ai_types:
+                try:
+                    # Check if AI has generated new proposals/knowledge
+                    proposals = await enhanced_proposal_service.get_recent_proposals(ai_type, limit=5)
+                    if proposals and len(proposals) > 0:
+                        new_knowledge_count += len(proposals)
+                except Exception as e:
+                    logger.warning(f"Error checking knowledge generation for {ai_type}: {str(e)}")
+            
+            # If we have significant new knowledge, trigger training
+            if new_knowledge_count >= 3:
+                logger.info(f"AI knowledge generation trigger: {new_knowledge_count} new knowledge items")
+                return [TrainingTrigger.CROSS_AI_LEARNING]
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error checking AI knowledge generation: {str(e)}")
+            return []
+    
+    async def trigger_ai_learning_training(self) -> Dict[str, Any]:
+        """Trigger training based on AI learning cycles (NEW: Live integration)"""
+        try:
+            logger.info("🔄 Triggering training based on AI learning cycles")
+            
+            # Check AI learning cycle triggers
+            ai_triggers = await self._check_ai_learning_cycle_triggers()
+            
+            if ai_triggers:
+                # Execute training with AI learning triggers
+                await self._execute_training(ai_triggers)
+                
+                return {
+                    "status": "success",
+                    "triggers": [t.value for t in ai_triggers],
+                    "message": f"Training triggered by AI learning cycles: {len(ai_triggers)} triggers",
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                return {
+                    "status": "no_triggers",
+                    "message": "No AI learning cycle triggers found",
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            logger.error(f"Error triggering AI learning training: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+    
+    async def get_ai_learning_integration_status(self) -> Dict[str, Any]:
+        """Get AI learning integration status (NEW: Live integration status)"""
+        try:
+            # Check AI learning service status
+            from .ai_learning_service import AILearningService
+            ai_learning_service = AILearningService()
+            
+            # Check enhanced learning service status
+            from .enhanced_learning_service import enhanced_learning_service
+            
+            # Check enhanced proposal service status
+            from .enhanced_proposal_service import enhanced_proposal_service
+            
+            ai_types = ["imperium", "guardian", "sandbox", "conquest"]
+            integration_status = {
+                "ai_learning_service": "operational",
+                "enhanced_learning_service": "operational", 
+                "enhanced_proposal_service": "operational",
+                "ai_learning_cycles": {},
+                "knowledge_generation": {},
+                "training_triggers": []
+            }
+            
+            # Check each AI's learning status
+            for ai_type in ai_types:
+                try:
+                    # Check learning insights
+                    insights = await ai_learning_service.get_learning_insights(ai_type)
+                    insights_count = len(insights.get("recent_patterns", [])) if insights else 0
+                    
+                    # Check learning cycles
+                    learning_status = await enhanced_learning_service.get_ai_learning_status(ai_type)
+                    cycle_completed = learning_status.get("cycle_completed", False) if learning_status else False
+                    
+                    # Check knowledge generation
+                    proposals = await enhanced_proposal_service.get_recent_proposals(ai_type, limit=5)
+                    knowledge_count = len(proposals) if proposals else 0
+                    
+                    integration_status["ai_learning_cycles"][ai_type] = {
+                        "insights_count": insights_count,
+                        "cycle_completed": cycle_completed,
+                        "knowledge_count": knowledge_count,
+                        "status": "active" if insights_count > 0 or cycle_completed or knowledge_count > 0 else "inactive"
+                    }
+                    
+                except Exception as e:
+                    logger.warning(f"Error checking {ai_type} learning status: {str(e)}")
+                    integration_status["ai_learning_cycles"][ai_type] = {
+                        "insights_count": 0,
+                        "cycle_completed": False,
+                        "knowledge_count": 0,
+                        "status": "error"
+                    }
+            
+            # Check if any AI learning triggers are active
+            ai_triggers = await self._check_ai_learning_cycle_triggers()
+            integration_status["training_triggers"] = [t.value for t in ai_triggers]
+            
+            return integration_status
+            
+        except Exception as e:
+            logger.error(f"Error getting AI learning integration status: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            } 
