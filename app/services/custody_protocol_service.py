@@ -304,7 +304,7 @@ class CustodyProtocolService:
                 test_difficulty = TestDifficulty.ADVANCED
                 if difficulty == "expert":
                     test_difficulty = TestDifficulty.EXPERT
-            elif difficulty == "master":
+                elif difficulty == "master":
                     test_difficulty = TestDifficulty.MASTER
                 
                 test = await self.generate_test(participant, test_difficulty)
