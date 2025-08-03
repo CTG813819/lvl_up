@@ -25,12 +25,12 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 
-# from app.models.project_berserk import (
-#     ProjectBerserk,
-#     BerserkLearningSession,
-#     BerserkSelfImprovement,
-#     BerserkDeviceIntegration
-# )
+from app.models.project_berserk import (
+    ProjectBerserk,
+    BerserkLearningSession,
+    BerserkSelfImprovement,
+    BerserkDeviceIntegration
+)
 
 logger = logging.getLogger(__name__)
 
