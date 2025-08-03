@@ -246,6 +246,96 @@ class CustodyProtocolService:
                 "error": str(e),
                 "completed_at": datetime.utcnow().isoformat()
             }
+    
+    async def administer_custody_test(self, ai_type: str, test_type: str = "standard") -> Dict[str, Any]:
+        """Administer a custody test for an AI"""
+        try:
+            logger.info(f"Administering custody test for {ai_type} - Type: {test_type}")
+            
+            # Generate test based on AI type
+            difficulty = TestDifficulty.INTERMEDIATE
+            if ai_type.lower() in ["imperium", "guardian"]:
+                difficulty = TestDifficulty.ADVANCED
+            elif ai_type.lower() == "sandbox":
+                difficulty = TestDifficulty.EXPERT
+            
+            # Generate test
+            test = await self.generate_test(ai_type, difficulty)
+            
+            # Simulate AI response
+            ai_response = f"Custody test response from {ai_type} for {test_type} test"
+            
+            # Evaluate response
+            evaluation = await self.evaluate_response(test["test_id"], ai_response, ai_type)
+            
+            result = {
+                "ai_type": ai_type,
+                "test_type": test_type,
+                "test_id": test["test_id"],
+                "score": evaluation["score"],
+                "passed": evaluation["passed"],
+                "difficulty": difficulty.value,
+                "evaluation": evaluation["evaluation"],
+                "completed_at": datetime.utcnow().isoformat()
+            }
+            
+            logger.info(f"Custody test completed for {ai_type} - Score: {evaluation['score']}, Passed: {evaluation['passed']}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error administering custody test for {ai_type}: {str(e)}")
+            return {
+                "ai_type": ai_type,
+                "test_type": test_type,
+                "score": 0,
+                "passed": False,
+                "error": str(e),
+                "completed_at": datetime.utcnow().isoformat()
+            }
+    
+    async def administer_olympic_event(self, participants: List[str], event_type: str = "code_quality", difficulty: str = "advanced") -> Dict[str, Any]:
+        """Administer an Olympic event for AI participants"""
+        try:
+            logger.info(f"Administering Olympic event: {event_type} for participants: {participants}")
+            
+            results = {}
+            for participant in participants:
+                # Generate a test for each participant
+                test_difficulty = TestDifficulty.ADVANCED
+                if difficulty == "expert":
+                    test_difficulty = TestDifficulty.EXPERT
+                elif difficulty == "master":
+                    test_difficulty = TestDifficulty.MASTER
+                
+                test = await self.generate_test(participant, test_difficulty)
+                
+                # Simulate participant response and evaluation
+                response = f"Olympic event response from {participant} for {event_type}"
+                evaluation = await self.evaluate_response(test["test_id"], response, participant)
+                
+                results[participant] = {
+                    "score": evaluation["score"],
+                    "passed": evaluation["passed"],
+                    "medal": "gold" if evaluation["score"] >= 90 else "silver" if evaluation["score"] >= 75 else "bronze"
+                }
+            
+            logger.info(f"Olympic event completed with {len(results)} participants")
+            return {
+                "event_type": event_type,
+                "participants": participants,
+                "results": results,
+                "completed_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error administering Olympic event: {str(e)}")
+            return {
+                "event_type": event_type,
+                "participants": participants,
+                "results": {},
+                "error": str(e),
+                "completed_at": datetime.utcnow().isoformat()
+            }
 
 # Global instance
 custody_protocol_service = CustodyProtocolService() 
