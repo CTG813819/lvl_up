@@ -39,6 +39,13 @@ class CustodyProtocolService:
         self.ai_metrics = {}
         logger.info("Custody Protocol Service initialized")
     
+    @classmethod
+    async def initialize(cls):
+        """Initialize the custody protocol service"""
+        instance = cls()
+        logger.info("Custody Protocol Service initialized successfully")
+        return instance
+    
     async def generate_test(self, ai_type: str, difficulty: TestDifficulty = TestDifficulty.INTERMEDIATE) -> Dict[str, Any]:
         """Generate a basic test for the AI"""
         try:
