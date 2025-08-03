@@ -7,12 +7,12 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import os
-from app.models.project_berserk import (
-    ProjectBerserk, 
-    BerserkLearningSession, 
-    BerserkSelfImprovement,
-    BerserkDeviceIntegration
-)
+# from app.models.project_berserk import (
+#     ProjectBerserk, 
+#     BerserkLearningSession, 
+#     BerserkSelfImprovement,
+#     BerserkDeviceIntegration
+# )
 from app.services.project_berserk_service import ProjectWarmasterService
 import httpx
 import logging
