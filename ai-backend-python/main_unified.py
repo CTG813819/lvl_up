@@ -35,9 +35,9 @@ from app.routers.proposals import periodic_proposal_generation
 # Import all additional routers from app/main.py (with correct router objects)
 from app.routers import (
     enhanced_learning, terra_extensions, training_data, anthropic_test, 
-    token_usage, weekly_notifications, black_library, imperium_extensions, 
-    enhanced_ai_router
+    token_usage, weekly_notifications, black_library, imperium_extensions
 )
+from app.routers.enhanced_ai_router import router as enhanced_ai_router
 from app.routers.system_status import router as system_status_router
 from app.routers.ai import router as ai_router
 from app.routers.agent_metrics import router as agent_metrics_router
@@ -372,7 +372,7 @@ app.include_router(weekly_notifications)
 app.include_router(custody_protocol, prefix="/api/custody", tags=["Custody Protocol"])
 app.include_router(black_library, tags=["Black Library"])
 app.include_router(imperium_extensions, prefix="/api/imperium-extensions", tags=["Imperium Extensions"])
-app.include_router(enhanced_ai_router.router, prefix="/api", tags=["Enhanced AI"])
+app.include_router(enhanced_ai_router, prefix="/api", tags=["Enhanced AI"])
 app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
 app.include_router(system_status_router, prefix="/api/system", tags=["System"])
 app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
