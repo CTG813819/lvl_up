@@ -33,6 +33,7 @@ import time
 
 from ..core.database import get_session
 from ..core.config import settings
+from ..core.railway_utils import should_skip_external_requests
 from .ml_service import MLService
 from . import trusted_sources
 from app.services.advanced_code_generator import AdvancedCodeGenerator
@@ -360,13 +361,8 @@ class _GeneratedWidgetState extends State<GeneratedWidget> {{
         """Update knowledge base from trusted sources"""
         try:
             # Skip external knowledge fetching during Railway startup to prevent hangs
-            # Railway provides PORT and RAILWAY_ENVIRONMENT_NAME variables
-            railway_env = (os.getenv("PORT") or 
-                          os.getenv("RAILWAY_ENVIRONMENT_NAME") or 
-                          os.getenv("RAILWAY_SERVICE_ID") or
-                          os.getenv("RAILWAY_PROJECT_ID"))
-            if railway_env:
-                logger.info(f"Railway environment detected ({railway_env}) - skipping external knowledge fetching to prevent startup hangs")
+            if should_skip_external_requests():
+                logger.info("Skipping external knowledge fetching to prevent startup hangs in containerized environment")
                 return
                 
             # Get current trusted sources
