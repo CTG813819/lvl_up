@@ -359,6 +359,12 @@ class _GeneratedWidgetState extends State<GeneratedWidget> {{
     async def _update_knowledge_from_sources(self):
         """Update knowledge base from trusted sources"""
         try:
+            # Skip external knowledge fetching during Railway startup to prevent hangs
+            railway_env = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT")
+            if railway_env:
+                logger.info("Railway environment detected - skipping external knowledge fetching to prevent startup hangs")
+                return
+                
             # Get current trusted sources
             sources = trusted_sources.get_trusted_sources()
             
