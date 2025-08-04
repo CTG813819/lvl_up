@@ -8,14 +8,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy the ai-backend-python directory contents
+COPY ai-backend-python/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy application code from ai-backend-python
+COPY ai-backend-python/ .
+
+# Set PYTHONPATH to include the current directory
+ENV PYTHONPATH=/app
 
 # Expose port
 EXPOSE 8000
@@ -24,5 +27,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Start the application using the startup script that prioritizes main_unified.py
+CMD ["python", "start_app.py"] 
