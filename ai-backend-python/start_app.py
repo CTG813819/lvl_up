@@ -30,20 +30,16 @@ os.environ['PYTHONPATH'] = current_dir
 print(f"🐍 Python path updated: {current_dir}")
 print(f"🌍 Environment PYTHONPATH: {os.environ.get('PYTHONPATH')}")
 
-# Now we can import the app - prioritize main_unified.py
+# Import the app from main_unified.py only
 try:
     from main_unified import app
     print("✅ Successfully imported app from main_unified.py")
-except ImportError:
-    try:
-        from main import app
-        print("✅ Successfully imported app from main.py")
-    except ImportError as e:
-        print(f"❌ Failed to import app: {e}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        print(f"Directory contents: {os.listdir('.')}")
-        sys.exit(1)
+except ImportError as e:
+    print(f"❌ Failed to import app from main_unified.py: {e}")
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Python path: {sys.path}")
+    print(f"Directory contents: {os.listdir('.')}")
+    sys.exit(1)
 
 if __name__ == "__main__":
     # Get PORT from environment with validation
