@@ -360,9 +360,13 @@ class _GeneratedWidgetState extends State<GeneratedWidget> {{
         """Update knowledge base from trusted sources"""
         try:
             # Skip external knowledge fetching during Railway startup to prevent hangs
-            railway_env = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT")
+            # Railway provides PORT and RAILWAY_ENVIRONMENT_NAME variables
+            railway_env = (os.getenv("PORT") or 
+                          os.getenv("RAILWAY_ENVIRONMENT_NAME") or 
+                          os.getenv("RAILWAY_SERVICE_ID") or
+                          os.getenv("RAILWAY_PROJECT_ID"))
             if railway_env:
-                logger.info("Railway environment detected - skipping external knowledge fetching to prevent startup hangs")
+                logger.info(f"Railway environment detected ({railway_env}) - skipping external knowledge fetching to prevent startup hangs")
                 return
                 
             # Get current trusted sources
