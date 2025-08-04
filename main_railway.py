@@ -32,7 +32,7 @@ from app.services.proposal_cycle_service import ProposalCycleService
 from app.services.token_usage_service import TokenUsageService
 from app.services.scheduled_notification_service import ScheduledNotificationService
 from app.services.auto_apply_service import auto_apply_service
-from app.controllers.imperium_learning_controller import ImperiumLearningController
+from app.services.imperium_learning_controller import ImperiumLearningController
 
 # Setup logging
 setup_logging()
