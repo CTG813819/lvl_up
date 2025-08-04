@@ -1,6 +1,11 @@
 """
-Main FastAPI application for AI Backend with scikit-learn integration
+DEPRECATED - This file should not be used for deployment
+Use main_unified.py instead for all functionality
+
+THIS FILE IS BEING RENAMED TO PREVENT CONFLICTS WITH main_unified.py
 """
+
+# This file is being moved to main_old.py to prevent deployment conflicts
 
 import os
 import asyncio

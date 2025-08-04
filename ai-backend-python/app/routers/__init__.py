@@ -29,8 +29,7 @@ from .weekly_notifications import router as weekly_notifications
 from .custody_protocol import router as custody_protocol
 from .black_library import router as black_library
 from .imperium_extensions import router as imperium_extensions
-# Temporarily disabled to test server stability
-# from .project_berserk import router as project_berserk
+from .project_berserk import router as project_berserk
 from .enhanced_ai_router import router as enhanced_ai_router
 from .system_status import router as system_status
 from .ai import router as ai
