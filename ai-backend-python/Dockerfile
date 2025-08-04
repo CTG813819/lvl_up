@@ -14,8 +14,14 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy only essential application files (explicit to avoid .dockerignore issues)
+COPY app/ ./app/
+COPY main_unified.py ./
+COPY start_app.py ./
+COPY Procfile ./
+COPY railway.toml ./
+COPY railway.json ./
+COPY nixpacks.toml ./
 
 # Set PYTHONPATH to include the current directory
 ENV PYTHONPATH=/app
