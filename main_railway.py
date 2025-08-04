@@ -43,6 +43,8 @@ async def lifespan(app: FastAPI):
     """Application lifespan events - Railway optimized for single process"""
     # Startup
     logger.info("🚂 Starting Railway-Optimized AI Backend")
+    print("🔧 RAILWAY DEBUG: Entered lifespan function")
+    logger.info("🔧 RAILWAY DEBUG: Entered lifespan function")
     
     try:
         # Initialize database
@@ -126,22 +128,37 @@ async def lifespan(app: FastAPI):
         logger.info("🔧 RAILWAY DEBUG: Checking background jobs environment...")
         if os.getenv("RUN_BACKGROUND_JOBS", "1") != "0":
             logger.info("🔧 RAILWAY DEBUG: Starting background jobs...")
+            print("🔧 RAILWAY DEBUG: Starting background jobs...")
             
             # Start autonomous AI cycle in background (non-blocking)
             logger.info("🔧 RAILWAY DEBUG: Creating background service instance...")
+            print("🔧 RAILWAY DEBUG: Creating background service instance...")
             background_service = BackgroundService()
+            logger.info("🔧 RAILWAY DEBUG: Background service instance created")
+            print("🔧 RAILWAY DEBUG: Background service instance created")
+            
             logger.info("🔧 RAILWAY DEBUG: Starting autonomous cycle task...")
+            print("🔧 RAILWAY DEBUG: Starting autonomous cycle task...")
             asyncio.create_task(background_service.start_autonomous_cycle())
+            logger.info("🔧 RAILWAY DEBUG: Autonomous cycle task created")
+            print("🔧 RAILWAY DEBUG: Autonomous cycle task created")
             
             # Start proposal cycle service (non-blocking)
             logger.info("🔧 RAILWAY DEBUG: Starting proposal cycle task...")
+            print("🔧 RAILWAY DEBUG: Starting proposal cycle task...")
             asyncio.create_task(proposal_cycle_service.start_proposal_cycle())
+            logger.info("🔧 RAILWAY DEBUG: Proposal cycle task created")
+            print("🔧 RAILWAY DEBUG: Proposal cycle task created")
             
             # Start scheduled notification service (non-blocking)
             logger.info("🔧 RAILWAY DEBUG: Starting notification scheduler task...")
+            print("🔧 RAILWAY DEBUG: Starting notification scheduler task...")
             asyncio.create_task(scheduled_notification_service.start_weekly_scheduler())
+            logger.info("🔧 RAILWAY DEBUG: Notification scheduler task created")
+            print("🔧 RAILWAY DEBUG: Notification scheduler task created")
             
             logger.info("✅ Background services started (Railway optimized)")
+            print("✅ Background services started (Railway optimized)")
         else:
             logger.info("🔧 RAILWAY DEBUG: Background jobs disabled via environment variable")
         
@@ -151,7 +168,11 @@ async def lifespan(app: FastAPI):
         print("⚔️ Enhanced Adversarial Testing: Integrated in main process") 
         print("🏋️ Training Ground: Available via custody protocol")
         
+        logger.info("🔧 RAILWAY DEBUG: About to yield - startup complete")
+        print("🔧 RAILWAY DEBUG: About to yield - startup complete")
         yield
+        logger.info("🔧 RAILWAY DEBUG: After yield - app is running")
+        print("🔧 RAILWAY DEBUG: After yield - app is running")
         
     except Exception as e:
         logger.error(f"❌ Error during startup: {str(e)}")
