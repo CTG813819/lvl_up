@@ -88,9 +88,9 @@ from app.services.custody_protocol_service import CustodyProtocolService
 setup_logging()
 logger = structlog.get_logger()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events - handles startup and shutdown"""
+# @asynccontextmanager  # Temporarily disabled to fix 502 errors
+async def lifespan_disabled(app: FastAPI):
+    """Application lifespan events - handles startup and shutdown - TEMPORARILY DISABLED"""
     # Startup
     logger.info("🚀 Starting Unified AI Backend with scikit-learn integration")
     
@@ -263,7 +263,7 @@ app = FastAPI(
     title="AI Backend - Unified System", 
     description="Complete AI Backend with Learning Cycles, Testing Systems, and ML Integration",
     version="2.0.0",
-    lifespan=lifespan
+    # lifespan=lifespan  # Temporarily disabled
 )
 
 # Add middleware (consolidated from both apps)
