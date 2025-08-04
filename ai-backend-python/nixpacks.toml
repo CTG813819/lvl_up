@@ -7,4 +7,4 @@ nixPkgs = ["python312", "gcc"]
 cmds = ["pip install -r requirements.txt"]
 
 [start]
-cmd = "chmod +x start.sh && ./start.sh"
+cmd = "python -m uvicorn main_unified:app --host 0.0.0.0 --port 8000"
