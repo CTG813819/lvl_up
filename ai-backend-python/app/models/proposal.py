@@ -128,6 +128,7 @@ class Proposal(ProposalBase):
                 "ai_learning_summary": "Learned from previous user feedback that code readability is important"
             }
         }
+    )
 
 
 class ProposalResponse(BaseModel):
