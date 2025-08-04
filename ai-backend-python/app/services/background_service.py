@@ -12,6 +12,7 @@ import time
 import subprocess
 
 from ..core.config import settings
+from ..core.railway_utils import should_skip_external_requests
 from .ai_agent_service import AIAgentService
 from .github_service import GitHubService
 from .ai_learning_service import AILearningService
@@ -184,20 +185,14 @@ class BackgroundService:
                     try:
                         logger.info(f"🧪 Running Custody test for {ai_type}...")
                         
-                        # Check if AI is eligible for testing first
-                        is_eligible = await custody_service._check_proposal_eligibility(ai_type)
-                        if not is_eligible:
-                            logger.warning(f"AI {ai_type} not eligible: No tests passed yet (Level {await custody_service._get_ai_level(ai_type)}, XP {custody_service.custody_metrics.get(ai_type, {}).get('xp', 0)})")
-                            continue
-                        
                         # Try to generate and administer test with fallback
                         test_result = await self._administer_test_with_fallback(custody_service, ai_type)
                         test_results[ai_type] = test_result
                         
-                        if test_result.get('status') == 'success':
+                        if test_result.get('status') == 'success' or test_result.get('passed'):
                             logger.info(f"✅ Custody test completed for {ai_type}: {test_result.get('passed', False)}")
                         else:
-                            logger.warning(f"⚠️ Custody test had issues for {ai_type}: {test_result.get('message', 'Unknown error')}")
+                            logger.warning(f"⚠️ Custody test had issues for {ai_type}: {test_result.get('error', 'Unknown error')}")
                             
                     except Exception as e:
                         logger.error(f"❌ Custody test failed for {ai_type}: {str(e)}")
@@ -236,7 +231,7 @@ class BackgroundService:
                         
                         olympic_result = await custody_service.administer_olympic_event(
                             participants=participants,
-                            difficulty=TestDifficulty.INTERMEDIATE,
+                            difficulty="intermediate",
                             event_type="olympics"
                         )
                         
@@ -301,7 +296,8 @@ class BackgroundService:
                             
                             collaborative_result = await custody_service._execute_collaborative_test(
                                 participants=participants,
-                                task_description=scenario
+                                scenario=scenario,
+                                context={"difficulty": "intermediate"}
                             )
                             
                             if collaborative_result and not collaborative_result.get('error'):

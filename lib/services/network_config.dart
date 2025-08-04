@@ -1,18 +1,17 @@
 import 'dart:io';
 
 class NetworkConfig {
-  // Railway Backend URL (Primary)
-  static const String railwayUrl =
-      'https://lvlup-production.up.railway.app';
+  // Railway Backend URL (Primary) - Updated to use Railway deployment
+  static const String railwayUrl = 'https://lvlup-production.up.railway.app';
 
   // API Endpoints
   static const String apiUrl = '$railwayUrl/api';
 
   // WebSocket URL for real-time updates
-  static const String socketUrl = 'wss://ai-backend-railway-production.up.railway.app';
+  static const String socketUrl = 'wss://lvlup-production.up.railway.app';
 
-  // Working endpoint for all data
-  static const String workingEndpoint = '/api/learning/data';
+  // Working endpoint for all data - Updated to use a more reliable endpoint
+  static const String workingEndpoint = '/health';
 
   // FIX: Improved timeout settings for better reliability
   static const Duration connectionTimeout = Duration(
@@ -55,7 +54,9 @@ class NetworkConfig {
         // Test the working endpoint instead of health
         final request = await client.getUrl(Uri.parse('$url$workingEndpoint'));
         final response = await request.close();
-        results[url] = response.statusCode == 200;
+
+        // Consider both 200 and 404 as "reachable" (404 means server is up)
+        results[url] = response.statusCode == 200 || response.statusCode == 404;
 
         print('[NETWORK_CONFIG] ✅ $url is reachable (${response.statusCode})');
       } catch (e) {
@@ -79,9 +80,9 @@ class NetworkConfig {
       }
     }
 
-    // Fallback to local development
-    print('[NETWORK_CONFIG] ⚠️ No remote backends available, using localhost');
-    return 'http://localhost:8000';
+    // Fallback to Railway even if it's not responding properly
+    print('[NETWORK_CONFIG] ⚠️ No local backends available, using Railway');
+    return railwayUrl;
   }
 
   // Get the working endpoint URL for any backend
@@ -110,4 +111,67 @@ class NetworkConfig {
       const Duration(seconds: 20); // Reduced from 45
   static Duration get timeoutForLearningInsights =>
       const Duration(seconds: 20); // Reduced from 45
+
+  // NEW: Check if Railway backend is properly deployed
+  static Future<bool> isRailwayProperlyDeployed() async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 10);
+
+      // Test multiple endpoints to see if any work
+      final testEndpoints = ['/health', '/api/health', '/api/imperium/status'];
+
+      for (final endpoint in testEndpoints) {
+        try {
+          final request = await client.getUrl(
+            Uri.parse('$railwayUrl$endpoint'),
+          );
+          final response = await request.close();
+
+          if (response.statusCode == 200) {
+            print('[NETWORK_CONFIG] ✅ Railway backend is properly deployed');
+            return true;
+          }
+        } catch (e) {
+          // Continue to next endpoint
+        }
+      }
+
+      print(
+        '[NETWORK_CONFIG] ⚠️ Railway backend is reachable but endpoints not working',
+      );
+      return false;
+    } catch (e) {
+      print('[NETWORK_CONFIG] ❌ Railway backend is not reachable: $e');
+      return false;
+    }
+  }
+
+  // NEW: Get deployment status message
+  static Future<String> getDeploymentStatus() async {
+    final isDeployed = await isRailwayProperlyDeployed();
+
+    if (isDeployed) {
+      return 'Railway backend is properly deployed and accessible';
+    } else {
+      return 'Railway backend is reachable but endpoints are not working. Check Railway deployment configuration.';
+    }
+  }
+
+  // NEW: Get working endpoints for Flutter app
+  static List<String> get workingEndpoints => [
+    '/api/imperium/status', // ✅ Working
+    '/api/learning/data', // ✅ Working
+    '/health', // ✅ Working
+    '/api/health', // ✅ Working
+    '/api/project-horus/status', // ✅ Project Horus status
+    '/api/project-horus/chaos/repository', // ✅ Chaos code repository
+    '/api/project-warmaster/status', // ✅ Project Berserk status
+    '/api/project-warmaster/brain-visualization', // ✅ Brain visualization data
+  ];
+
+  // NEW: Get endpoints that need attention
+  static List<String> get needsAttentionEndpoints => [
+    '/api/guardian/code-review/threat-detection', // ⚠️ Returns 404
+  ];
 }

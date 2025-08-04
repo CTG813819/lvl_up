@@ -333,11 +333,7 @@ class _SideMenuState extends State<SideMenu> {
             Navigator.push(
               widget.parentContext,
               MaterialPageRoute(
-                builder:
-                    (context) => ProjectWarmasterScreen(
-                      baseUrl:
-                          'http://ec2-34-202-215-209.compute-1.amazonaws.com:8003',
-                    ),
+                builder: (context) => const ProjectWarmasterScreen(),
               ),
             );
           },
@@ -542,11 +538,7 @@ class _SideMenuState extends State<SideMenu> {
         Navigator.push(
           widget.parentContext,
           MaterialPageRoute(
-            builder:
-                (context) => ProjectWarmasterScreen(
-                  baseUrl:
-                      'http://ec2-34-202-215-209.compute-1.amazonaws.com:8003',
-                ),
+            builder: (context) => const ProjectWarmasterScreen(),
           ),
         );
       } else {

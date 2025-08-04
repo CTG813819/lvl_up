@@ -179,7 +179,7 @@ void main() async {
     // Initialize WebSocket client for real-time notifications
     try {
       final channel = WebSocketChannel.connect(
-        Uri.parse('ws://34.202.215.209:8000/api/imperium/status'),
+        Uri.parse('wss://lvlup-production.up.railway.app/api/imperium/status'),
       );
 
       channel.stream.listen(

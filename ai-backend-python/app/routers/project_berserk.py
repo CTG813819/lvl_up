@@ -1141,3 +1141,39 @@ async def run_simulated_attack_cycle(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error running simulated attack cycle: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to run simulated attack cycle: {str(e)}")
+
+
+@router.post("/jarvis/evolve")
+async def trigger_jarvis_evolution(db: AsyncSession = Depends(get_db)):
+    """Manually trigger JARVIS evolution"""
+    try:
+        berserk_service = await ProjectWarmasterService.initialize()
+        result = await berserk_service.trigger_jarvis_evolution(db)
+        return result
+    except Exception as e:
+        logger.error(f"Error triggering JARVIS evolution: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to evolve JARVIS: {str(e)}")
+
+
+@router.get("/jarvis/status")
+async def get_jarvis_status(db: AsyncSession = Depends(get_db)):
+    """Get JARVIS evolution status"""
+    try:
+        berserk_service = await ProjectWarmasterService.initialize()
+        status = await berserk_service.get_system_status(db)
+        
+        jarvis_info = {
+            "evolution_stage": status.get("jarvis_evolution_stage", 0),
+            "capabilities": status.get("capabilities", {}),
+            "last_evolution": status.get("last_jarvis_evolution"),
+            "modules": berserk_service.jarvis_system.jarvis_modules if hasattr(berserk_service, 'jarvis_system') else []
+        }
+        
+        return {
+            "status": "success",
+            "jarvis": jarvis_info,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting JARVIS status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get JARVIS status: {str(e)}")

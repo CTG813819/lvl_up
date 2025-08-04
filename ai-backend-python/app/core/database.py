@@ -95,10 +95,20 @@ async def init_database():
     global engine, SessionLocal
     
     try:
-        logger.info("Initializing PostgreSQL database connection")
-        
         # Parse database URL and handle SSL properly
         db_url = settings.database_url
+        
+        # Handle placeholder values and use SQLite as fallback
+        if db_url in ["your_neon_connection_string_here", "postgresql://user:password@localhost:5432/dbname"]:
+            db_url = "sqlite:///./ai_backend.db"
+            logger.info("Using SQLite database for local development")
+        elif db_url.startswith("sqlite"):
+            logger.info("Initializing SQLite database connection")
+        elif db_url.startswith("postgresql"):
+            logger.info("Initializing PostgreSQL database connection")
+        else:
+            logger.warning(f"Unknown database URL format: {db_url}, falling back to SQLite")
+            db_url = "sqlite:///./ai_backend.db"
         
         # Remove problematic SSL parameters from URL (asyncpg doesn't support them in URL)
         if "?" in db_url:
@@ -117,17 +127,25 @@ async def init_database():
                 else:
                     db_url = base_url
         
-        # Create async engine with asyncpg driver - Enhanced configuration
-        engine = create_async_engine(
-            db_url.replace("postgresql://", "postgresql+asyncpg://"),
-            echo=settings.debug,
-            pool_pre_ping=True,
-            pool_recycle=1800,      # Recycle connections every 30 min
-            pool_size=10,           # Lowered from 50 to 10 for safer FD usage
-            max_overflow=5,         # Lowered from 100 to 5
-            pool_timeout=30,        # Lowered from 120 to 30 seconds
-            pool_reset_on_return='commit',
-            # pool_use_lifo removed for simplicity and compatibility
+        # Create async engine based on database type
+        if db_url.startswith("sqlite"):
+            # SQLite configuration
+            engine = create_async_engine(
+                db_url.replace("sqlite://", "sqlite+aiosqlite://"),
+                echo=settings.debug,
+                pool_pre_ping=True,
+            )
+        else:
+            # PostgreSQL configuration with asyncpg driver
+            engine = create_async_engine(
+                db_url.replace("postgresql://", "postgresql+asyncpg://"),
+                echo=settings.debug,
+                pool_pre_ping=True,
+                pool_recycle=1800,      # Recycle connections every 30 min
+                pool_size=10,           # Lowered from 50 to 10 for safer FD usage
+                max_overflow=5,         # Lowered from 100 to 5
+                pool_timeout=30,        # Lowered from 120 to 30 seconds
+                pool_reset_on_return='commit',
             connect_args={
                 "ssl": "require",
                 "server_settings": {
@@ -170,8 +188,11 @@ async def _test_connection_with_retry():
         raise RuntimeError("Engine not initialized")
     async with engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
-        # Test a more complex query to ensure full connectivity
-        await conn.execute(text("SELECT version()"))
+        # Test a database-specific query to ensure full connectivity
+        if str(engine.url).startswith("sqlite"):
+            await conn.execute(text("SELECT sqlite_version()"))  # SQLite version query
+        else:
+            await conn.execute(text("SELECT version()"))  # PostgreSQL version query
 
 
 async def close_database():
