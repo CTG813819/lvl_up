@@ -75,9 +75,8 @@ async def lifespan(app: FastAPI):
         await GitHubService.initialize()
         logger.info("🔧 RAILWAY DEBUG: GitHubService initialized")
         
-        logger.info("🔧 RAILWAY DEBUG: Starting BackgroundService initialization...")
-        await BackgroundService.initialize()
-        logger.info("🔧 RAILWAY DEBUG: BackgroundService initialized")
+        # BackgroundService will be initialized later when background jobs start
+        logger.info("🔧 RAILWAY DEBUG: BackgroundService initialization deferred to background jobs section")
         
         logger.info("🔧 RAILWAY DEBUG: Starting AIGrowthService initialization...")
         await AIGrowthService.initialize()
@@ -131,11 +130,11 @@ async def lifespan(app: FastAPI):
             print("🔧 RAILWAY DEBUG: Starting background jobs...")
             
             # Start autonomous AI cycle in background (non-blocking)
-            logger.info("🔧 RAILWAY DEBUG: Creating background service instance...")
-            print("🔧 RAILWAY DEBUG: Creating background service instance...")
-            background_service = BackgroundService()
-            logger.info("🔧 RAILWAY DEBUG: Background service instance created")
-            print("🔧 RAILWAY DEBUG: Background service instance created")
+            logger.info("🔧 RAILWAY DEBUG: Initializing background service properly...")
+            print("🔧 RAILWAY DEBUG: Initializing background service properly...")
+            background_service = await BackgroundService.initialize()
+            logger.info("🔧 RAILWAY DEBUG: Background service properly initialized")
+            print("🔧 RAILWAY DEBUG: Background service properly initialized")
             
             logger.info("🔧 RAILWAY DEBUG: Starting autonomous cycle task...")
             print("🔧 RAILWAY DEBUG: Starting autonomous cycle task...")
@@ -143,12 +142,9 @@ async def lifespan(app: FastAPI):
             logger.info("🔧 RAILWAY DEBUG: Autonomous cycle task created")
             print("🔧 RAILWAY DEBUG: Autonomous cycle task created")
             
-            # Start proposal cycle service (non-blocking)
-            logger.info("🔧 RAILWAY DEBUG: Starting proposal cycle task...")
-            print("🔧 RAILWAY DEBUG: Starting proposal cycle task...")
-            asyncio.create_task(proposal_cycle_service.start_proposal_cycle())
-            logger.info("🔧 RAILWAY DEBUG: Proposal cycle task created")
-            print("🔧 RAILWAY DEBUG: Proposal cycle task created")
+            # ProposalCycleService is a passive service - no background task needed
+            logger.info("🔧 RAILWAY DEBUG: ProposalCycleService is passive - no background task needed")
+            print("🔧 RAILWAY DEBUG: ProposalCycleService is passive - no background task needed")
             
             # Start scheduled notification service (non-blocking)
             logger.info("🔧 RAILWAY DEBUG: Starting notification scheduler task...")
