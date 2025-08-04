@@ -4,7 +4,7 @@ Proposal model using Pydantic
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 from uuid import UUID
 
