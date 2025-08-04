@@ -14,8 +14,8 @@ load_dotenv()
 class Settings(BaseSettings):
     """Application settings"""
     
-    # Database
-    database_url: str = Field(default="postgresql://user:password@localhost:5432/dbname", env="DATABASE_URL")
+    # Database (using SQLite for local development, PostgreSQL for production)
+    database_url: str = Field(default="sqlite:///./ai_backend.db", env="DATABASE_URL")
     database_name: str = Field(default="ai_backend", env="DATABASE_NAME")
     
     # Server
