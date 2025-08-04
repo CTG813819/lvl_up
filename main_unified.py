@@ -229,9 +229,14 @@ async def lifespan(app: FastAPI):
         
         logger.info("🎯 All systems initialized and running!")
         print("🎯 All systems initialized and running!")
-        print("📊 Main Server: http://localhost:8000")
-        print("⚔️ Adversarial Testing: http://localhost:8001") 
-        print("🏋️ Training Ground: http://localhost:8002")
+        if railway_env:
+            print("📊 Main Server: Railway deployment running")
+            print("⚔️ Enhanced Adversarial Testing: Integrated in main process") 
+            print("🏋️ Training Ground: Available via custody protocol")
+        else:
+            print("📊 Main Server: http://localhost:8000")
+            print("⚔️ Adversarial Testing: http://localhost:8001") 
+            print("🏋️ Training Ground: http://localhost:8002")
         
         yield
         
