@@ -237,7 +237,7 @@ app.include_router(black_library, prefix="/api/black-library", tags=["Black Libr
 app.include_router(imperium_extensions, prefix="/api/imperium-extensions", tags=["Imperium Extensions"])
 
 # Router objects with aliases
-app.include_router(enhanced_ai_router, prefix="/api", tags=["Enhanced AI"])
+app.include_router(enhanced_ai_router)
 app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
 app.include_router(system_status_router, prefix="/api/system", tags=["System"])
 app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
