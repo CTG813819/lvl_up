@@ -36,5 +36,6 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Copy the start script
 COPY ai-backend-python/start.sh /app/start.sh
 
-# Start the application using shell script for proper PORT handling
-CMD ["chmod", "+x", "start.sh", "&&", "./start.sh"]
+# Make script executable and start the application
+RUN chmod +x start.sh
+CMD ["./start.sh"]
