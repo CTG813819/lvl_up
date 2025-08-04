@@ -46,63 +46,104 @@ async def lifespan(app: FastAPI):
     
     try:
         # Initialize database
+        logger.info("🔧 RAILWAY DEBUG: Starting database initialization...")
         await init_database()
+        logger.info("🔧 RAILWAY DEBUG: Database engine created...")
         await create_tables()
+        logger.info("🔧 RAILWAY DEBUG: Tables created...")
         await create_indexes()
         logger.info("✅ Database initialized")
         
         # Initialize ML service
+        logger.info("🔧 RAILWAY DEBUG: Starting ML Service initialization...")
         await MLService.initialize()
         logger.info("✅ ML Service initialized")
         
         # Initialize AI Learning service
+        logger.info("🔧 RAILWAY DEBUG: Starting AI Learning Service initialization...")
         await AILearningService.initialize()
         logger.info("✅ AI Learning Service initialized")
         
         # Initialize core services
+        logger.info("🔧 RAILWAY DEBUG: Starting AIAgentService initialization...")
         await AIAgentService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: AIAgentService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting GitHubService initialization...")
         await GitHubService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: GitHubService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting BackgroundService initialization...")
         await BackgroundService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: BackgroundService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting AIGrowthService initialization...")
         await AIGrowthService.initialize()
         logger.info("✅ Core AI services initialized")
         
         # Initialize Imperium Learning Controller
+        logger.info("🔧 RAILWAY DEBUG: Starting Imperium Learning Controller initialization...")
         await ImperiumLearningController.initialize()
         logger.info("✅ Imperium Learning Controller initialized")
         
         # Initialize Auto-Apply Service
+        logger.info("🔧 RAILWAY DEBUG: Starting Auto-Apply Service initialization...")
         await auto_apply_service.initialize()
         logger.info("✅ Auto-Apply Service initialized")
         
         # Initialize optimization services
+        logger.info("🔧 RAILWAY DEBUG: Starting CacheService initialization...")
         await CacheService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: CacheService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting DataCollectionService initialization...")
         await DataCollectionService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: DataCollectionService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting AnalysisService initialization...")
         await AnalysisService.initialize()
         logger.info("✅ Optimization services initialized")
         
         # Initialize Custody Protocol Service
+        logger.info("🔧 RAILWAY DEBUG: Starting Custody Protocol Service initialization...")
         custody_service = await CustodyProtocolService.initialize()
         logger.info("✅ Custody Protocol Service initialized")
         
         # Initialize additional services
+        logger.info("🔧 RAILWAY DEBUG: Starting ProposalCycleService initialization...")
         proposal_cycle_service = await ProposalCycleService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: ProposalCycleService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting TokenUsageService initialization...")
         token_usage_service = await TokenUsageService.initialize()
+        logger.info("🔧 RAILWAY DEBUG: TokenUsageService initialized")
+        
+        logger.info("🔧 RAILWAY DEBUG: Starting ScheduledNotificationService initialization...")
         scheduled_notification_service = await ScheduledNotificationService.initialize()
         logger.info("✅ Additional services initialized")
         
         # Start background jobs (Railway optimized)
+        logger.info("🔧 RAILWAY DEBUG: Checking background jobs environment...")
         if os.getenv("RUN_BACKGROUND_JOBS", "1") != "0":
+            logger.info("🔧 RAILWAY DEBUG: Starting background jobs...")
+            
             # Start autonomous AI cycle in background (non-blocking)
+            logger.info("🔧 RAILWAY DEBUG: Creating background service instance...")
             background_service = BackgroundService()
+            logger.info("🔧 RAILWAY DEBUG: Starting autonomous cycle task...")
             asyncio.create_task(background_service.start_autonomous_cycle())
             
             # Start proposal cycle service (non-blocking)
+            logger.info("🔧 RAILWAY DEBUG: Starting proposal cycle task...")
             asyncio.create_task(proposal_cycle_service.start_proposal_cycle())
             
             # Start scheduled notification service (non-blocking)
+            logger.info("🔧 RAILWAY DEBUG: Starting notification scheduler task...")
             asyncio.create_task(scheduled_notification_service.start_weekly_scheduler())
             
             logger.info("✅ Background services started (Railway optimized)")
+        else:
+            logger.info("🔧 RAILWAY DEBUG: Background jobs disabled via environment variable")
         
         logger.info("🎯 Railway AI Backend fully initialized!")
         print("🎯 Railway AI Backend fully initialized!")
