@@ -379,7 +379,7 @@ app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
 app.include_router(agent_metrics_router, prefix="/api/agent-metrics", tags=["Agent Metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
 app.include_router(enhanced_adversarial_router, prefix="/api/enhanced-adversarial", tags=["Enhanced Adversarial Testing"])
-app.include_router(project_berserk_router)  # Already has prefix="/api/project-warmaster" in router definition
+app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
 # New AI service routers

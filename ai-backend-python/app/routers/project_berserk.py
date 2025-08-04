@@ -19,7 +19,7 @@ import logging
 import time
 
 logger = structlog.get_logger()
-router = APIRouter(prefix="/api/project-warmaster", tags=["Project Warmaster"])
+router = APIRouter(tags=["Project Warmaster"])
 
 
 class LearningRequest(BaseModel):

@@ -29,6 +29,12 @@ from .weekly_notifications import router as weekly_notifications
 from .custody_protocol import router as custody_protocol
 from .black_library import router as black_library
 from .imperium_extensions import router as imperium_extensions
+from .project_berserk import router as project_berserk
 from .enhanced_ai_router import router as enhanced_ai_router
-from .system_status import router as system_status 
+from .system_status import router as system_status
+from .ai import router as ai
+from .agent_metrics import router as agent_metrics
+from .scheduling import router as scheduling
+from .enhanced_adversarial_testing import router as enhanced_adversarial_testing
+from .offline_chaos_router import router as offline_chaos_router
 from .weapons import router as weapons 
