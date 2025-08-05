@@ -10,6 +10,17 @@ from typing import Dict, Any
 import uvicorn
 
 # CRITICAL: Module-level debug that WILL execute during Railway import
+import sys
+sys.stdout.write("\n" + "🔥" * 80 + "\n")
+sys.stdout.write("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
+sys.stdout.write(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
+sys.stdout.write(f"🔌 Railway explicit uvicorn command active\n")
+sys.stdout.write(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
+sys.stdout.write(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
+sys.stdout.write("🔥" * 80 + "\n\n")
+sys.stdout.flush()
+
+# BACKUP DEBUG - Multiple methods to ensure visibility
 print("\n" + "🔥" * 80, flush=True)
 print("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
 print(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
@@ -289,13 +300,39 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Error during shutdown: {str(e)}")
 
-# Create FastAPI app with unified configuration
+# Create FastAPI app with unified configuration + BACKUP STARTUP EVENT
 app = FastAPI(
     title="AI Backend - Unified System", 
     description="Complete AI Backend with Learning Cycles, Testing Systems, and ML Integration",
     version="2.0.0",
     lifespan=lifespan  # Re-enabled for Railway debugging
 )
+
+# BACKUP: Add startup event as fallback if lifespan fails
+@app.on_event("startup")
+async def backup_startup():
+    """Backup startup event if lifespan manager fails in Railway"""
+    sys.stdout.write("🔄 BACKUP STARTUP EVENT TRIGGERED\n")
+    sys.stdout.flush()
+    print("🔄 BACKUP STARTUP EVENT TRIGGERED", flush=True)
+    
+    try:
+        # Import database functions
+        from app.core.database import init_database, create_tables, create_indexes
+        
+        print("🔗 BACKUP: Initializing database...", flush=True)
+        await init_database()
+        print("✅ BACKUP: Database initialized", flush=True)
+        
+        await create_tables()
+        print("✅ BACKUP: Tables created", flush=True)
+        
+        await create_indexes()
+        print("✅ BACKUP: Indexes created", flush=True)
+        
+    except Exception as e:
+        print(f"⚠️ BACKUP: Database init failed: {e}", flush=True)
+        # Continue without database - some endpoints still work
 
 # Add middleware (consolidated from both apps)
 app.add_middleware(
