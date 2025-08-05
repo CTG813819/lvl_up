@@ -447,6 +447,7 @@ async def debug_info():
 if __name__ == "__main__":
     # Run the unified application on port 8000 [[memory:4401229]] (or Railway's PORT env var)
     port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 Starting server on port {port} (PORT env var: {os.environ.get('PORT', 'not set')})")
     uvicorn.run(
         "main_unified:app",
         host="0.0.0.0",
