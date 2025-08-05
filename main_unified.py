@@ -323,33 +323,35 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # Health check endpoints
+@app.get("/")
+async def root():
+    """Root endpoint - basic health check"""
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy", "service": "ai-backend-unified", "endpoints": 475}
+    )
+
 @app.get("/health")
 async def health_check():
-    """Main health check endpoint for Railway"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "service": "ai-backend-unified",
-        "version": "2.0.0",
-        "components": {
-            "main_server": "running",
-            "adversarial_testing": "port_8001",
-            "training_ground": "port_8002",
-            "learning_cycles": "active",
-            "testing_systems": "active"
-        }
-    }
+    """Railway health check endpoint - simplified for reliability"""
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy", "service": "ai-backend-unified"}
+    )
 
-@app.get("/api/health")
+@app.get("/api/health")  
 async def api_health_check():
-    """API health check"""
-    return {
-        "status": "ok",
-        "message": "AI Learning Backend is running",
-        "timestamp": datetime.utcnow().isoformat(),
-        "learning_systems_active": True,
-        "testing_systems_active": True
-    }
+    """Detailed API health check"""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "ok",
+            "message": "AI Learning Backend is running", 
+            "timestamp": datetime.utcnow().isoformat(),
+            "endpoints": 475,
+            "projects": ["horus", "berserk", "adversarial", "training_ground", "imperium"]
+        }
+    )
 
 # Include all routers (consolidated from both main files)
 # Core routers
