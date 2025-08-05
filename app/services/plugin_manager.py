@@ -13,35 +13,22 @@ class PluginManager:
 
     def reload_plugins(self):
         self.plugins = {}
-        
-        # Create plugins directory if it doesn't exist (Railway deployment fix)
-        if not os.path.exists(PLUGIN_DIR):
-            try:
-                os.makedirs(PLUGIN_DIR, exist_ok=True)
-                print(f"✅ Created plugins directory: {PLUGIN_DIR}")
-            except Exception as e:
-                print(f"⚠️ Could not create plugins directory: {e}")
-                return
-        
-        try:
-            for fname in os.listdir(PLUGIN_DIR):
-                if fname.endswith('.py') and fname != 'base_plugin.py':
-                    plugin_name = fname[:-3]
-                    plugin_path = os.path.join(PLUGIN_DIR, fname)
-                    spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
-                    if spec and spec.loader:
-                        module = importlib.util.module_from_spec(spec)
-                        sys.modules[plugin_name] = module
-                        try:
-                            spec.loader.exec_module(module)
-                            for attr in dir(module):
-                                obj = getattr(module, attr)
-                                if hasattr(obj, '__bases__') and 'BasePlugin' in [b.__name__ for b in obj.__bases__]:
-                                    self.plugins[plugin_name] = obj()
-                        except Exception as e:
-                            print(f"Failed to load plugin {plugin_name}: {e}")
-        except Exception as e:
-            print(f"⚠️ Error reading plugins directory: {e}")
+        for fname in os.listdir(PLUGIN_DIR):
+            if fname.endswith('.py') and fname != 'base_plugin.py':
+                plugin_name = fname[:-3]
+                plugin_path = os.path.join(PLUGIN_DIR, fname)
+                spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[plugin_name] = module
+                    try:
+                        spec.loader.exec_module(module)
+                        for attr in dir(module):
+                            obj = getattr(module, attr)
+                            if hasattr(obj, '__bases__') and 'BasePlugin' in [b.__name__ for b in obj.__bases__]:
+                                self.plugins[plugin_name] = obj()
+                    except Exception as e:
+                        print(f"Failed to load plugin {plugin_name}: {e}")
 
     def list_plugins(self) -> List[str]:
         return list(self.plugins.keys())

@@ -208,6 +208,11 @@ async def cleanup_old_pending_proposals():
     try:
         import app.core.database as database_module
         
+        # Check if database is initialized
+        if not hasattr(database_module, 'SessionLocal') or database_module.SessionLocal is None:
+            logger.warning("Database not initialized, skipping proposal cleanup")
+            return
+        
         # Check if we have too many pending proposals
         async with database_module.SessionLocal() as db:
             pending_query = select(func.count(Proposal.id)).where(Proposal.status == "pending")
@@ -248,7 +253,12 @@ async def generate_and_test_proposal(ai_type: str):
     print(f"[DEBUG] Starting generate_and_test_proposal for {ai_type}")
     try:
         print("[DEBUG] About to call init_database()")
-        await init_database()
+        try:
+            await init_database()
+        except Exception as db_error:
+            print(f"❌ Database initialization failed in generate_and_test_proposal: {db_error}")
+            await feedback_log("Database not initialized. Call init_database() first.", error=str(db_error))
+            return None
         print("[DEBUG] init_database() completed successfully")
         import app.core.database as database_module
         if database_module.SessionLocal is None:

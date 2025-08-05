@@ -4,8 +4,6 @@
 # Only include these essential files
 !app/
 !app/**
-!plugins/
-!plugins/**
 !main_unified.py
 !start_app.py
 !requirements.txt

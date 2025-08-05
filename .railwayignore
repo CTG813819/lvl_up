@@ -1,0 +1,113 @@
+# Railway Ignore File - Exclude unnecessary files from Railway deployment
+
+# Old/deprecated main files
+main_old.py
+main_OLD_DEPRECATED.py
+main_railway.py
+
+# Multiple startup scripts (confusing - only use main_unified.py)
+start.py
+start_unified_server.py
+start_railway.py
+start_server.py
+start_app.py
+railway_start.py
+railway_debug.py
+
+# Test files not needed in production
+test_*.py
+quick_*.py
+
+# Development and debugging files
+fix_*.py
+simple_*.py
+verify_*.py
+check_*.py
+trigger_*.py
+
+# Documentation files
+*.md
+!README.md
+
+# Shell scripts not needed in production
+*.sh
+*.ps1
+*.bat
+
+# EC2 deployment files
+deploy_*.py
+upload_*.py
+update_*.py
+
+# Cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Virtual environment
+venv/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Other language files not needed for Python backend
+android/
+ios/
+linux/
+macos/
+web/
+windows/
+*.dart
+*.kts
+*.gradle
+*.iml
+*.properties
+*.xcconfig
+*.plist
+*.swift
+*.pbxproj
+*.xcworkspacedata
+*.storyboard
+*.h
+*.cc
+*.cmake
+*.txt
+*.cpp
+*.manifest
+*.ico
+*.html
+*.json
+*.js
+*.mov
+*.mp4
+*.gif
+*.jpeg
+*.jpg
+*.png
+
+# Specific config files not needed
+pubspec.lock
+websocket_*.dart
+working_endpoints.json
+websocket_addition_results.json
+
+# Service files
+*.service
+
+# Backup and temp files
+*~
+*.bak
+*.tmp
