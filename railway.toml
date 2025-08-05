@@ -3,7 +3,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "python start.py"
+startCommand = "python main_unified.py"
 healthcheckPath = "/ping"
 healthcheckTimeout = 180
 restartPolicyType = "ON_FAILURE"

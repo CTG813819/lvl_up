@@ -503,51 +503,26 @@ async def debug_info():
         }
 
 if __name__ == "__main__":
-    # Railway port detection with fallback logic
+    # FORCE Railway port detection - Railway must execute this
     port_env = os.environ.get("PORT")
     if port_env and port_env.isdigit():
         port = int(port_env)
     else:
-        # Railway might assign port dynamically - try common ports
         port = 8000
     
-    railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
-                       os.environ.get("RAILWAY_PROJECT_ID") or
-                       os.environ.get("RAILWAY_DEPLOYMENT_ID"))
+    # GUARANTEED debug output
+    print("🔥" * 60, flush=True)
+    print("🚀 MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
+    print(f"🔌 PORT env var: '{port_env}'", flush=True)
+    print(f"📍 Using port: {port}", flush=True)
+    print(f"📊 RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
+    print("🔥" * 60, flush=True)
     
-    # Enhanced logging that WILL appear
-    print("\n" + "=" * 60, flush=True)
-    print("🚀 AI BACKEND SERVER STARTING", flush=True)
-    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
-    print(f"🔌 Using Port: {port}", flush=True)
-    print(f"📋 PORT env var: '{port_env}' (raw)", flush=True)
-    print(f"🏥 Health endpoint: /", flush=True)
-    print(f"📊 Railway env vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
-    print("=" * 60 + "\n", flush=True)
-    
-    try:
-        uvicorn.run(
-            "main_unified:app",
-            host="0.0.0.0",
-            port=port,
-            reload=False,
-            log_level="info",
-            access_log=True
-        )
-    except Exception as e:
-        print(f"❌ Server failed to start on port {port}: {e}", flush=True)
-        # Try alternative ports if Railway assigns differently
-        for alt_port in [3000, 5000, 8080]:
-            try:
-                print(f"🔄 Trying alternative port {alt_port}...", flush=True)
-                uvicorn.run(
-                    "main_unified:app",
-                    host="0.0.0.0",
-                    port=alt_port,
-                    reload=False,
-                    log_level="info",
-                    access_log=True
-                )
-                break
-            except:
-                continue
+    uvicorn.run(
+        "main_unified:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+        log_level="info",
+        access_log=True
+    )
