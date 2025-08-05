@@ -4,7 +4,7 @@ Proposal model using Pydantic
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 from uuid import UUID
 
@@ -68,10 +68,11 @@ class ProposalBase(BaseModel):
     # Files analyzed during proposal creation
     files_analyzed: Optional[List[str]] = Field(default=[], description="List of files analyzed by the AI when creating this proposal")
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {UUID: str}
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={UUID: str}
+    )
 
 
 class ProposalCreate(ProposalBase):
@@ -109,11 +110,11 @@ class Proposal(ProposalBase):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {UUID: str}
-        schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={UUID: str},
+        json_schema_extra={
             "example": {
                 "ai_type": "Imperium",
                 "file_path": "lib/main.dart",
@@ -127,6 +128,7 @@ class Proposal(ProposalBase):
                 "ai_learning_summary": "Learned from previous user feedback that code readability is important"
             }
         }
+    )
 
 
 class ProposalResponse(BaseModel):

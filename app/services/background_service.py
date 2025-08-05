@@ -12,6 +12,7 @@ import time
 import subprocess
 
 from ..core.config import settings
+from ..core.railway_utils import should_skip_external_requests
 from .ai_agent_service import AIAgentService
 from .github_service import GitHubService
 from .ai_learning_service import AILearningService

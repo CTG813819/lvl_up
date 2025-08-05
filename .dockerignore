@@ -1,0 +1,14 @@
+# Exclude EVERYTHING except essential app files
+*
+
+# Only include these essential files
+!app/
+!app/**
+!main_unified.py
+!start_app.py
+!requirements.txt
+!Procfile
+!railway.toml
+!railway.json
+!nixpacks.toml
+!runtime.txt

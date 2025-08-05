@@ -35,9 +35,9 @@ from app.routers.proposals import periodic_proposal_generation
 # Import all additional routers from app/main.py (with correct router objects)
 from app.routers import (
     enhanced_learning, terra_extensions, training_data, anthropic_test, 
-    token_usage, weekly_notifications, black_library, imperium_extensions, 
-    enhanced_ai_router
+    token_usage, weekly_notifications, black_library, imperium_extensions
 )
+from app.routers.enhanced_ai_router import router as enhanced_ai_router
 from app.routers.system_status import router as system_status_router
 from app.routers.ai import router as ai_router
 from app.routers.agent_metrics import router as agent_metrics_router
@@ -45,6 +45,7 @@ from app.routers.scheduling import router as scheduling_router
 from app.routers.enhanced_adversarial_testing import router as enhanced_adversarial_router
 from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
+from app.routers.training_ground import router as training_ground_router
 from app.routers.weapons import router as weapons_router
 
 # Import new AI service routers
@@ -88,9 +89,9 @@ from app.services.custody_protocol_service import CustodyProtocolService
 setup_logging()
 logger = structlog.get_logger()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events - handles startup and shutdown"""
+# @asynccontextmanager  # Temporarily disabled to fix 502 errors
+async def lifespan_disabled(app: FastAPI):
+    """Application lifespan events - handles startup and shutdown - TEMPORARILY DISABLED"""
     # Startup
     logger.info("🚀 Starting Unified AI Backend with scikit-learn integration")
     
@@ -169,63 +170,76 @@ async def lifespan(app: FastAPI):
             print("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
             logger.warning("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
         
-        # Start enhanced adversarial testing service on port 8001 [[memory:4401228]]
-        try:
-            def start_enhanced_adversarial_service():
-                """Start the enhanced adversarial testing service on port 8001"""
-                import sys
-                import os
-                sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-                
-                from standalone_enhanced_adversarial_testing import app as adversarial_app
-                
-                uvicorn.run(
-                    adversarial_app,
-                    host="0.0.0.0",
-                    port=8001,
-                    log_level="info",
-                    access_log=True
-                )
-            
-            # Start enhanced adversarial testing service in a separate process
-            adversarial_process = Process(target=start_enhanced_adversarial_service)
-            adversarial_process.start()
-            
-            logger.info("✅ Enhanced adversarial testing service started on port 8001")
-            print("✅ Enhanced adversarial testing service started on port 8001")
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
-            print(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+        # Detect Railway environment to prevent multiprocessing hangs
+        railway_env = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT") or os.getenv("RAILWAY_ENVIRONMENT_NAME")
         
-        # Start training ground server on port 8002
-        try:
-            def start_training_ground_service():
-                """Start the training ground service on port 8002"""
-                import sys
-                import os
-                sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        if railway_env:
+            # Railway deployment - avoid multiprocessing, use integrated routers
+            logger.info("🚂 Railway environment detected - using integrated services")
+            print("🚂 Railway environment detected - using integrated services")
+            logger.info("✅ Enhanced adversarial testing integrated in main process")
+            logger.info("✅ Training ground available via custody protocol")
+        else:
+            # Local development - use separate processes for services
+            logger.info("🏠 Local development - starting separate service processes")
+            
+            # Start enhanced adversarial testing service on port 8001 [[memory:4401228]]
+            try:
+                def start_enhanced_adversarial_service():
+                    """Start the enhanced adversarial testing service on port 8001"""
+                    import sys
+                    import os
+                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                    
+                    from standalone_enhanced_adversarial_testing import app as adversarial_app
+                    
+                    uvicorn.run(
+                        adversarial_app,
+                        host="0.0.0.0",
+                        port=8001,
+                        log_level="info",
+                        access_log=True
+                    )
                 
-                from training_ground_server import app as training_ground_app
+                # Start enhanced adversarial testing service in a separate process
+                adversarial_process = Process(target=start_enhanced_adversarial_service)
+                adversarial_process.start()
                 
-                uvicorn.run(
-                    training_ground_app,
-                    host="0.0.0.0",
-                    port=8002,
-                    log_level="info",
-                    access_log=True
-                )
+                logger.info("✅ Enhanced adversarial testing service started on port 8001")
+                print("✅ Enhanced adversarial testing service started on port 8001")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+                print(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
             
-            # Start training ground service in a separate process
-            training_ground_process = Process(target=start_training_ground_service)
-            training_ground_process.start()
-            
-            logger.info("✅ Training ground service started on port 8002")
-            print("✅ Training ground service started on port 8002")
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to start training ground service: {str(e)}")
-            print(f"❌ Failed to start training ground service: {str(e)}")
+            # Start training ground server on port 8002
+            try:
+                def start_training_ground_service():
+                    """Start the training ground service on port 8002"""
+                    import sys
+                    import os
+                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                    
+                    from training_ground_server import app as training_ground_app
+                    
+                    uvicorn.run(
+                        training_ground_app,
+                        host="0.0.0.0",
+                        port=8002,
+                        log_level="info",
+                        access_log=True
+                    )
+                
+                # Start training ground service in a separate process
+                training_ground_process = Process(target=start_training_ground_service)
+                training_ground_process.start()
+                
+                logger.info("✅ Training ground service started on port 8002")
+                print("✅ Training ground service started on port 8002")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to start training ground service: {str(e)}")
+                print(f"❌ Failed to start training ground service: {str(e)}")
         
         logger.info("🎯 All systems initialized and running!")
         print("🎯 All systems initialized and running!")
@@ -263,7 +277,7 @@ app = FastAPI(
     title="AI Backend - Unified System", 
     description="Complete AI Backend with Learning Cycles, Testing Systems, and ML Integration",
     version="2.0.0",
-    lifespan=lifespan
+    # lifespan=lifespan  # Temporarily disabled
 )
 
 # Add middleware (consolidated from both apps)
@@ -372,14 +386,15 @@ app.include_router(weekly_notifications)
 app.include_router(custody_protocol, prefix="/api/custody", tags=["Custody Protocol"])
 app.include_router(black_library, tags=["Black Library"])
 app.include_router(imperium_extensions, prefix="/api/imperium-extensions", tags=["Imperium Extensions"])
-app.include_router(enhanced_ai_router.router, prefix="/api", tags=["Enhanced AI"])
+app.include_router(enhanced_ai_router, prefix="/api", tags=["Enhanced AI"])
 app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
 app.include_router(system_status_router, prefix="/api/system", tags=["System"])
 app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
 app.include_router(agent_metrics_router, prefix="/api/agent-metrics", tags=["Agent Metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
 app.include_router(enhanced_adversarial_router, prefix="/api/enhanced-adversarial", tags=["Enhanced Adversarial Testing"])
-app.include_router(project_berserk_router)  # Already has prefix="/api/project-warmaster" in router definition
+app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
+app.include_router(training_ground_router, prefix="/api/training-ground", tags=["Training Ground"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
 # New AI service routers

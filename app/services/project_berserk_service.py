@@ -88,6 +88,17 @@ class JarvisEvolutionSystem:
         self.voice_interface_active = False
         self.autonomous_coding_active = False
         self.repository_management_active = False
+        self.learning_progress = 0.0
+        self.knowledge_base_size = 0
+        self.neural_connections = 0
+        self.actual_achievements = []
+        self.evolution_requirements = {
+            1: {"learning_progress": 0.1, "knowledge_base": 100, "neural_connections": 50},
+            2: {"learning_progress": 0.25, "knowledge_base": 250, "neural_connections": 150},
+            3: {"learning_progress": 0.5, "knowledge_base": 500, "neural_connections": 300},
+            4: {"learning_progress": 0.75, "knowledge_base": 1000, "neural_connections": 600},
+            5: {"learning_progress": 0.9, "knowledge_base": 2000, "neural_connections": 1200}
+        }
         self._initialize_jarvis_system()
     
     def _initialize_jarvis_system(self):
@@ -100,52 +111,126 @@ class JarvisEvolutionSystem:
                 "name": "voice_interface",
                 "status": "initializing",
                 "capability": 0.0,
-                "description": "Advanced voice interaction system"
+                "description": "Advanced voice interaction system",
+                "progress": 0.0
             },
             {
                 "name": "autonomous_coding",
                 "status": "active",
                 "capability": 0.8,
-                "description": "Self-coding and repository management"
+                "description": "Self-coding and repository management",
+                "progress": 0.8
             },
             {
                 "name": "repository_manager",
                 "status": "active",
                 "capability": 0.9,
-                "description": "Dynamic repository creation and management"
+                "description": "Dynamic repository creation and management",
+                "progress": 0.9
             },
             {
                 "name": "chaos_evolution",
                 "status": "evolving",
                 "capability": 0.95,
-                "description": "Continuous chaos code evolution"
+                "description": "Continuous chaos code evolution",
+                "progress": 0.95
             }
         ]
         
         _global_live_data["jarvis_evolution_stage"] = self.evolution_stage
         print(f"🤖 JARVIS Evolution System initialized - Stage {self.evolution_stage}")
     
-    def evolve_jarvis_system(self):
-        """Evolve JARVIS system capabilities"""
+    def update_progress(self, learning_progress: float, knowledge_base_size: int, neural_connections: int):
+        """Update Jarvis progress based on actual achievements"""
+        self.learning_progress = learning_progress
+        self.knowledge_base_size = knowledge_base_size
+        self.neural_connections = neural_connections
+        
+        # Check if evolution should occur based on actual progress
+        self._check_evolution_requirements()
+        
+        # Update module capabilities based on progress
+        self._update_module_capabilities()
+    
+    def _check_evolution_requirements(self):
+        """Check if evolution should occur based on actual progress"""
         global _global_live_data
         
-        self.evolution_stage += 1
-        _global_live_data["jarvis_evolution_stage"] = self.evolution_stage
-        
-        # Enhance capabilities
+        for stage, requirements in self.evolution_requirements.items():
+            if stage > self.evolution_stage:
+                if (self.learning_progress >= requirements["learning_progress"] and
+                    self.knowledge_base_size >= requirements["knowledge_base"] and
+                    self.neural_connections >= requirements["neural_connections"]):
+                    
+                    # Evolution achieved through actual progress
+                    self.evolution_stage = stage
+                    _global_live_data["jarvis_evolution_stage"] = self.evolution_stage
+                    _global_live_data["last_jarvis_evolution"] = datetime.now().isoformat()
+                    
+                    print(f"🚀 JARVIS Evolution: Stage {stage} achieved through actual progress!")
+                    print(f"   Learning Progress: {self.learning_progress:.2f} (required: {requirements['learning_progress']})")
+                    print(f"   Knowledge Base: {self.knowledge_base_size} (required: {requirements['knowledge_base']})")
+                    print(f"   Neural Connections: {self.neural_connections} (required: {requirements['neural_connections']})")
+                    break
+    
+    def _update_module_capabilities(self):
+        """Update module capabilities based on actual progress"""
         for module in self.jarvis_modules:
-            module["capability"] = min(1.0, module["capability"] + random.uniform(0.05, 0.15))
+            # Calculate capability based on overall progress
+            base_capability = module.get("base_capability", 0.0)
+            progress_factor = min(1.0, self.learning_progress * 2)  # Scale progress to capability
+            
+            if module["name"] == "voice_interface":
+                module["capability"] = min(1.0, base_capability + (progress_factor * 0.3))
+                module["progress"] = module["capability"]
+            elif module["name"] == "autonomous_coding":
+                module["capability"] = min(1.0, base_capability + (progress_factor * 0.2))
+                module["progress"] = module["capability"]
+            elif module["name"] == "repository_manager":
+                module["capability"] = min(1.0, base_capability + (progress_factor * 0.1))
+                module["progress"] = module["capability"]
+            elif module["name"] == "chaos_evolution":
+                module["capability"] = min(1.0, base_capability + (progress_factor * 0.05))
+                module["progress"] = module["capability"]
+    
+    def evolve_jarvis_system(self):
+        """Evolve JARVIS system capabilities - now based on actual progress"""
+        global _global_live_data
         
-        # Update global capabilities
-        _global_live_data["capabilities"]["jarvis_interface"] = min(1.0, 
-            _global_live_data["capabilities"]["jarvis_interface"] + 0.1)
-        _global_live_data["capabilities"]["autonomous_coding"] = min(1.0, 
-            _global_live_data["capabilities"]["autonomous_coding"] + 0.15)
-        _global_live_data["capabilities"]["repository_management"] = min(1.0, 
-            _global_live_data["capabilities"]["repository_management"] + 0.2)
+        # Only evolve if actual progress requirements are met
+        if self._check_evolution_requirements():
+            # Update global capabilities based on actual progress
+            _global_live_data["capabilities"]["jarvis_interface"] = min(1.0, 
+                _global_live_data["capabilities"]["jarvis_interface"] + (self.learning_progress * 0.1))
+            _global_live_data["capabilities"]["autonomous_coding"] = min(1.0, 
+                _global_live_data["capabilities"]["autonomous_coding"] + (self.learning_progress * 0.15))
+            _global_live_data["capabilities"]["repository_management"] = min(1.0, 
+                _global_live_data["capabilities"]["repository_management"] + (self.learning_progress * 0.2))
+            
+            print(f"🚀 JARVIS Evolution: Stage {self.evolution_stage} - Enhanced capabilities based on actual progress")
+            return self.evolution_stage
+        else:
+            print(f"🤖 JARVIS Evolution: Stage {self.evolution_stage} - Waiting for actual progress requirements")
+            return self.evolution_stage
+    
+    def get_evolution_status(self):
+        """Get detailed evolution status"""
+        next_stage = self.evolution_stage + 1
+        next_requirements = self.evolution_requirements.get(next_stage, {})
         
-        print(f"🚀 JARVIS Evolution: Stage {self.evolution_stage} - Enhanced capabilities")
-        return self.evolution_stage
+        return {
+            "current_stage": self.evolution_stage,
+            "learning_progress": self.learning_progress,
+            "knowledge_base_size": self.knowledge_base_size,
+            "neural_connections": self.neural_connections,
+            "next_stage_requirements": next_requirements,
+            "progress_to_next_stage": {
+                "learning_progress": min(1.0, self.learning_progress / next_requirements.get("learning_progress", 1.0)),
+                "knowledge_base": min(1.0, self.knowledge_base_size / next_requirements.get("knowledge_base", 1)),
+                "neural_connections": min(1.0, self.neural_connections / next_requirements.get("neural_connections", 1))
+            },
+            "modules": self.jarvis_modules
+        }
 
 class ChaosRepositoryBuilder:
     """Builds chaos code repositories and extensions"""
@@ -486,19 +571,65 @@ class ProjectWarmasterService:
                 await asyncio.sleep(600)  # Wait 10 minutes on error
     
     async def _jarvis_evolution_cycle(self):
-        """Continuous JARVIS evolution cycle"""
+        """Continuous JARVIS evolution cycle based on actual progress"""
+        print("🤖 Starting JARVIS evolution cycle based on actual progress...")
         while True:
             try:
-                # Evolve JARVIS system
+                # Get current system progress
+                global _global_live_data
+                learning_progress = _global_live_data.get("learning_progress", 0.0)
+                knowledge_base_size = _global_live_data.get("knowledge_base_size", 0)
+                neural_connections = _global_live_data.get("neural_connections", 0)
+                
+                # Update Jarvis progress based on actual achievements
+                self.jarvis_system.update_progress(learning_progress, knowledge_base_size, neural_connections)
+                
+                # Check for evolution based on actual progress
                 evolution_stage = self.jarvis_system.evolve_jarvis_system()
                 
-                print(f"🤖 JARVIS Evolution: Stage {evolution_stage} - Enhanced capabilities")
+                # Update global data
+                _global_live_data["jarvis_evolution_stage"] = evolution_stage
+                _global_live_data["last_jarvis_evolution"] = datetime.now().isoformat()
+                
+                # Log progress towards next evolution
+                evolution_status = self.jarvis_system.get_evolution_status()
+                print(f"🤖 JARVIS Evolution: Stage {evolution_stage} - Progress: {learning_progress:.2f}")
+                print(f"   Knowledge Base: {knowledge_base_size}, Neural Connections: {neural_connections}")
                 
                 await asyncio.sleep(600)  # Run every 10 minutes
                 
             except Exception as e:
                 print(f"❌ Error in JARVIS evolution cycle: {e}")
                 await asyncio.sleep(1200)  # Wait 20 minutes on error
+    
+    async def trigger_jarvis_evolution(self, db: AsyncSession = None) -> Dict[str, Any]:
+        """Manually trigger JARVIS evolution"""
+        try:
+            # Force evolution
+            evolution_stage = self.jarvis_system.evolve_jarvis_system()
+            
+            # Update global data
+            global _global_live_data
+            _global_live_data["jarvis_evolution_stage"] = evolution_stage
+            _global_live_data["last_jarvis_evolution"] = datetime.now().isoformat()
+            
+            print(f"🚀 Manual JARVIS Evolution triggered: Stage {evolution_stage}")
+            
+            return {
+                "status": "success",
+                "evolution_stage": evolution_stage,
+                "message": f"JARVIS evolved to stage {evolution_stage}",
+                "timestamp": datetime.now().isoformat(),
+                "capabilities": self.jarvis_system.jarvis_modules
+            }
+            
+        except Exception as e:
+            print(f"❌ Error triggering JARVIS evolution: {e}")
+            return {
+                "status": "error",
+                "message": f"Failed to evolve JARVIS: {str(e)}",
+                "timestamp": datetime.now().isoformat()
+            }
     
     async def _repository_building_cycle(self):
         """Continuous repository building cycle"""
