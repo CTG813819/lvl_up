@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only essential application files
 COPY app/ ./app/
+COPY plugins/ ./plugins/
 COPY main_unified.py ./
 COPY requirements.txt ./
 
