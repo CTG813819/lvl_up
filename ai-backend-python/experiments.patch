@@ -1,0 +1,12 @@
+--- a/ec2_routes/home/ubuntu/ai-learning-backend/src/routes/experiements.js
++++ b/ec2_routes/home/ubuntu/ai-learning-backend/src/routes/experiements.js
+@@ -9,7 +9,9 @@
+ });
+ 
+ router.get('/', async (req, res) => {
+-  const experiments = await Experiment.find();
++  // Add a limit and sort to prevent timeouts on large collections
++  const experiments = await Experiment.find().sort({ createdAt: -1 }).limit(50);
+   res.json(experiments);
+ });
+ 

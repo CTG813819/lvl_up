@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp"
+    android:background="@android:color/transparent">
+
+    <!-- Background image (faded in Dart) -->
+    <ImageView
+        android:id="@+id/notification_image"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:scaleType="centerCrop"
+        android:layout_alignParentTop="true" />
+
+    <!-- Semi-transparent overlay to enhance text readability -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="#80000000" /> <!-- 50% black overlay -->
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/notification_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+
+    <!-- Description -->
+    <TextView
+        android:id="@+id/notification_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:layout_below="@id/notification_title"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="4dp" />
+
+</RelativeLayout>

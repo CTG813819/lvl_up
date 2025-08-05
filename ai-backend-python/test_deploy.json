@@ -1,0 +1,31 @@
+{
+  "scenario": {
+    "scenario": "Attack the vulnerable web application at TARGET_URL. Focus on exploiting: all_vulnerabilities. ",
+    "real_target": true,
+    "target_info": {
+      "container_id": "mock_container_123",
+      "container_name": "vuln_target_sql_injection_easy_mock",
+      "target_url": "http://localhost:8080",
+      "port": 8080,
+      "template_name": "sql_injection_basic",
+      "difficulty": "easy",
+      "vulnerabilities": ["sql_injection", "information_disclosure"],
+      "credentials": {
+        "admin": "admin:admin123",
+        "user": "user:password123",
+        "test": "test:test123"
+      },
+      "hints": [
+        "Try using ' OR 1=1 -- in the username field",
+        "Look for error messages that reveal database structure",
+        "Try UNION-based attacks to extract data"
+      ],
+      "success_criteria": {
+        "extract_credentials": true,
+        "bypass_authentication": true,
+        "access_admin_panel": true
+      }
+    }
+  },
+  "weapon_id": "test_weapon_123"
+} 

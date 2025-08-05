@@ -11,23 +11,23 @@ import uvicorn
 
 # CRITICAL: Module-level debug that WILL execute during Railway import
 import sys
-sys.stdout.write("\n" + "🔥" * 80 + "\n")
-sys.stdout.write("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
-sys.stdout.write(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
-sys.stdout.write(f"🔌 Railway explicit uvicorn command active\n")
-sys.stdout.write(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
-sys.stdout.write(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
-sys.stdout.write("🔥" * 80 + "\n\n")
+sys.stdout.write("\n" + "=" * 80 + "\n")
+sys.stdout.write("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
+sys.stdout.write(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
+sys.stdout.write(f"Railway explicit uvicorn command active\n")
+sys.stdout.write(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
+sys.stdout.write(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
+sys.stdout.write("=" * 80 + "\n\n")
 sys.stdout.flush()
 
 # BACKUP DEBUG - Multiple methods to ensure visibility
-print("\n" + "🔥" * 80, flush=True)
-print("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
-print(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
-print(f"🔌 Railway explicit uvicorn command active", flush=True)
-print(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
-print(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
-print("🔥" * 80 + "\n", flush=True)
+print("\n" + "=" * 80, flush=True)
+print("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
+print(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
+print(f"Railway explicit uvicorn command active", flush=True)
+print(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
+print(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
+print("=" * 80 + "\n", flush=True)
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -558,12 +558,12 @@ if __name__ == "__main__":
         port = 8000
     
     # GUARANTEED debug output
-    print("🔥" * 60, flush=True)
-    print("🚀 MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
-    print(f"🔌 PORT env var: '{port_env}'", flush=True)
-    print(f"📍 Using port: {port}", flush=True)
-    print(f"📊 RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
-    print("🔥" * 60, flush=True)
+    print("=" * 60, flush=True)
+    print("MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
+    print(f"PORT env var: '{port_env}'", flush=True)
+    print(f"Using port: {port}", flush=True)
+    print(f"RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
+    print("=" * 60, flush=True)
     
     uvicorn.run(
         "main_unified:app",

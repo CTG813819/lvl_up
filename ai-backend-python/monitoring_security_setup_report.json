@@ -1,0 +1,267 @@
+{
+  "timestamp": "2025-07-05T23:38:13.825825",
+  "monitoring_config": {
+    "metrics": [
+      "response_time",
+      "throughput",
+      "error_rate",
+      "cpu_usage",
+      "memory_usage",
+      "database_connections",
+      "active_agents"
+    ],
+    "sampling_interval": 30,
+    "retention_period": 24,
+    "alert_thresholds": {
+      "cpu_usage": 80.0,
+      "memory_usage": 85.0,
+      "response_time": 5.0,
+      "error_rate": 5.0
+    }
+  },
+  "security_config": {
+    "authentication": {
+      "enabled": true,
+      "method": "JWT",
+      "token_expiry": 3600,
+      "refresh_token_expiry": 604800
+    },
+    "authorization": {
+      "enabled": true,
+      "roles": [
+        "admin",
+        "user",
+        "ai_agent"
+      ],
+      "permissions": {
+        "admin": [
+          "read",
+          "write",
+          "delete",
+          "execute"
+        ],
+        "user": [
+          "read",
+          "write"
+        ],
+        "ai_agent": [
+          "read",
+          "execute"
+        ]
+      }
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "burst_limit": 20
+    },
+    "input_validation": {
+      "enabled": true,
+      "sql_injection_protection": true,
+      "xss_protection": true,
+      "file_upload_validation": true
+    },
+    "logging": {
+      "enabled": true,
+      "level": "INFO",
+      "security_events": true,
+      "audit_trail": true
+    }
+  },
+  "alerting_config": {
+    "channels": {
+      "email": {
+        "enabled": true,
+        "recipients": [
+          "admin@example.com"
+        ],
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587
+      },
+      "webhook": {
+        "enabled": true,
+        "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "events": [
+          "critical",
+          "warning",
+          "info"
+        ]
+      },
+      "database": {
+        "enabled": true,
+        "table": "alerts",
+        "retention_days": 30
+      }
+    },
+    "alert_rules": [
+      {
+        "name": "High CPU Usage",
+        "condition": "cpu_usage > 80",
+        "severity": "warning",
+        "cooldown": 300
+      },
+      {
+        "name": "High Error Rate",
+        "condition": "error_rate > 5",
+        "severity": "critical",
+        "cooldown": 60
+      },
+      {
+        "name": "Slow Response Time",
+        "condition": "response_time > 5",
+        "severity": "warning",
+        "cooldown": 180
+      }
+    ]
+  },
+  "logging_config": {
+    "loggers": {
+      "app": {
+        "level": "INFO",
+        "handlers": [
+          "file",
+          "console"
+        ],
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      },
+      "security": {
+        "level": "WARNING",
+        "handlers": [
+          "file",
+          "security_file"
+        ],
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(user)s - %(ip)s - %(message)s"
+      },
+      "performance": {
+        "level": "INFO",
+        "handlers": [
+          "file",
+          "performance_file"
+        ],
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(duration)s - %(endpoint)s - %(message)s"
+      }
+    },
+    "handlers": {
+      "file": {
+        "type": "rotating_file",
+        "filename": "logs/app.log",
+        "max_bytes": 10485760,
+        "backup_count": 5
+      },
+      "security_file": {
+        "type": "rotating_file",
+        "filename": "logs/security.log",
+        "max_bytes": 5242880,
+        "backup_count": 10
+      },
+      "performance_file": {
+        "type": "rotating_file",
+        "filename": "logs/performance.log",
+        "max_bytes": 10485760,
+        "backup_count": 5
+      }
+    }
+  },
+  "performance_results": {
+    "/health": {
+      "response_time": 186.62643432617188,
+      "status_code": 200,
+      "success": true
+    },
+    "/api/agents/status": {
+      "response_time": 6660.631895065308,
+      "status_code": 200,
+      "success": true
+    },
+    "/api/learning/status": {
+      "response_time": 93.02878379821777,
+      "status_code": 200,
+      "success": true
+    },
+    "/api/proposals/": {
+      "response_time": 623.8908767700195,
+      "status_code": 200,
+      "success": true
+    },
+    "/api/growth/status": {
+      "response_time": 888.2813453674316,
+      "status_code": 200,
+      "success": true
+    }
+  },
+  "security_results": {
+    "input_validation_sql_injection": {
+      "status_code": 200,
+      "blocked": false
+    },
+    "input_validation_xss_attack": {
+      "status_code": 200,
+      "blocked": false
+    },
+    "input_validation_path_traversal": {
+      "status_code": 200,
+      "blocked": false
+    }
+  },
+  "dashboard_config": {
+    "title": "AI Backend Monitoring Dashboard",
+    "refresh_interval": 30,
+    "panels": [
+      {
+        "title": "System Health",
+        "type": "status",
+        "metrics": [
+          "health",
+          "agents_status",
+          "learning_status"
+        ]
+      },
+      {
+        "title": "Performance Metrics",
+        "type": "graph",
+        "metrics": [
+          "response_time",
+          "throughput",
+          "error_rate"
+        ]
+      },
+      {
+        "title": "Resource Usage",
+        "type": "graph",
+        "metrics": [
+          "cpu_usage",
+          "memory_usage",
+          "database_connections"
+        ]
+      },
+      {
+        "title": "AI Agents Activity",
+        "type": "table",
+        "metrics": [
+          "agent_status",
+          "proposals_created",
+          "learning_progress"
+        ]
+      },
+      {
+        "title": "Security Events",
+        "type": "log",
+        "metrics": [
+          "failed_logins",
+          "rate_limit_violations",
+          "suspicious_activity"
+        ]
+      }
+    ]
+  },
+  "recommendations": [
+    "1. Configure email/Slack webhooks for alerts",
+    "2. Set up authentication tokens and user management",
+    "3. Configure rate limiting based on expected traffic",
+    "4. Set up log rotation and archiving",
+    "5. Deploy monitoring dashboard",
+    "6. Set up automated backups",
+    "7. Configure SSL/TLS certificates",
+    "8. Set up intrusion detection system"
+  ]
+}

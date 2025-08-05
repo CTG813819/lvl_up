@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-07-05T23:54:55.943761",
+  "results": {
+    "Basic Connectivity": {
+      "status": "pass",
+      "response_time": 186.0828399658203,
+      "status_code": 200
+    },
+    "AI Agents Status": {
+      "status": "pass",
+      "response_time": 6731.864929199219,
+      "status_code": 200
+    },
+    "Learning System": {
+      "status": "pass",
+      "response_time": 165.71497917175293,
+      "status_code": 200
+    },
+    "Proposals": {
+      "status": "pass",
+      "response_time": 640.8872604370117,
+      "status_code": 200
+    },
+    "Oath Papers": {
+      "status": "pass",
+      "response_time": 249.12357330322266,
+      "status_code": 200
+    },
+    "Growth Analytics": {
+      "status": "pass",
+      "response_time": 931.5037727355957,
+      "status_code": 200
+    },
+    "Conquest AI": {
+      "status": "pass",
+      "response_time": 248.41690063476562,
+      "status_code": 200
+    },
+    "GitHub Integration": {
+      "status": "pass",
+      "response_time": 168.40720176696777,
+      "status_code": 200
+    }
+  },
+  "summary": {
+    "total_tests": 8,
+    "passed_tests": 8,
+    "failed_tests": 0,
+    "success_rate": 100.0
+  }
+}

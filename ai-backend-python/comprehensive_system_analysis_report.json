@@ -1,0 +1,135 @@
+{
+  "timestamp": "2025-07-20T12:44:23.151453",
+  "frontend_analysis": {
+    "total_files": 2,
+    "total_lines": 22,
+    "total_classes": 2,
+    "total_functions": 2,
+    "total_ai_functions": 0,
+    "files": [
+      {
+        "file_path": "lib/widgets/modern_navigation.dart",
+        "file_size": 315,
+        "lines": 11,
+        "classes": [
+          {
+            "name": "GeneratedWidget",
+            "extends": "StatelessWidget",
+            "implements": null,
+            "with_mixin": null
+          }
+        ],
+        "functions": [
+          {
+            "name": "build",
+            "return_type": "Widget",
+            "is_async": false
+          }
+        ],
+        "variables": [],
+        "imports": [
+          "package:flutter/material.dart"
+        ],
+        "ai_functions": [],
+        "services": [],
+        "providers": [],
+        "widgets": [],
+        "models": [],
+        "errors": []
+      },
+      {
+        "file_path": "lib/widgets/enhanced_form.dart",
+        "file_size": 322,
+        "lines": 11,
+        "classes": [
+          {
+            "name": "GeneratedWidget",
+            "extends": "StatelessWidget",
+            "implements": null,
+            "with_mixin": null
+          }
+        ],
+        "functions": [
+          {
+            "name": "build",
+            "return_type": "Widget",
+            "is_async": false
+          }
+        ],
+        "variables": [],
+        "imports": [
+          "package:flutter/material.dart"
+        ],
+        "ai_functions": [],
+        "services": [],
+        "providers": [],
+        "widgets": [],
+        "models": [],
+        "errors": []
+      }
+    ],
+    "services": [],
+    "providers": [],
+    "widgets": [],
+    "models": [],
+    "ai_components": []
+  },
+  "backend_analysis": {
+    "total_files": 0,
+    "total_lines": 0,
+    "total_classes": 0,
+    "total_functions": 0,
+    "total_ai_functions": 0,
+    "total_endpoints": 0,
+    "files": [],
+    "services": [],
+    "models": [],
+    "routers": [],
+    "ai_components": [],
+    "endpoints": []
+  },
+  "integration_analysis": {
+    "api_endpoints": {
+      "backend": [],
+      "frontend_calls": []
+    },
+    "data_models": {
+      "backend": [],
+      "frontend": []
+    },
+    "shared_concepts": [],
+    "potential_issues": []
+  },
+  "summary": {
+    "system_overview": {
+      "total_files": 2,
+      "total_lines": 22,
+      "frontend_files": 2,
+      "backend_files": 0,
+      "frontend_lines": 22,
+      "backend_lines": 0
+    },
+    "ai_components": {
+      "frontend_ai_functions": 0,
+      "backend_ai_functions": 0,
+      "total_ai_functions": 0
+    },
+    "architecture": {
+      "frontend_services": 0,
+      "frontend_providers": 0,
+      "frontend_widgets": 0,
+      "frontend_models": 0,
+      "backend_services": 0,
+      "backend_models": 0,
+      "backend_routers": 0,
+      "backend_endpoints": 0
+    },
+    "integration": {
+      "api_endpoints": 0,
+      "frontend_api_calls": 0,
+      "backend_models": 0,
+      "frontend_models": 0
+    },
+    "key_findings": []
+  }
+}

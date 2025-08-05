@@ -1,0 +1,15 @@
+[Unit]
+Description=Imperium Dashboard
+After=network.target imperium_master.service
+
+[Service]
+Type=exec
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/streamlit run imperium_dashboard.py --server.port 8501 --server.address 0.0.0.0
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

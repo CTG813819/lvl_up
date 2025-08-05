@@ -1,0 +1,6 @@
+{
+  "name": "test_app_123",
+  "description": "Test app for debugging and validation testing",
+  "features": ["basic functionality"],
+  "keywords": ["test", "debug", "validation"]
+} 

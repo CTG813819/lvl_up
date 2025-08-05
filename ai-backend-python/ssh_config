@@ -1,0 +1,10 @@
+
+Host 34.202.215.209
+    HostName 34.202.215.209
+    User ubuntu
+    IdentityFile New.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ConnectTimeout 30
+    TCPKeepAlive yes
+    Compression yes
