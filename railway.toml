@@ -3,8 +3,8 @@
 builder = "NIXPACKS"
 
 [deploy]
-# Use startup script that properly handles PORT environment variable
-startCommand = "./railway_start.sh"
+# Use main_unified.py which properly handles PORT environment variable
+startCommand = "python main_unified.py"
 healthcheckPath = "/ping"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
