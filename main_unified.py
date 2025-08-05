@@ -322,36 +322,26 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Health check endpoints
+# Health check endpoints - ULTRA SIMPLE for Railway
 @app.get("/")
-async def root():
-    """Root endpoint - basic health check"""
-    return JSONResponse(
-        status_code=200,
-        content={"status": "healthy", "service": "ai-backend-unified", "endpoints": 475}
-    )
+def root():
+    """Root endpoint - basic health check - SYNCHRONOUS"""
+    return {"status": "healthy"}
 
 @app.get("/health")
-async def health_check():
-    """Railway health check endpoint - simplified for reliability"""
-    return JSONResponse(
-        status_code=200,
-        content={"status": "healthy", "service": "ai-backend-unified"}
-    )
+def health_check():
+    """Railway health check - SYNCHRONOUS and zero dependencies"""
+    return {"status": "healthy"}
 
 @app.get("/api/health")  
-async def api_health_check():
-    """Detailed API health check"""
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "ok",
-            "message": "AI Learning Backend is running", 
-            "timestamp": datetime.utcnow().isoformat(),
-            "endpoints": 475,
-            "projects": ["horus", "berserk", "adversarial", "training_ground", "imperium"]
-        }
-    )
+def api_health_check():
+    """Detailed API health check - SYNCHRONOUS"""
+    return {
+        "status": "ok",
+        "message": "AI Learning Backend is running", 
+        "endpoints": 475,
+        "projects": ["horus", "berserk", "adversarial", "training_ground", "imperium"]
+    }
 
 # Include all routers (consolidated from both main files)
 # Core routers
