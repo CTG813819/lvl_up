@@ -8,6 +8,15 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 import uvicorn
+
+# CRITICAL: Module-level debug that WILL execute during Railway import
+print("\n" + "🔥" * 80, flush=True)
+print("🚀 MODULE IMPORT LEVEL - RAILWAY DEBUG", flush=True)
+print(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
+print(f"🔌 Railway auto-detected port logic active", flush=True)
+print(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
+print(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
+print("🔥" * 80 + "\n", flush=True)
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -331,14 +340,22 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Health check endpoints
 @app.get("/")
-async def root():
-    """Root endpoint for basic connectivity test"""
+def root():
+    """Root endpoint for basic connectivity test - SYNCHRONOUS for reliability"""
+    import datetime
     return {
         "status": "online",
-        "service": "ai-backend-unified",
+        "service": "ai-backend-unified", 
         "version": "2.0.0",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.datetime.now().isoformat(),
+        "railway_port_env": os.environ.get('PORT', 'not_set'),
+        "message": "Server is healthy and ready"
     }
+
+@app.get("/ping")
+def ping():
+    """Ultra-simple ping endpoint"""
+    return {"ping": "pong"}
 
 @app.get("/health")
 async def health_check():
