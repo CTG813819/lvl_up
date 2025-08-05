@@ -322,26 +322,36 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Health check endpoints - ULTRA SIMPLE for Railway
+# ABSOLUTE MINIMAL HEALTH CHECK for Railway - NO DEPENDENCIES
 @app.get("/")
 def root():
-    """Root endpoint - basic health check - SYNCHRONOUS"""
-    return {"status": "healthy"}
+    """ABSOLUTE MINIMAL ROOT ENDPOINT - RAILWAY HEALTH CHECK"""
+    return {"status": "healthy", "service": "ai-backend", "port": 8000}
 
-@app.get("/health")
+@app.get("/health") 
 def health_check():
-    """Railway health check - SYNCHRONOUS and zero dependencies"""
+    """MINIMAL HEALTH CHECK - NO IMPORTS, NO DEPENDENCIES"""
     return {"status": "healthy"}
 
 @app.get("/api/health")  
 def api_health_check():
-    """Detailed API health check - SYNCHRONOUS"""
+    """DETAILED HEALTH CHECK - MINIMAL DEPENDENCIES"""
     return {
         "status": "ok",
         "message": "AI Learning Backend is running", 
         "endpoints": 475,
         "projects": ["horus", "berserk", "adversarial", "training_ground", "imperium"]
     }
+
+@app.get("/ping")
+def ping():
+    """ULTRA SIMPLE PING ENDPOINT - BYPASS ALL MIDDLEWARE"""
+    return "pong"
+
+@app.get("/ready")
+def ready():
+    """READY CHECK - NO JSON PROCESSING"""
+    return "ready"
 
 # Include all routers (consolidated from both main files)
 # Core routers
