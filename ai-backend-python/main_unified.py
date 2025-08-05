@@ -258,6 +258,21 @@ async def lifespan_disabled(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Error during shutdown: {str(e)}")
 
+# Railway port detection - CRITICAL: Must be at app level, not in __main__
+railway_port = int(os.environ.get("PORT", 8000))
+railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
+                   os.environ.get("RAILWAY_PROJECT_ID") or
+                   os.environ.get("RAILWAY_DEPLOYMENT_ID"))
+
+# Log port configuration at app initialization
+print("=" * 60, flush=True)
+print("🚀 FASTAPI APP INITIALIZATION", flush=True)
+print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
+print(f"🔌 Detected Port: {railway_port}", flush=True)
+print(f"📋 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
+print(f"🏥 Health endpoint: /", flush=True)
+print("=" * 60, flush=True)
+
 # Create FastAPI app with unified configuration
 app = FastAPI(
     title="AI Backend - Unified System", 
