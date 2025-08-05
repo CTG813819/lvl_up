@@ -3,7 +3,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "python -m uvicorn main_unified:app --host 0.0.0.0 --port 8000"
+startCommand = "python -m uvicorn main_unified:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/ping"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
@@ -11,10 +11,10 @@ restartPolicyMaxRetries = 10
 
 [environments.production]
 RUN_BACKGROUND_JOBS = "1"
-PORT = "8000"
+# Railway will set PORT automatically
 # Project Horus & Berserk are included in main_unified.py and ready for deployment
 
 [environments.staging]  
 RUN_BACKGROUND_JOBS = "1"
-PORT = "8000"
+# Railway will set PORT automatically
 # All 53 endpoints (6 Horus + 47 Berserk) are included and tested
