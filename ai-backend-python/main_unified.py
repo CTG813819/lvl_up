@@ -355,7 +355,17 @@ def root():
 @app.get("/ping")
 def ping():
     """Ultra-simple ping endpoint"""
-    return {"ping": "pong"}
+    return "OK"
+
+@app.get("/status")
+def status():
+    """Alternative status endpoint"""
+    return {"status": "healthy"}
+
+@app.get("/ready")
+def ready():
+    """Readiness probe endpoint"""
+    return {"ready": True}
 
 @app.get("/health")
 async def health_check():
