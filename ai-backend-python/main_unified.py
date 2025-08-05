@@ -455,22 +455,33 @@ async def debug_info():
         }
 
 if __name__ == "__main__":
-    # Detect Railway environment and use appropriate port
-    railway_env = os.environ.get("RAILWAY_ENVIRONMENT_NAME") is not None
+    # Enhanced Railway port detection
     port = int(os.environ.get("PORT", 8000))
+    railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
+                       os.environ.get("RAILWAY_PROJECT_ID") or
+                       os.environ.get("RAILWAY_DEPLOYMENT_ID"))
     
-    print("=" * 50)
-    print(f"🚀 STARTING AI BACKEND SERVER")
-    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}")
-    print(f"🔌 Port: {port} (from PORT env: {os.environ.get('PORT', 'not set')})")
-    print(f"🏥 Health check: /health")
-    print("=" * 50)
+    # Force port output to appear in logs
+    import sys
+    sys.stdout.flush()
+    
+    startup_msg = f"""
+==================================================
+🚀 AI BACKEND SERVER STARTING
+📍 Environment: {'Railway' if railway_env else 'Local'}
+🔌 Port: {port}
+📋 PORT env var: {os.environ.get('PORT', 'NOT SET')}
+🏥 Health endpoint: /
+📊 All environment vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}
+==================================================
+"""
+    print(startup_msg, flush=True)
     
     uvicorn.run(
         "main_unified:app",
         host="0.0.0.0",
         port=port,
-        reload=False,  # Disable reload for production
+        reload=False,
         log_level="info",
         access_log=True
     )
