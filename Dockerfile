@@ -19,8 +19,9 @@ COPY app/ ./app/
 COPY main_unified.py ./
 COPY requirements.txt ./
 
-# Copy plugins directory if it exists (conditional copy)
-COPY plugins* ./plugins/
+# Create plugins directory and copy plugins if they exist
+RUN mkdir -p ./plugins
+COPY plugins ./plugins/ 2>/dev/null || true
 
 # Set PYTHONPATH to include the current directory
 ENV PYTHONPATH=/app
