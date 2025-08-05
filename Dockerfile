@@ -16,9 +16,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only essential application files
 COPY app/ ./app/
-COPY plugins/ ./plugins/
 COPY main_unified.py ./
 COPY requirements.txt ./
+
+# Copy plugins directory if it exists (conditional copy)
+COPY plugins* ./plugins/
 
 # Set PYTHONPATH to include the current directory
 ENV PYTHONPATH=/app
