@@ -88,10 +88,22 @@ from app.services.custody_protocol_service import CustodyProtocolService
 setup_logging()
 logger = structlog.get_logger()
 
-# @asynccontextmanager  # Temporarily disabled to fix 502 errors
-async def lifespan_disabled(app: FastAPI):
+@asynccontextmanager  # Re-enabled to add port debugging
+async def lifespan(app: FastAPI):
     """Application lifespan events - handles startup and shutdown - TEMPORARILY DISABLED"""
-    # Startup
+    # Startup with Railway debugging
+    port_env = os.environ.get("PORT", "not set")
+    railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
+                       os.environ.get("RAILWAY_PROJECT_ID") or
+                       os.environ.get("RAILWAY_DEPLOYMENT_ID"))
+    
+    print("=" * 70, flush=True)
+    print("🚀 LIFESPAN STARTUP - RAILWAY DEBUG", flush=True)
+    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
+    print(f"🔌 PORT env var: '{port_env}'", flush=True)
+    print(f"📊 Railway vars: {[k for k in os.environ.keys() if 'RAILWAY' in k][:5]}", flush=True)
+    print("=" * 70, flush=True)
+    
     logger.info("🚀 Starting Unified AI Backend with scikit-learn integration")
     
     try:
@@ -263,7 +275,7 @@ app = FastAPI(
     title="AI Backend - Unified System", 
     description="Complete AI Backend with Learning Cycles, Testing Systems, and ML Integration",
     version="2.0.0",
-    # lifespan=lifespan  # Temporarily disabled
+    lifespan=lifespan  # Re-enabled for Railway debugging
 )
 
 # Add middleware (consolidated from both apps)
@@ -293,6 +305,15 @@ async def add_process_time_header(request: Request, call_next):
     response = await call_next(request)
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
+    return response
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests for Railway debugging"""
+    client_host = request.client.host if request.client else "unknown"
+    print(f"🌐 Incoming request: {request.method} {request.url.path} from {client_host}", flush=True)
+    response = await call_next(request)
+    print(f"📤 Response: {response.status_code} for {request.url.path}", flush=True)
     return response
 
 # Exception handler
