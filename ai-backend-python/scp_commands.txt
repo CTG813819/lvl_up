@@ -1,0 +1,18 @@
+# SCP Commands to Upload Fix Files to EC2
+# Replace YOUR_EC2_IP with your actual EC2 IP address
+# Replace YOUR_KEY.pem with your actual key file path
+
+# Upload the main fix script
+scp -i YOUR_KEY.pem fix_backend_issues.py ubuntu@YOUR_EC2_IP:~/ai-backend-python/
+
+# Upload the test script (if it exists)
+scp -i YOUR_KEY.pem test_backend_fixes.py ubuntu@YOUR_EC2_IP:~/ai-backend-python/
+
+# Example with actual values (replace with your actual values):
+# scp -i ~/.ssh/my-ec2-key.pem fix_backend_issues.py ubuntu@52.23.45.67:~/ai-backend-python/
+
+# After uploading, SSH into EC2 and run:
+# ssh -i YOUR_KEY.pem ubuntu@YOUR_EC2_IP
+# cd ~/ai-backend-python
+# python fix_backend_issues.py
+# sudo systemctl restart ai-backend-python 

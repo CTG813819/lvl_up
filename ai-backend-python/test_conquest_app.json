@@ -1,0 +1,8 @@
+{
+  "name": "Test Fitness App",
+  "description": "A fitness tracking app with social features",
+  "keywords": ["fitness", "social", "tracking"],
+  "app_type": "fitness",
+  "features": ["workout_tracking", "social_sharing"],
+  "operation_type": "create_new"
+} 

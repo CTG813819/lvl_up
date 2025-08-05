@@ -1,0 +1,36 @@
+[Unit]
+Description=Guardian AI Security Service - Simple
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
+Environment=PYTHONPATH=/home/ubuntu/ai-backend-python
+Environment=PYTHONUNBUFFERED=1
+Environment=DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-red-fire-aekqiiwr-pooler.c-2.us-east-2.aws.neon.tech/neondb
+Environment=GITHUB_TOKEN=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
+Environment=GITHUB_REPO_URL=https://github.com/CTG813819/Lvl_UP.git
+Environment=GITHUB_USERNAME=CTG813819
+
+ExecStart=/home/ubuntu/ai-backend-python/venv/bin/python /home/ubuntu/ai-backend-python/run_guardian.py
+
+Restart=always
+RestartSec=30
+StartLimitInterval=300
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=guardian-ai
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target 

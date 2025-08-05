@@ -10,8 +10,13 @@ import time
 import sys
 from datetime import datetime
 
+<<<<<<< HEAD
 # Configuration - Updated for EC2 instance
 BASE_URL = "http://34.202.215.209:4000"  # EC2 instance URL
+=======
+# Configuration
+BASE_URL = "http://localhost:8000"  # Update with your backend URL
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 API_BASE = f"{BASE_URL}/api/terra"
 
 def test_extension_submission():
@@ -129,7 +134,10 @@ def test_extension_approval(extension_id):
             return True
         else:
             print(f"❌ Failed to approve extension: {response.status_code}")
+<<<<<<< HEAD
             print(f"   Response: {response.text}")
+=======
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
             return False
             
     except Exception as e:
@@ -249,6 +257,7 @@ def run_comprehensive_test():
     
     # Test 4: Wait for testing completion
     print("\n📝 Test 4: Wait for testing completion")
+<<<<<<< HEAD
     if valid_extension_id:
         valid_extension = wait_for_testing_completion(valid_extension_id)
     
@@ -292,4 +301,68 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         print(f"\n💥 Unexpected error: {e}")
+=======
+    valid_extension_data = wait_for_testing_completion(valid_extension_id)
+    if invalid_extension_id:
+        invalid_extension_data = wait_for_testing_completion(invalid_extension_id)
+    
+    # Test 5: Retrieve extension details
+    print("\n📝 Test 5: Retrieve extension details")
+    retrieved_extension = test_extension_retrieval(valid_extension_id)
+    
+    # Test 6: Approve valid extension
+    print("\n📝 Test 6: Approve valid extension")
+    if valid_extension_data and valid_extension_data['status'] == 'ready_for_approval':
+        approval_success = test_extension_approval(valid_extension_id)
+    else:
+        print("⚠️  Extension not ready for approval")
+        approval_success = False
+    
+    # Test 7: Check approved extensions
+    print("\n📝 Test 7: Check approved extensions")
+    approved_extensions = test_approved_extensions()
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print("📊 Test Summary:")
+    print(f"   Valid extension submitted: {'✅' if valid_extension_id else '❌'}")
+    print(f"   Invalid extension submitted: {'✅' if invalid_extension_id else '❌'}")
+    print(f"   Extensions listed: {'✅' if all_extensions else '❌'}")
+    print(f"   Testing completed: {'✅' if valid_extension_data else '❌'}")
+    print(f"   Extension approved: {'✅' if approval_success else '❌'}")
+    print(f"   Approved extensions found: {'✅' if approved_extensions else '❌'}")
+    
+    success = all([
+        valid_extension_id,
+        all_extensions,
+        valid_extension_data,
+        approval_success,
+        approved_extensions
+    ])
+    
+    if success:
+        print("\n🎉 All tests passed! Terra extensions system is working correctly.")
+        print("You can now:")
+        print("- Submit extensions via the Flutter app")
+        print("- Test extensions automatically")
+        print("- Approve extensions for live use")
+        print("- See extensions in the side menu")
+    else:
+        print("\n❌ Some tests failed. Check the backend logs for details.")
+    
+    return success
+
+if __name__ == "__main__":
+    print("Terra Extensions System Test")
+    print("=" * 60)
+    
+    try:
+        success = run_comprehensive_test()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n⚠️  Test interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Test failed with error: {e}")
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
         sys.exit(1) 

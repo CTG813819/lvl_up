@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="120dp"
+    android:background="@android:color/black"
+    android:padding="12dp">
+
+    <!-- Background Image (Dynamic Island background) -->
+    <ImageView
+        android:id="@+id/di_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <!-- AI Icon -->
+    <ImageView
+        android:id="@+id/ai_icon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginEnd="12dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="AI Icon" />
+
+    <!-- Title (AI Name) -->
+    <TextView
+        android:id="@+id/ai_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/ai_icon"
+        android:text="AI Name"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Progress Bar (custom style) -->
+    <ProgressBar
+        android:id="@+id/ai_progress"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="180dp"
+        android:layout_height="12dp"
+        android:layout_below="@id/ai_title"
+        android:layout_toEndOf="@id/ai_icon"
+        android:layout_marginTop="8dp"
+        android:progress="75"
+        android:max="100"
+        android:progressDrawable="@android:drawable/progress_horizontal" />
+
+    <!-- Progress Text -->
+    <TextView
+        android:id="@+id/ai_progress_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ai_progress"
+        android:layout_toEndOf="@id/ai_icon"
+        android:layout_marginTop="4dp"
+        android:text="75%"
+        android:textColor="@android:color/white"
+        android:textSize="12sp" />
+
+    <!-- Album Art (if any) -->
+    <ImageView
+        android:id="@+id/album_art"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:scaleType="centerCrop"
+        android:contentDescription="Album Art"
+        android:visibility="gone" />
+
+    <!-- Media Controls -->
+    <LinearLayout
+        android:id="@+id/media_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@id/ai_icon"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/btn_prev"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_media_previous"
+            android:contentDescription="Previous" />
+
+        <ImageButton
+            android:id="@+id/btn_play"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_media_play"
+            android:contentDescription="Play" />
+
+        <ImageButton
+            android:id="@+id/btn_pause"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_media_pause"
+            android:contentDescription="Pause" />
+
+        <ImageButton
+            android:id="@+id/btn_next"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_media_next"
+            android:contentDescription="Next" />
+    </LinearLayout>
+</RelativeLayout> 

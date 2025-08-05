@@ -1,0 +1,12 @@
+{
+  "repository": {
+    "url": "https://github.com/your-username/lvl_up.git",
+    "branch": "main",
+    "remote": "origin"
+  },
+  "experiments": {
+    "default_repository": "https://github.com/your-username/lvl_up.git",
+    "auto_push": true,
+    "create_issues": true
+  }
+}

@@ -11,7 +11,11 @@ import time
 from datetime import datetime, timedelta
 
 # Configuration
+<<<<<<< HEAD
 BASE_URL = "http://localhost:8000"
+=======
+BASE_URL = "http://ec2-34-202-215-209.compute-1.amazonaws.com:4001"
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 API_BASE = f"{BASE_URL}/api/imperium"
 
 class ImperiumMasterTester:
@@ -27,7 +31,11 @@ class ImperiumMasterTester:
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.session:
+<<<<<<< HEAD
             await self.  # Removed - async generators should use async context
+=======
+            await self.session.close()
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
     
     async def test_endpoint(self, method, endpoint, data=None, expected_status=200):
         """Test an API endpoint"""
@@ -189,6 +197,7 @@ class ImperiumMasterTester:
         # Test getting trusted sources
         await self.test_endpoint("GET", "/trusted-sources")
         
+<<<<<<< HEAD
                   # Test adding trusted source
           await self.test_endpoint("POST", "/trusted-sources", {
               "url": "https://example.com"
@@ -198,6 +207,17 @@ class ImperiumMasterTester:
           await self.test_endpoint("DELETE", "/trusted-sources", {
               "url": "https://example.com"
           })
+=======
+        # Test adding trusted source
+        await self.test_endpoint("POST", "/trusted-sources", {
+            "url": "https://example.com"
+        })
+        
+        # Test removing trusted source
+        await self.test_endpoint("DELETE", "/trusted-sources", {
+            "url": "https://example.com"
+        })
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
     
     async def test_internet_learning_result_persistence(self):
         """Test internet learning result persistence"""

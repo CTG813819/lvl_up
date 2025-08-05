@@ -1,0 +1,316 @@
+# Buddy.works CI/CD Configuration
+# This file configures automated deployment pipelines for the AI Learning System
+
+version: 2.0
+
+pipelines:
+  # Development Pipeline
+  development:
+    name: "Development Pipeline"
+    on:
+      push:
+        branches: ["develop"]
+      manual: true
+    
+    variables:
+      - key: NODE_VERSION
+        value: "18"
+      - key: FLUTTER_VERSION
+        value: "3.19.0"
+      - key: ENVIRONMENT
+        value: "development"
+    
+    actions:
+      - name: "Install Dependencies"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm ci"
+        volumes:
+          - "/app:/app"
+      
+      - name: "Run Backend Tests"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm test"
+        environment_variables:
+          - key: MONGODB_URI
+            value: "$MONGODB_URI"
+          - key: GITHUB_TOKEN
+            value: "$GITHUB_TOKEN"
+      
+      - name: "Build Backend"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm run build"
+      
+      - name: "Flutter Setup"
+        type: "docker"
+        image: "cirrusci/flutter:3.19.0"
+        working_directory: "/app"
+        commands:
+          - "flutter pub get"
+          - "flutter analyze"
+          - "flutter test"
+      
+      - name: "Build Flutter APK"
+        type: "docker"
+        image: "cirrusci/flutter:3.19.0"
+        working_directory: "/app"
+        commands:
+          - "flutter build apk --release"
+      
+      - name: "Deploy to Development"
+        type: "ssh"
+        login: "$DEV_SSH_LOGIN"
+        host: "$DEV_HOST"
+        port: "$DEV_SSH_PORT"
+        authentication_mode: "password"
+        password: "$DEV_SSH_PASSWORD"
+        commands:
+          - "cd /var/www/ai-learning-system"
+          - "git pull origin develop"
+          - "npm ci"
+          - "pm2 restart ai-learning-backend"
+          - "echo 'Development deployment completed'"
+
+  # Staging Pipeline
+  staging:
+    name: "Staging Pipeline"
+    on:
+      push:
+        branches: ["staging"]
+      manual: true
+    
+    variables:
+      - key: NODE_VERSION
+        value: "18"
+      - key: FLUTTER_VERSION
+        value: "3.19.0"
+      - key: ENVIRONMENT
+        value: "staging"
+    
+    actions:
+      - name: "Security Scan"
+        type: "docker"
+        image: "aquasec/trivy:latest"
+        commands:
+          - "trivy fs --format json --output trivy-results.json ."
+      
+      - name: "Build and Test"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app"
+        commands:
+          - "cd ai-backend && npm ci && npm test && npm run build"
+          - "cd .. && flutter pub get && flutter test && flutter build apk --release"
+      
+      - name: "Deploy to Staging"
+        type: "ssh"
+        login: "$STAGING_SSH_LOGIN"
+        host: "$STAGING_HOST"
+        port: "$STAGING_SSH_PORT"
+        authentication_mode: "password"
+        password: "$STAGING_SSH_PASSWORD"
+        commands:
+          - "cd /var/www/ai-learning-system-staging"
+          - "git pull origin staging"
+          - "npm ci"
+          - "pm2 restart ai-learning-staging"
+          - "echo 'Staging deployment completed'"
+      
+      - name: "Run Integration Tests"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm run test:integration"
+        environment_variables:
+          - key: API_BASE_URL
+            value: "$STAGING_API_URL"
+
+  # Production Pipeline
+  production:
+    name: "Production Pipeline"
+    on:
+      push:
+        branches: ["main"]
+      manual: true
+    
+    variables:
+      - key: NODE_VERSION
+        value: "18"
+      - key: FLUTTER_VERSION
+        value: "3.19.0"
+      - key: ENVIRONMENT
+        value: "production"
+    
+    actions:
+      - name: "Comprehensive Security Scan"
+        type: "docker"
+        image: "aquasec/trivy:latest"
+        commands:
+          - "trivy fs --severity HIGH,CRITICAL --format json --output trivy-results.json ."
+      
+      - name: "Performance Testing"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm ci"
+          - "npm run test:performance"
+        environment_variables:
+          - key: API_BASE_URL
+            value: "$PROD_API_URL"
+      
+      - name: "Build Production Assets"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app"
+        commands:
+          - "cd ai-backend && npm ci && npm run build:production"
+          - "cd .. && flutter pub get && flutter build apk --release && flutter build appbundle --release"
+      
+      - name: "Deploy Backend to Production"
+        type: "ssh"
+        login: "$PROD_SSH_LOGIN"
+        host: "$PROD_HOST"
+        port: "$PROD_SSH_PORT"
+        authentication_mode: "password"
+        password: "$PROD_SSH_PASSWORD"
+        commands:
+          - "cd /var/www/ai-learning-system-prod"
+          - "git pull origin main"
+          - "npm ci"
+          - "pm2 restart ai-learning-prod"
+          - "echo 'Production backend deployment completed'"
+      
+      - name: "Deploy APK to Google Play"
+        type: "docker"
+        image: "google/cloud-sdk:latest"
+        commands:
+          - "echo '$GOOGLE_PLAY_SERVICE_ACCOUNT_KEY' > /tmp/service-account.json"
+          - "gcloud auth activate-service-account --key-file=/tmp/service-account.json"
+          - "gcloud config set project $GOOGLE_CLOUD_PROJECT"
+          - "fastlane deploy_to_play_store"
+        environment_variables:
+          - key: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY
+            value: "$GOOGLE_PLAY_SERVICE_ACCOUNT_KEY"
+          - key: GOOGLE_CLOUD_PROJECT
+            value: "$GOOGLE_CLOUD_PROJECT"
+      
+      - name: "Create Release Tag"
+        type: "docker"
+        image: "alpine/git:latest"
+        commands:
+          - "git config --global user.name 'CI/CD Bot'"
+          - "git config --global user.email 'ci@ai-learning-system.com'"
+          - "git tag -a v$(date +%Y%m%d.%H%M%S) -m 'Production release'"
+          - "git push origin --tags"
+      
+      - name: "Send Deployment Notification"
+        type: "webhook"
+        url: "$SLACK_WEBHOOK_URL"
+        method: "POST"
+        headers:
+          - key: "Content-Type"
+            value: "application/json"
+        body: |
+          {
+            "text": "🚀 Production deployment completed successfully!",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  {
+                    "title": "Environment",
+                    "value": "Production",
+                    "short": true
+                  },
+                  {
+                    "title": "Version",
+                    "value": "v$(date +%Y%m%d.%H%M%S)",
+                    "short": true
+                  }
+                ]
+              }
+            ]
+          }
+
+  # AI Learning Monitoring Pipeline
+  ai-monitoring:
+    name: "AI Learning Monitoring"
+    on:
+      schedule:
+        - cron: "0 */6 * * *"  # Every 6 hours
+      manual: true
+    
+    actions:
+      - name: "Check AI Learning Status"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "npm ci"
+          - "node scripts/check-ai-learning-status.js"
+        environment_variables:
+          - key: MONGODB_URI
+            value: "$MONGODB_URI"
+          - key: GITHUB_TOKEN
+            value: "$GITHUB_TOKEN"
+      
+      - name: "Generate AI Learning Report"
+        type: "docker"
+        image: "node:18"
+        working_directory: "/app/ai-backend"
+        commands:
+          - "node scripts/generate-ai-report.js"
+        environment_variables:
+          - key: MONGODB_URI
+            value: "$MONGODB_URI"
+      
+      - name: "Send AI Learning Report"
+        type: "webhook"
+        url: "$SLACK_WEBHOOK_URL"
+        method: "POST"
+        headers:
+          - key: "Content-Type"
+            value: "application/json"
+        body: |
+          {
+            "text": "📊 AI Learning System Status Report",
+            "attachments": [
+              {
+                "color": "info",
+                "text": "AI learning activities have been monitored and reported."
+              }
+            ]
+          }
+
+# Environment configurations
+environments:
+  development:
+    variables:
+      - key: API_BASE_URL
+        value: "http://dev-api.ai-learning-system.com"
+      - key: MONGODB_URI
+        value: "$DEV_MONGODB_URI"
+  
+  staging:
+    variables:
+      - key: API_BASE_URL
+        value: "http://staging-api.ai-learning-system.com"
+      - key: MONGODB_URI
+        value: "$STAGING_MONGODB_URI"
+  
+  production:
+    variables:
+      - key: API_BASE_URL
+        value: "https://api.ai-learning-system.com"
+      - key: MONGODB_URI
+        value: "$PROD_MONGODB_URI" 

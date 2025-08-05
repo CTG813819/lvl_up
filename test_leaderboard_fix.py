@@ -7,9 +7,12 @@ import asyncio
 import sys
 import os
 
+<<<<<<< HEAD
 # Set the DATABASE_URL environment variable
 os.environ['DATABASE_URL'] = 'postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 
+=======
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 # Add the project root to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'ai-backend-python'))
 
@@ -18,10 +21,13 @@ from app.models.sql_models import AgentMetrics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+<<<<<<< HEAD
 # Directly set the database URL in settings
 from app.core.config import settings
 settings.database_url = 'postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 
+=======
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 async def test_database_connection():
     """Test database connection and table existence"""
     print("🔍 Testing database connection...")

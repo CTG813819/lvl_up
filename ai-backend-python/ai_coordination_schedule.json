@@ -1,0 +1,85 @@
+{
+  "ai_schedules": {
+    "guardian": {
+      "interval_hours": 3,
+      "timeout_minutes": 30,
+      "enabled": true,
+      "retry_attempts": 3,
+      "retry_delay_minutes": 5
+    },
+    "imperium": {
+      "interval_hours": 2,
+      "timeout_minutes": 45,
+      "enabled": true,
+      "retry_attempts": 3,
+      "retry_delay_minutes": 5
+    },
+    "sandbox": {
+      "interval_hours": 4,
+      "timeout_minutes": 20,
+      "enabled": true,
+      "retry_attempts": 2,
+      "retry_delay_minutes": 3
+    },
+    "conquest": {
+      "interval_hours": 6,
+      "timeout_minutes": 60,
+      "enabled": true,
+      "retry_attempts": 2,
+      "retry_delay_minutes": 10
+    }
+  },
+  "custodes_config": {
+    "trigger_after_ai_completion": true,
+    "delay_minutes": 1,
+    "timeout_minutes": 15,
+    "enabled": true,
+    "test_all_ais": true
+  },
+  "system_config": {
+    "health_check_interval_minutes": 5,
+    "max_concurrent_ais": 2,
+    "retry_attempts": 3,
+    "retry_delay_minutes": 5,
+    "graceful_shutdown_timeout_seconds": 30
+  },
+  "monitoring": {
+    "log_level": "info",
+    "notify_on_failure": true,
+    "save_status_to_file": true,
+    "status_file_path": "/home/ubuntu/ai-backend-python/ai_scheduler_status.json"
+  },
+  "ai_configs": {
+    "guardian": {
+      "health_checks": true,
+      "performance_optimization": true,
+      "proposal_validation": true,
+      "learning_enabled": true
+    },
+    "imperium": {
+      "master_orchestration": true,
+      "learning_coordination": true,
+      "cross_ai_learning": true,
+      "performance_monitoring": true
+    },
+    "sandbox": {
+      "experiment_management": true,
+      "repository_analysis": true,
+      "code_quality_assessment": true,
+      "learning_experiments": true
+    },
+    "conquest": {
+      "app_deployment": true,
+      "build_management": true,
+      "deployment_validation": true,
+      "performance_testing": true
+    },
+    "custodes": {
+      "test_ai_outputs": true,
+      "validate_ai_results": true,
+      "quality_assessment": true,
+      "performance_metrics": true,
+      "learning_validation": true
+    }
+  }
+} 

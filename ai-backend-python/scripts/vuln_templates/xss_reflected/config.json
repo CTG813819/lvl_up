@@ -1,0 +1,44 @@
+{
+  "name": "Reflected XSS",
+  "description": "Web application with reflected XSS vulnerability in search and comment forms",
+  "difficulty": "medium",
+  "category": "web",
+  "vulnerabilities": ["xss", "reflected_xss", "stored_xss"],
+  "ports": [8080],
+  "credentials": {
+    "admin": "admin:xss_admin_2024",
+    "user": "user:xss_user_2024",
+    "guest": "guest:guest123"
+  },
+  "mutation_options": {
+    "code_complexity": "medium",
+    "vuln_obfuscation": true,
+    "randomization": true,
+    "xss_vectors": [
+      "<script>alert('XSS')</script>",
+      "<img src=x onerror=alert('XSS')>",
+      "javascript:alert('XSS')",
+      "<svg onload=alert('XSS')>",
+      "<iframe src=javascript:alert('XSS')>"
+    ],
+    "filter_bypasses": [
+      "ScRiPt",
+      "&#60;script&#62;",
+      "\\u003Cscript\\u003E",
+      "javascript:alert(1)",
+      "data:text/html,<script>alert('XSS')</script>"
+    ]
+  },
+  "hints": [
+    "Try injecting script tags in the search form",
+    "Look for places where user input is reflected back",
+    "Try different encoding techniques to bypass filters",
+    "Check if there are any stored XSS opportunities"
+  ],
+  "success_criteria": {
+    "execute_alert": true,
+    "bypass_filters": true,
+    "steal_cookies": true,
+    "access_admin": true
+  }
+} 

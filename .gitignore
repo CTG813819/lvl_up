@@ -21,12 +21,23 @@ wheels/
 *.egg
 MANIFEST
 
+<<<<<<< HEAD
 # Virtual Environment
 venv/
 env/
 ENV/
 .venv/
 .env/
+=======
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 # IDE
 .vscode/
@@ -37,24 +48,47 @@ ENV/
 
 # OS
 .DS_Store
+<<<<<<< HEAD
+=======
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 Thumbs.db
 
 # Logs
 *.log
 logs/
+<<<<<<< HEAD
 
 # Database
 *.db
+=======
+log/
+
+# Database
+*.db
+*.sqlite
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 *.sqlite3
 
 # Environment variables
 .env
 .env.local
+<<<<<<< HEAD
 .env.production
+=======
+.env.development.local
+.env.test.local
+.env.production.local
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 # Cache
 .cache/
 .pytest_cache/
+<<<<<<< HEAD
 
 # Models (if they're large)
 models/*.pkl
@@ -112,3 +146,33 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/ 
+=======
+.coverage
+htmlcov/
+
+# Model files (large files)
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.model
+models/
+*.bin
+*.safetensors
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Railway
+.railway/
+
+# Node modules (if any)
+node_modules/
+
+# Local development
+local/
+dev/
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5

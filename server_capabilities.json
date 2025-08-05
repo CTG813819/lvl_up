@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-07-07T22:33:23.661595",
+  "working_endpoints": [
+    {
+      "endpoint": "/api/imperium/agents",
+      "status": 200,
+      "response_length": 50577,
+      "content_type": "application/json"
+    },
+    {
+      "endpoint": "/api/imperium/status",
+      "status": 200,
+      "response_length": 467,
+      "content_type": "application/json"
+    },
+    {
+      "endpoint": "/api/imperium/dashboard",
+      "status": 200,
+      "response_length": 54226,
+      "content_type": "application/json"
+    },
+    {
+      "endpoint": "/api/imperium/trusted-sources",
+      "status": 200,
+      "response_length": 602,
+      "content_type": "application/json"
+    },
+    {
+      "endpoint": "/api/imperium/internet-learning/topics",
+      "status": 200,
+      "response_length": 164,
+      "content_type": "application/json"
+    },
+    {
+      "endpoint": "/api/imperium/persistence/learning-analytics",
+      "status": 200,
+      "response_length": 93,
+      "content_type": "application/json"
+    }
+  ],
+  "websocket_endpoints": [],
+  "working_websockets": [],
+  "server_info": {},
+  "summary": {
+    "http_endpoints": 6,
+    "websocket_endpoints": 0,
+    "working_websockets": 0,
+    "server_info": 0
+  }
+}

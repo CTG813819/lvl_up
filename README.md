@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # LVL AI Backend
 
 A comprehensive AI-powered backend system for the LVL (Level Up) application, designed for deployment on Railway with Neon database.
@@ -200,3 +201,21 @@ For issues and questions:
 - Create an issue in the GitHub repository
 - Check the documentation in `/docs`
 - Review the deployment logs in Railway dashboard 
+=======
+# lvl_up
+
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+>>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
