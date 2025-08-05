@@ -258,21 +258,6 @@ async def lifespan_disabled(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Error during shutdown: {str(e)}")
 
-# Railway port detection - CRITICAL: Must be at app level, not in __main__
-railway_port = int(os.environ.get("PORT", 8000))
-railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
-                   os.environ.get("RAILWAY_PROJECT_ID") or
-                   os.environ.get("RAILWAY_DEPLOYMENT_ID"))
-
-# Log port configuration at app initialization
-print("=" * 60, flush=True)
-print("🚀 FASTAPI APP INITIALIZATION", flush=True)
-print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
-print(f"🔌 Detected Port: {railway_port}", flush=True)
-print(f"📋 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
-print(f"🏥 Health endpoint: /", flush=True)
-print("=" * 60, flush=True)
-
 # Create FastAPI app with unified configuration
 app = FastAPI(
     title="AI Backend - Unified System", 
@@ -470,33 +455,51 @@ async def debug_info():
         }
 
 if __name__ == "__main__":
-    # Enhanced Railway port detection
-    port = int(os.environ.get("PORT", 8000))
+    # Railway port detection with fallback logic
+    port_env = os.environ.get("PORT")
+    if port_env and port_env.isdigit():
+        port = int(port_env)
+    else:
+        # Railway might assign port dynamically - try common ports
+        port = 8000
+    
     railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
                        os.environ.get("RAILWAY_PROJECT_ID") or
                        os.environ.get("RAILWAY_DEPLOYMENT_ID"))
     
-    # Force port output to appear in logs
-    import sys
-    sys.stdout.flush()
+    # Enhanced logging that WILL appear
+    print("\n" + "=" * 60, flush=True)
+    print("🚀 AI BACKEND SERVER STARTING", flush=True)
+    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
+    print(f"🔌 Using Port: {port}", flush=True)
+    print(f"📋 PORT env var: '{port_env}' (raw)", flush=True)
+    print(f"🏥 Health endpoint: /", flush=True)
+    print(f"📊 Railway env vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
+    print("=" * 60 + "\n", flush=True)
     
-    startup_msg = f"""
-==================================================
-🚀 AI BACKEND SERVER STARTING
-📍 Environment: {'Railway' if railway_env else 'Local'}
-🔌 Port: {port}
-📋 PORT env var: {os.environ.get('PORT', 'NOT SET')}
-🏥 Health endpoint: /
-📊 All environment vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}
-==================================================
-"""
-    print(startup_msg, flush=True)
-    
-    uvicorn.run(
-        "main_unified:app",
-        host="0.0.0.0",
-        port=port,
-        reload=False,
-        log_level="info",
-        access_log=True
-    )
+    try:
+        uvicorn.run(
+            "main_unified:app",
+            host="0.0.0.0",
+            port=port,
+            reload=False,
+            log_level="info",
+            access_log=True
+        )
+    except Exception as e:
+        print(f"❌ Server failed to start on port {port}: {e}", flush=True)
+        # Try alternative ports if Railway assigns differently
+        for alt_port in [3000, 5000, 8080]:
+            try:
+                print(f"🔄 Trying alternative port {alt_port}...", flush=True)
+                uvicorn.run(
+                    "main_unified:app",
+                    host="0.0.0.0",
+                    port=alt_port,
+                    reload=False,
+                    log_level="info",
+                    access_log=True
+                )
+                break
+            except:
+                continue
