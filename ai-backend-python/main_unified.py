@@ -309,6 +309,16 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # Health check endpoints
+@app.get("/")
+async def root():
+    """Root endpoint for basic connectivity test"""
+    return {
+        "status": "online",
+        "service": "ai-backend-unified",
+        "version": "2.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
 @app.get("/health")
 async def health_check():
     """Main health check endpoint for Railway"""
@@ -445,9 +455,17 @@ async def debug_info():
         }
 
 if __name__ == "__main__":
-    # Run the unified application on port 8000 [[memory:4401229]] (or Railway's PORT env var)
+    # Detect Railway environment and use appropriate port
+    railway_env = os.environ.get("RAILWAY_ENVIRONMENT_NAME") is not None
     port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Starting server on port {port} (PORT env var: {os.environ.get('PORT', 'not set')})")
+    
+    print("=" * 50)
+    print(f"🚀 STARTING AI BACKEND SERVER")
+    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}")
+    print(f"🔌 Port: {port} (from PORT env: {os.environ.get('PORT', 'not set')})")
+    print(f"🏥 Health check: /health")
+    print("=" * 50)
+    
     uvicorn.run(
         "main_unified:app",
         host="0.0.0.0",
