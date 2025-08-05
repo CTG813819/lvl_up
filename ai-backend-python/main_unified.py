@@ -11,9 +11,9 @@ import uvicorn
 
 # CRITICAL: Module-level debug that WILL execute during Railway import
 print("\n" + "🔥" * 80, flush=True)
-print("🚀 MODULE IMPORT LEVEL - RAILWAY DEBUG", flush=True)
+print("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
 print(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
-print(f"🔌 Railway auto-detected port logic active", flush=True)
+print(f"🔌 Railway explicit uvicorn command active", flush=True)
 print(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
 print(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
 print("🔥" * 80 + "\n", flush=True)
@@ -116,10 +116,20 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Unified AI Backend with scikit-learn integration")
     
     try:
-        # Initialize database
-        await init_database()
-        await create_tables()
-        await create_indexes()
+        # Initialize database with retry logic and error handling
+        print("🔗 Initializing database connection...", flush=True)
+        try:
+            await init_database()
+            print("✅ Database initialized successfully", flush=True)
+            await create_tables()
+            print("✅ Database tables created", flush=True)
+            await create_indexes()
+            print("✅ Database indexes created", flush=True)
+        except Exception as db_error:
+            print(f"❌ Database initialization failed: {db_error}", flush=True)
+            logger.error(f"Database initialization failed: {db_error}")
+            # Continue without database - some endpoints can still work
+            pass
         
         # Initialize ML service first
         await MLService.initialize()

@@ -1,20 +1,17 @@
-# Railway Configuration for AI Backend with Project Horus & Berserk
+# Railway Configuration for AI Backend - FORCE NO AUTO-DETECTION
 [build]
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "python main_unified.py"
+# FORCE explicit uvicorn with our app - NO auto-detection
+startCommand = "uvicorn main_unified:app --host 0.0.0.0 --port $PORT --no-access-log"
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+restartPolicyMaxRetries = 3
 
 [environments.production]
-RUN_BACKGROUND_JOBS = "1"
 PORT = "8000"
-# Project Horus & Berserk are included in main_unified.py and ready for deployment
 
 [environments.staging]  
-RUN_BACKGROUND_JOBS = "1"
 PORT = "8000"
-# All 53 endpoints (6 Horus + 47 Berserk) are included and tested
