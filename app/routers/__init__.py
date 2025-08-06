@@ -37,4 +37,6 @@ from .agent_metrics import router as agent_metrics
 from .scheduling import router as scheduling
 from .ai_integration_router import router as ai_integration_router
 from .offline_chaos_router import router as offline_chaos_router
-from .weapons import router as weapons 
+from .weapons import router as weapons
+from .security_testing_router import router as security_testing_router
+from .rolling_password_router import router as rolling_password_router 

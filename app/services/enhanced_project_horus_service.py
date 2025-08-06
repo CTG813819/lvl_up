@@ -15,12 +15,28 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import structlog
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, mean_squared_error
+
+# Try to import sklearn components, fall back to None if not available
+try:
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
+    from sklearn.neural_network import MLPRegressor
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.cluster import KMeans
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, mean_squared_error
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    logger = structlog.get_logger()
+    logger.warning("scikit-learn not available, ML features will be disabled")
+    RandomForestRegressor = None
+    GradientBoostingClassifier = None
+    MLPRegressor = None
+    StandardScaler = None
+    KMeans = None
+    train_test_split = None
+    accuracy_score = None
+    mean_squared_error = None
+    SKLEARN_AVAILABLE = False
 
 from .project_horus_service import ProjectHorusService
 from .ai_adversarial_integration_service import ai_adversarial_integration_service
@@ -73,6 +89,11 @@ class EnhancedProjectHorusService(ProjectHorusService):
         self.ml_learning_history = []
         self.adaptive_goals = []
         self.complexity_evolution_factor = 1.0
+        
+        # Security testing integration
+        self.security_learning_data = []
+        self.defensive_mechanisms = {}
+        self.attack_countermeasures = {}
         
     async def learn_from_ai_experiences(self, ai_types: List[str] = None) -> Dict[str, Any]:
         """Learn from other AI experiences and integrate into weapon development"""
@@ -1633,6 +1654,10 @@ class EnhancedProjectHorusService(ProjectHorusService):
     async def _train_ml_models(self) -> None:
         """Train ML models with accumulated data"""
         try:
+            if not SKLEARN_AVAILABLE:
+                logger.warning("🧠 ML training skipped - scikit-learn not available")
+                return
+                
             logger.info("🧠 Training ML models...")
             
             # Prepare data
@@ -1676,7 +1701,10 @@ class EnhancedProjectHorusService(ProjectHorusService):
     async def _evolve_test_complexity_with_ml(self) -> None:
         """Evolve test complexity using ML predictions"""
         try:
-            if self.ml_models["test_complexity_optimizer"] is None:
+            if not SKLEARN_AVAILABLE or self.ml_models["test_complexity_optimizer"] is None:
+                # Fallback complexity evolution without ML
+                self.complexity_evolution_factor = min(self.complexity_evolution_factor * 1.02, 2.0)
+                logger.info(f"🔬 Test complexity evolved (no ML) to factor: {self.complexity_evolution_factor:.3f}")
                 return
             
             logger.info("🔬 Evolving test complexity with ML predictions...")
@@ -1705,7 +1733,27 @@ class EnhancedProjectHorusService(ProjectHorusService):
     async def _generate_adaptive_goals_with_ml(self) -> None:
         """Generate adaptive goals using ML clustering and predictions"""
         try:
-            if self.ml_models["environment_difficulty_clusterer"] is None:
+            if not SKLEARN_AVAILABLE or self.ml_models["environment_difficulty_clusterer"] is None:
+                # Fallback goal generation without ML
+                fallback_goal = {
+                    "goal_id": f"fallback_goal_{int(time.time())}",
+                    "category": "standard_optimization",
+                    "target_complexity": self.complexity_evolution_factor,
+                    "innovation_requirement": 0.7,
+                    "success_threshold": 0.75,
+                    "adaptive_weights": {
+                        "infiltration": 0.25,
+                        "stealth": 0.25,
+                        "persistence": 0.25,
+                        "growth_potential": 0.25
+                    },
+                    "created_by": "fallback_system",
+                    "created_at": datetime.utcnow().isoformat(),
+                    "evolution_cycle": len(self.adaptive_goals)
+                }
+                self.adaptive_goals.append(fallback_goal)
+                self.adaptive_goals = self.adaptive_goals[-20:]
+                logger.info("🎯 Generated fallback adaptive goal (no ML available)")
                 return
             
             logger.info("🎯 Generating adaptive goals with ML clustering...")
@@ -1816,6 +1864,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
         """Get ML system performance metrics"""
         try:
             metrics = {
+                "sklearn_available": SKLEARN_AVAILABLE,
                 "models_trained": sum(1 for model in self.ml_models.values() if model is not None),
                 "total_training_samples": len(self.training_data["weapon_features"]),
                 "complexity_evolution_factor": self.complexity_evolution_factor,
@@ -1825,8 +1874,9 @@ class EnhancedProjectHorusService(ProjectHorusService):
                 "prediction_confidence": 0.0
             }
             
-            # Calculate model accuracy if we have test data
-            if (self.ml_models["weapon_performance_predictor"] is not None and 
+            # Calculate model accuracy if sklearn is available and we have test data
+            if (SKLEARN_AVAILABLE and 
+                self.ml_models["weapon_performance_predictor"] is not None and 
                 len(self.training_data["weapon_features"]) > 10):
                 
                 X = np.array(self.training_data["weapon_features"])
@@ -1844,6 +1894,113 @@ class EnhancedProjectHorusService(ProjectHorusService):
         except Exception as e:
             logger.error(f"Error getting ML performance metrics: {e}")
             return {"error": str(e)}
+    
+    async def learn_from_security_testing(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Learn from security testing results to improve weapons and defenses"""
+        try:
+            logger.info("🛡️ Project Horus learning from security testing results")
+            
+            # Store security learning data
+            self.security_learning_data.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "attack_results": security_data.get("attack_results", {}),
+                "defense_mechanisms": security_data.get("defense_mechanisms", []),
+                "vulnerabilities_found": security_data.get("new_attack_vectors", [])
+            })
+            
+            # Analyze attack results for weapon improvement
+            attack_results = security_data.get("attack_results", {})
+            if attack_results:
+                await self._analyze_attack_results_for_improvement(attack_results)
+            
+            # Extract defensive mechanisms
+            defense_mechanisms = security_data.get("defense_mechanisms", [])
+            for mechanism in defense_mechanisms:
+                mechanism_id = mechanism.get("category", "unknown")
+                self.defensive_mechanisms[mechanism_id] = {
+                    "description": mechanism.get("improvement", ""),
+                    "implementation": mechanism.get("implementation", ""),
+                    "priority": mechanism.get("priority", "medium"),
+                    "learned_from": "security_testing"
+                }
+            
+            # Update weapon synthesis based on security findings
+            security_score = attack_results.get("overall_security_score", 0)
+            if security_score < 8.0:  # Security score needs improvement
+                await self._generate_countermeasure_weapons(attack_results)
+            
+            # Update ML models with security data if available
+            if SKLEARN_AVAILABLE:
+                await self._update_ml_with_security_data(security_data)
+            
+            learning_result = {
+                "security_learnings_stored": len(self.security_learning_data),
+                "defensive_mechanisms_learned": len(self.defensive_mechanisms),
+                "countermeasures_generated": len(self.attack_countermeasures),
+                "ml_integration": SKLEARN_AVAILABLE,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            logger.info(f"✅ Security learning completed: {learning_result}")
+            return learning_result
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to learn from security testing: {e}")
+            return {"error": str(e)}
+    
+    async def _update_ml_with_security_data(self, security_data: Dict[str, Any]) -> None:
+        """Update ML models with security testing data"""
+        if not SKLEARN_AVAILABLE:
+            return
+            
+        try:
+            # Extract features from security data
+            attack_results = security_data.get("attack_results", {})
+            
+            security_features = [
+                attack_results.get("overall_security_score", 0),
+                len(attack_results.get("encryption_tests", [])),
+                len(attack_results.get("authentication_tests", [])),
+                len(attack_results.get("api_tests", [])),
+                attack_results.get("mobile_tests", {}).get("overall_mobile_security_score", 0),
+                len(security_data.get("defense_mechanisms", [])),
+                len(security_data.get("new_attack_vectors", []))
+            ]
+            
+            # Add to training data
+            self.training_data["weapon_features"].append(security_features)
+            self.training_data["performance_scores"].append(
+                attack_results.get("overall_security_score", 0) / 10.0
+            )
+            
+            # Update ML learning history
+            self.ml_learning_history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": "security_testing",
+                "features_added": len(security_features),
+                "security_integration": True
+            })
+            
+            logger.info("🧠 Updated ML models with security testing data")
+            
+        except Exception as e:
+            logger.error(f"Failed to update ML with security data: {e}")
+    
+    async def get_security_learning_status(self) -> Dict[str, Any]:
+        """Get status of security learning integration"""
+        return {
+            "security_learnings_count": len(self.security_learning_data),
+            "defensive_mechanisms_learned": len(self.defensive_mechanisms),
+            "countermeasures_generated": len(self.attack_countermeasures),
+            "total_weapons_in_lab": len(self.weapon_synthesis_lab),
+            "ml_integration_active": SKLEARN_AVAILABLE,
+            "latest_learning": self.security_learning_data[-1] if self.security_learning_data else None,
+            "security_weapon_categories": list(set(
+                weapon.get("category", "unknown") 
+                for weapon in self.weapon_synthesis_lab.values()
+                if weapon.get("learned_from_security_test", False)
+            ))
+        }
 
 
 # Global instance

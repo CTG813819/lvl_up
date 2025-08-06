@@ -1757,6 +1757,111 @@ class GuardianAIService:
             logger.error(f"Error in thoughtful fallback: {str(e)}")
             return "🛡️ Guardian AI: I'm here to protect your systems and ensure security."
 
+    async def store_security_learning(self, learning_data: Dict[str, Any]) -> None:
+        """Store security learning data from attack simulations"""
+        try:
+            logger.info("🛡️ Guardian AI storing security learning data")
+            
+            # Store in threat detection history
+            self.threat_detection_history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": learning_data.get("source", "unknown"),
+                "attack_type": learning_data.get("attack_type", "unknown"),
+                "security_score": learning_data.get("security_score", 0),
+                "vulnerabilities": learning_data.get("vulnerabilities", []),
+                "improvements": learning_data.get("improvements", [])
+            })
+            
+            # Update security analyses
+            analysis_id = str(uuid.uuid4())
+            self._security_analyses[analysis_id] = {
+                "learning_data": learning_data,
+                "analysis_timestamp": datetime.utcnow().isoformat(),
+                "guardian_assessment": "Security data integrated for continuous improvement"
+            }
+            
+            # Update SCKIPIT models with new security data if available
+            if hasattr(self, 'sckipit_service') and self.sckipit_service:
+                await self._update_sckipit_security_models(learning_data)
+            
+            logger.info(f"✅ Guardian AI stored security learning data: {analysis_id}")
+        except Exception as e:
+            logger.error(f"❌ Failed to store security learning data: {e}")
+    
+    async def _update_sckipit_security_models(self, learning_data: Dict[str, Any]) -> None:
+        """Update SCKIPIT security models with new learning data"""
+        try:
+            if not hasattr(self, 'sckipit_security_assessor') or not self.sckipit_security_assessor:
+                return
+            
+            # Extract features for SCKIPIT models
+            security_features = {
+                "attack_type": learning_data.get("attack_type", "unknown"),
+                "security_score": learning_data.get("security_score", 0),
+                "vulnerability_count": len(learning_data.get("vulnerabilities", [])),
+                "improvement_count": len(learning_data.get("improvements", []))
+            }
+            
+            # Update enhanced security analyses
+            self.sckipit_enhanced_security_analyses.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "features": security_features,
+                "learning_source": learning_data.get("source", "security_simulation")
+            })
+            
+            logger.info("🔬 Updated SCKIPIT security models with new learning data")
+        except Exception as e:
+            logger.error(f"Failed to update SCKIPIT security models: {e}")
+    
+    async def get_security_learning_insights(self) -> Dict[str, Any]:
+        """Get insights from stored security learning data"""
+        try:
+            insights = {
+                "total_security_learnings": len(self.threat_detection_history),
+                "recent_learnings": self.threat_detection_history[-5:] if self.threat_detection_history else [],
+                "security_trends": {},
+                "vulnerability_patterns": {},
+                "improvement_recommendations": []
+            }
+            
+            if self.threat_detection_history:
+                # Calculate security trends
+                recent_scores = [
+                    learning.get("security_score", 0) 
+                    for learning in self.threat_detection_history[-10:]
+                ]
+                if recent_scores:
+                    insights["security_trends"] = {
+                        "average_score": sum(recent_scores) / len(recent_scores),
+                        "trend": "improving" if recent_scores[-1] > recent_scores[0] else "stable",
+                        "latest_score": recent_scores[-1]
+                    }
+                
+                # Analyze vulnerability patterns
+                all_vulnerabilities = []
+                for learning in self.threat_detection_history:
+                    all_vulnerabilities.extend(learning.get("vulnerabilities", []))
+                
+                vulnerability_counts = {}
+                for vuln in all_vulnerabilities:
+                    vuln_type = vuln.get("type", "unknown") if isinstance(vuln, dict) else str(vuln)
+                    vulnerability_counts[vuln_type] = vulnerability_counts.get(vuln_type, 0) + 1
+                
+                insights["vulnerability_patterns"] = vulnerability_counts
+                
+                # Generate improvement recommendations
+                insights["improvement_recommendations"] = [
+                    "Continue regular security testing",
+                    "Focus on encryption strengthening",
+                    "Enhance authentication mechanisms",
+                    "Implement advanced threat detection"
+                ]
+            
+            return insights
+        except Exception as e:
+            logger.error(f"Failed to get security learning insights: {e}")
+            return {"error": str(e)}
+    
     @classmethod
     async def initialize(cls):
         """Initialize the Guardian AI service"""

@@ -66,6 +66,8 @@ from app.routers.ai_integration_router import router as ai_integration_router
 from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
 from app.routers.weapons import router as weapons_router
+from app.routers.security_testing_router import router as security_testing_router
+from app.routers.rolling_password_router import router as rolling_password_router
 
 # Import new AI service routers
 from app.routers.project_horus import router as project_horus_router
@@ -497,6 +499,8 @@ app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Schedulin
 app.include_router(ai_integration_router, tags=["AI Integration"])
 app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
+app.include_router(security_testing_router, tags=["Security Testing"])
+app.include_router(rolling_password_router, tags=["Rolling Password Authentication"])
 
 # New AI service routers
 app.include_router(project_horus_router)  # Already has prefix="/api/project-horus" in router definition

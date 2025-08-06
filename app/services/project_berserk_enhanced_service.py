@@ -55,6 +55,12 @@ class ProjectBerserkEnhancedService:
         self.internet_threat_intelligence = {}
         self.docker_testing_results = {}
         
+        # Security learning integration
+        self.security_learning_data = []
+        self.defensive_mechanisms = {}
+        self.attack_countermeasures = {}
+        self.security_evolution_cycles = 0
+        
     async def initialize(self):
         """Initialize Enhanced Project Berserk"""
         try:
@@ -903,6 +909,234 @@ class ProjectBerserkEnhancedService:
                 category = weapon.get("category", "unknown")
                 categories[category] = categories.get(category, 0) + 1
         return categories
+    
+    async def learn_from_security_testing(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Learn from security testing results to improve weapons and defenses"""
+        try:
+            logger.info("🔒 Project Berserk learning from security testing results")
+            
+            # Store security learning data
+            self.security_learning_data.append({
+                "timestamp": datetime.now().isoformat(),
+                "data": security_data,
+                "source": "security_testing"
+            })
+            
+            # Analyze attack outcomes for weapon improvement
+            attack_results = security_data.get("attack_results", {})
+            vulnerability_findings = security_data.get("vulnerability_findings", {})
+            
+            # Extract defensive mechanisms from security testing
+            defensive_mechanisms = await self._extract_defensive_mechanisms(security_data)
+            self.defensive_mechanisms.update(defensive_mechanisms)
+            
+            # Generate countermeasure weapons based on security findings
+            countermeasure_weapons = await self._generate_countermeasure_weapons(security_data)
+            self.attack_countermeasures.update(countermeasure_weapons)
+            
+            # Update weapon evolution with security insights
+            enhanced_weapons = await self._enhance_weapons_with_security_insights(security_data)
+            
+            # Update ML models with security data
+            await self._update_ml_with_security_data(security_data)
+            
+            # Increment security evolution cycles
+            self.security_evolution_cycles += 1
+            
+            return {
+                "status": "success",
+                "defensive_mechanisms_extracted": len(defensive_mechanisms),
+                "countermeasure_weapons_created": len(countermeasure_weapons),
+                "weapons_enhanced": len(enhanced_weapons),
+                "security_evolution_cycle": self.security_evolution_cycles
+            }
+            
+        except Exception as e:
+            logger.error(f"Error learning from security testing: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _extract_defensive_mechanisms(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract defensive mechanisms from security testing"""
+        defensive_mechanisms = {}
+        
+        # Extract from vulnerability findings
+        vulnerability_findings = security_data.get("vulnerability_findings", {})
+        for vuln_type, details in vulnerability_findings.items():
+            if details.get("severity", 0) > 0.7:  # High severity vulnerabilities
+                defensive_mechanism = {
+                    "type": "vulnerability_countermeasure",
+                    "target_vulnerability": vuln_type,
+                    "defense_strategy": self._generate_defense_strategy(vuln_type, details),
+                    "implementation": self._create_defensive_implementation(vuln_type, details)
+                }
+                defensive_mechanisms[f"defense_{vuln_type}"] = defensive_mechanism
+        
+        # Extract from attack results
+        attack_results = security_data.get("attack_results", {})
+        for attack_type, result in attack_results.items():
+            if result.get("success_rate", 0) > 0.8:  # Successful attacks
+                defensive_mechanism = {
+                    "type": "attack_countermeasure",
+                    "target_attack": attack_type,
+                    "defense_strategy": self._generate_attack_defense_strategy(attack_type, result),
+                    "implementation": self._create_attack_defensive_implementation(attack_type, result)
+                }
+                defensive_mechanisms[f"attack_defense_{attack_type}"] = defensive_mechanism
+        
+        return defensive_mechanisms
+    
+    def _generate_defense_strategy(self, vuln_type: str, details: Dict[str, Any]) -> str:
+        """Generate defense strategy for vulnerability type"""
+        strategies = {
+            "encryption": "Implement multi-layer encryption with rotating keys",
+            "authentication": "Deploy biometric and behavioral authentication",
+            "api_security": "Implement rate limiting and input validation",
+            "mobile_security": "Deploy app sandboxing and code obfuscation",
+            "apt_attack": "Implement advanced threat detection and response"
+        }
+        return strategies.get(vuln_type, "Implement comprehensive security monitoring")
+    
+    def _create_defensive_implementation(self, vuln_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
+        """Create defensive implementation for vulnerability"""
+        return {
+            "code": f"defense_{vuln_type}_implementation",
+            "complexity": details.get("complexity", 1.0) + 0.3,
+            "stealth": 0.9,
+            "effectiveness": min(details.get("severity", 0.5) + 0.2, 1.0)
+        }
+    
+    def _generate_attack_defense_strategy(self, attack_type: str, result: Dict[str, Any]) -> str:
+        """Generate defense strategy for attack type"""
+        strategies = {
+            "reconnaissance": "Implement network segmentation and traffic analysis",
+            "encryption_testing": "Deploy adaptive encryption with key rotation",
+            "authentication_testing": "Implement multi-factor authentication with behavioral analysis",
+            "api_security_testing": "Deploy API gateway with advanced rate limiting",
+            "mobile_app_security": "Implement app integrity checks and runtime protection",
+            "apt_simulation": "Deploy advanced threat hunting and response systems"
+        }
+        return strategies.get(attack_type, "Implement comprehensive security monitoring and response")
+    
+    def _create_attack_defensive_implementation(self, attack_type: str, result: Dict[str, Any]) -> Dict[str, Any]:
+        """Create defensive implementation for attack"""
+        return {
+            "code": f"attack_defense_{attack_type}_implementation",
+            "complexity": result.get("complexity", 1.0) + 0.4,
+            "stealth": 0.95,
+            "effectiveness": min(result.get("success_rate", 0.5) + 0.3, 1.0)
+        }
+    
+    async def _generate_countermeasure_weapons(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate countermeasure weapons based on security findings"""
+        countermeasure_weapons = {}
+        
+        # Generate weapons for each vulnerability type
+        vulnerability_findings = security_data.get("vulnerability_findings", {})
+        for vuln_type, details in vulnerability_findings.items():
+            weapon_id = f"countermeasure_{vuln_type}_{uuid.uuid4().hex[:8]}"
+            countermeasure_weapons[weapon_id] = {
+                "name": f"Countermeasure: {vuln_type.title()}",
+                "type": "defensive_weapon",
+                "category": "security_countermeasure",
+                "target_vulnerability": vuln_type,
+                "complexity": details.get("complexity", 1.0) + 0.5,
+                "stealth": 0.9,
+                "effectiveness": min(details.get("severity", 0.5) + 0.4, 1.0),
+                "implementation": self._create_countermeasure_implementation(vuln_type, details),
+                "created_from_security_testing": True
+            }
+        
+        return countermeasure_weapons
+    
+    def _create_countermeasure_implementation(self, vuln_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
+        """Create countermeasure implementation"""
+        return {
+            "defense_code": f"defense_{vuln_type}_code",
+            "monitoring_code": f"monitor_{vuln_type}_code",
+            "response_code": f"respond_{vuln_type}_code",
+            "complexity": details.get("complexity", 1.0) + 0.3
+        }
+    
+    async def _enhance_weapons_with_security_insights(self, security_data: Dict[str, Any]) -> List[str]:
+        """Enhance existing weapons with security insights"""
+        enhanced_weapons = []
+        
+        # Get vulnerability patterns
+        vulnerability_findings = security_data.get("vulnerability_findings", {})
+        attack_results = security_data.get("attack_results", {})
+        
+        # Enhance weapons based on security patterns
+        for weapon_id, weapon in self.weapon_arsenal.items():
+            if weapon.get("category") in ["neural_infiltrator", "quantum_backdoor", "adaptive_virus"]:
+                # Enhance with security insights
+                enhanced_weapon = await self._apply_security_enhancements(weapon, security_data)
+                self.weapon_arsenal[weapon_id] = enhanced_weapon
+                enhanced_weapons.append(weapon_id)
+        
+        return enhanced_weapons
+    
+    async def _apply_security_enhancements(self, weapon: Dict[str, Any], security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply security enhancements to weapon"""
+        enhanced_weapon = weapon.copy()
+        
+        # Add security monitoring capabilities
+        enhanced_weapon["security_monitoring"] = {
+            "vulnerability_detection": True,
+            "attack_pattern_recognition": True,
+            "defensive_response": True
+        }
+        
+        # Enhance complexity based on security findings
+        vulnerability_count = len(security_data.get("vulnerability_findings", {}))
+        enhanced_weapon["complexity"] = min(enhanced_weapon.get("complexity", 1.0) + (vulnerability_count * 0.1), 2.0)
+        
+        # Add security learning timestamp
+        enhanced_weapon["security_enhanced"] = datetime.now().isoformat()
+        
+        return enhanced_weapon
+    
+    async def _update_ml_with_security_data(self, security_data: Dict[str, Any]) -> None:
+        """Update ML models with security testing data"""
+        try:
+            # Extract features from security data
+            security_features = {
+                "vulnerability_count": len(security_data.get("vulnerability_findings", {})),
+                "attack_success_rate": security_data.get("attack_results", {}).get("overall_success_rate", 0.0),
+                "security_score": security_data.get("security_score", 0.0),
+                "defensive_mechanisms_count": len(self.defensive_mechanisms),
+                "countermeasure_weapons_count": len(self.attack_countermeasures)
+            }
+            
+            # Add to learning data
+            if not hasattr(self, 'ml_learning_history'):
+                self.ml_learning_history = []
+            
+            self.ml_learning_history.append({
+                "timestamp": datetime.now().isoformat(),
+                "features": security_features,
+                "source": "security_testing"
+            })
+            
+            logger.info(f"🔒 Updated ML models with security data: {len(security_features)} features")
+            
+        except Exception as e:
+            logger.error(f"Error updating ML with security data: {e}")
+    
+    async def get_security_learning_status(self) -> Dict[str, Any]:
+        """Get status of security learning integration"""
+        return {
+            "security_learning_data_count": len(self.security_learning_data),
+            "defensive_mechanisms_count": len(self.defensive_mechanisms),
+            "attack_countermeasures_count": len(self.attack_countermeasures),
+            "security_evolution_cycles": self.security_evolution_cycles,
+            "recent_security_insights": [
+                {
+                    "timestamp": data["timestamp"],
+                    "source": data["source"]
+                }
+                for data in self.security_learning_data[-5:]  # Last 5 entries
+            ] if self.security_learning_data else []
+        }
 
 
 # Global instance
