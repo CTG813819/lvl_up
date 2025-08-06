@@ -4,7 +4,7 @@ import 'dart:convert';
 void main() async {
   print('🚀 Testing Railway Connection for Flutter App...');
 
-  final railwayUrl = 'https://lvlup-production-1a5a.up.railway.app';
+  final railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
 
   print('\n📡 Testing Railway Backend Status...');
   print('🎯 Railway URL: $railwayUrl');

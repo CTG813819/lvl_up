@@ -4,7 +4,7 @@ import 'dart:convert';
 void main() async {
   print('🔍 Testing AI Growth Analytics -> Railway Connection...\n');
   
-  const railwayUrl = 'https://lvlup-production.up.railway.app';
+  const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
   
   // Test the endpoints that AI Growth Analytics Provider uses
   final aiGrowthEndpoints = [

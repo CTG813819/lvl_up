@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 void main() async {
   print('🧪 Testing Warmaster and Warp Railway Backend Connectivity...\n');
 
-  const railwayUrl = 'https://lvlup-production-1a5a.up.railway.app';
+  const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
 
   // Test endpoints used by Warmaster/Project Berserk screen
   final warmasterEndpoints = [

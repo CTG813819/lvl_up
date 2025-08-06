@@ -4,7 +4,7 @@ import 'dart:convert';
 void main() async {
   print('🔍 Testing Railway Backend Connection (ai-backend-python)...\n');
 
-  const railwayUrl = 'https://lvlup-production-1a5a.up.railway.app';
+  const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
 
   // Test endpoints that should be available based on app/main.py
   final endpoints = [
