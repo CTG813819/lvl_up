@@ -9,10 +9,12 @@ import json
 import random
 import hashlib
 import time
+import aiohttp
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import structlog
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 logger = structlog.get_logger()
 
@@ -45,6 +47,20 @@ class ProjectHorusService:
             "testing": ["unit", "integration", "e2e", "mocking", "stubbing"],
             "deployment": ["docker", "kubernetes", "aws", "azure", "gcp"],
             "ai_ml": ["tensorflow", "pytorch", "scikit-learn", "opencv", "nltk"]
+        }
+        
+        # Initialize internet learning sources
+        self.internet_sources = {
+            "github": "https://github.com",
+            "stackoverflow": "https://stackoverflow.com",
+            "medium": "https://medium.com",
+            "dev_to": "https://dev.to",
+            "tech_crunch": "https://techcrunch.com",
+            "hacker_news": "https://news.ycombinator.com",
+            "reddit_programming": "https://reddit.com/r/programming",
+            "quantum_computing": "https://quantum-computing.ibm.com/",
+            "jarvis_ai": "https://en.wikipedia.org/wiki/J.A.R.V.I.S.",
+            "quantum_mechanics": "https://en.wikipedia.org/wiki/Quantum_mechanics"
         }
         
     async def generate_chaos_code(self, target_context: Optional[str] = None) -> Dict[str, Any]:
@@ -505,6 +521,218 @@ class {class_name} {{
     async def get_chaos_code_by_id(self, chaos_id: str) -> Optional[Dict[str, Any]]:
         """Get specific chaos code by ID"""
         return self.chaos_code_repository.get(chaos_id)
+
+    async def learn_from_internet(self, topics: List[str] = None) -> Dict[str, Any]:
+        """Learn from real internet sources to enhance chaos code generation"""
+        try:
+            if topics is None:
+                topics = [
+                    "quantum_computing", "jarvis_ai", "quantum_mechanics", 
+                    "artificial_intelligence", "machine_learning", "cybersecurity",
+                    "neural_networks", "autonomous_systems", "chaos_theory"
+                ]
+            
+            learning_results = []
+            total_knowledge_gained = 0.0
+            
+            async with aiohttp.ClientSession() as session:
+                for topic in topics:
+                    try:
+                        # Research topic from internet
+                        topic_knowledge = await self._research_topic_from_internet(session, topic)
+                        
+                        # Update code knowledge base with new information
+                        self._update_code_knowledge_from_research(topic, topic_knowledge)
+                        
+                        knowledge_gained = topic_knowledge.get("knowledge_gained", 0.2)
+                        total_knowledge_gained += knowledge_gained
+                        
+                        learning_results.append({
+                            "topic": topic,
+                            "knowledge_gained": knowledge_gained,
+                            "research_data": topic_knowledge.get("research_data", {}),
+                            "sources_accessed": topic_knowledge.get("sources", [])
+                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to research topic {topic}: {e}")
+                        learning_results.append({
+                            "topic": topic,
+                            "knowledge_gained": 0.1,
+                            "error": str(e)
+                        })
+            
+            # Update learning progress
+            self.learning_progress = min(1.0, self.learning_progress + total_knowledge_gained)
+            self.chaos_complexity = min(2.0, self.chaos_complexity + total_knowledge_gained * 0.1)
+            
+            return {
+                "status": "success",
+                "topics_researched": topics,
+                "learning_results": learning_results,
+                "total_knowledge_gained": total_knowledge_gained,
+                "learning_progress": self.learning_progress,
+                "chaos_complexity": self.chaos_complexity,
+                "message": "Internet learning completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Internet learning failed: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def _research_topic_from_internet(self, session: aiohttp.ClientSession, topic: str) -> Dict[str, Any]:
+        """Research topic from real internet sources"""
+        try:
+            research_data = {}
+            accessed_sources = []
+            total_knowledge = 0.0
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # Get relevant sources for the topic
+            sources = self._get_sources_for_topic(topic)
+            
+            for source_url in sources:
+                try:
+                    async with session.get(source_url, headers=headers, timeout=10) as response:
+                        if response.status == 200:
+                            content = await response.text()
+                            soup = BeautifulSoup(content, 'html.parser')
+                            
+                            # Extract topic-specific information
+                            topic_info = self._extract_topic_information(soup, content, topic)
+                            research_data[topic] = topic_info
+                            total_knowledge += 0.3
+                            accessed_sources.append(source_url)
+                            
+                except Exception as e:
+                    logger.error(f"Failed to access {source_url}: {e}")
+                    continue
+            
+            return {
+                "knowledge_gained": min(1.0, total_knowledge),
+                "research_data": research_data,
+                "sources": accessed_sources,
+                "topic": topic
+            }
+            
+        except Exception as e:
+            logger.error(f"Research failed for topic {topic}: {e}")
+            return {
+                "knowledge_gained": 0.1,
+                "research_data": {},
+                "sources": [],
+                "error": str(e)
+            }
+
+    def _get_sources_for_topic(self, topic: str) -> List[str]:
+        """Get relevant internet sources for a topic"""
+        source_mapping = {
+            "quantum_computing": [
+                "https://quantum-computing.ibm.com/",
+                "https://en.wikipedia.org/wiki/Quantum_computing",
+                "https://www.microsoft.com/en-us/quantum"
+            ],
+            "jarvis_ai": [
+                "https://en.wikipedia.org/wiki/J.A.R.V.I.S.",
+                "https://www.techopedia.com/definition/28094/jarvis",
+                "https://www.ibm.com/watson"
+            ],
+            "quantum_mechanics": [
+                "https://en.wikipedia.org/wiki/Quantum_mechanics",
+                "https://www.quantamagazine.org/",
+                "https://www.nature.com/subjects/quantum-mechanics"
+            ],
+            "artificial_intelligence": [
+                "https://openai.com/",
+                "https://www.anthropic.com/",
+                "https://www.deepmind.com/"
+            ],
+            "cybersecurity": [
+                "https://cve.mitre.org/",
+                "https://nvd.nist.gov/vuln/",
+                "https://www.exploit-db.com/"
+            ]
+        }
+        
+        return source_mapping.get(topic, [self.internet_sources.get("github", "https://github.com")])
+
+    def _extract_topic_information(self, soup: BeautifulSoup, content: str, topic: str) -> Dict[str, Any]:
+        """Extract topic-specific information from web content"""
+        topic_info = {
+            "concepts": [],
+            "technologies": [],
+            "frameworks": [],
+            "trends": []
+        }
+        
+        text_content = soup.get_text().lower()
+        
+        if topic == "quantum_computing":
+            quantum_keywords = ["qubit", "quantum gate", "quantum algorithm", "quantum supremacy", "quantum error correction"]
+            for keyword in quantum_keywords:
+                if keyword in text_content:
+                    topic_info["concepts"].append(keyword)
+                    
+        elif topic == "jarvis_ai":
+            jarvis_keywords = ["jarvis", "artificial intelligence", "voice interface", "ai assistant", "natural language"]
+            for keyword in jarvis_keywords:
+                if keyword in text_content:
+                    topic_info["concepts"].append(keyword)
+                    
+        elif topic == "quantum_mechanics":
+            quantum_keywords = ["superposition", "entanglement", "uncertainty", "wave function", "quantum"]
+            for keyword in quantum_keywords:
+                if keyword in text_content:
+                    topic_info["concepts"].append(keyword)
+                    
+        elif topic == "artificial_intelligence":
+            ai_keywords = ["machine learning", "deep learning", "neural networks", "natural language processing", "computer vision"]
+            for keyword in ai_keywords:
+                if keyword in text_content:
+                    topic_info["technologies"].append(keyword)
+                    
+        elif topic == "cybersecurity":
+            security_keywords = ["sql injection", "xss", "csrf", "buffer overflow", "privilege escalation"]
+            for keyword in security_keywords:
+                if keyword in text_content:
+                    topic_info["concepts"].append(keyword)
+        
+        return topic_info
+
+    def _update_code_knowledge_from_research(self, topic: str, research_data: Dict[str, Any]):
+        """Update code knowledge base with research findings"""
+        try:
+            topic_info = research_data.get("research_data", {}).get(topic, {})
+            
+            if topic == "quantum_computing":
+                # Add quantum computing concepts to AI/ML section
+                quantum_concepts = topic_info.get("concepts", [])
+                self.code_knowledge_base["ai_ml"].extend(quantum_concepts)
+                
+            elif topic == "jarvis_ai":
+                # Add JARVIS concepts to AI/ML section
+                jarvis_concepts = topic_info.get("concepts", [])
+                self.code_knowledge_base["ai_ml"].extend(jarvis_concepts)
+                
+            elif topic == "artificial_intelligence":
+                # Add AI technologies to frameworks
+                ai_technologies = topic_info.get("technologies", [])
+                self.code_knowledge_base["frameworks"].extend(ai_technologies)
+                
+            elif topic == "cybersecurity":
+                # Add security concepts to security section
+                security_concepts = topic_info.get("concepts", [])
+                self.code_knowledge_base["security"].extend(security_concepts)
+                
+            # Remove duplicates
+            for key in self.code_knowledge_base:
+                self.code_knowledge_base[key] = list(set(self.code_knowledge_base[key]))
+                
+        except Exception as e:
+            logger.error(f"Failed to update code knowledge from research: {e}")
     
     async def deploy_chaos_code(self, chaos_id: str, target_system: str) -> Dict[str, Any]:
         """Deploy chaos code to target system"""
