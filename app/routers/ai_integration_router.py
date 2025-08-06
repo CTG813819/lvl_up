@@ -7,6 +7,7 @@ LIVE SERVICES ONLY - NO FALLBACKS
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
+from datetime import datetime
 import structlog
 
 # Import LIVE services - NO FALLBACKS
@@ -33,6 +34,13 @@ class WeaponDeploymentRequest(BaseModel):
 
 class LearningIntegrationRequest(BaseModel):
     ai_types: Optional[List[str]] = None
+
+
+class FailureDataRequest(BaseModel):
+    ai_type: str
+    failure_data: Dict[str, Any]
+    learning_context: str
+    timestamp: str
 
 
 @router.post("/adversarial-training/run")
@@ -79,17 +87,33 @@ async def get_adversarial_progress() -> Dict[str, Any]:
 
 @router.get("/horus/weapon-synthesis-report")
 async def get_weapon_synthesis_report() -> Dict[str, Any]:
-    """Get LIVE weapon synthesis report from Project Horus"""
+    """Get LIVE weapon synthesis report from Project Horus with NEW weapon generation"""
     try:
+        # LIVE WEAPON GENERATION - Create new weapons each time
+        logger.info("🚀 LIVE: Generating new weapons from AI learning...")
+        
+        # Learn from all AI types and synthesize new weapons
+        ai_types = ["imperium", "conquest", "sandbox", "guardian"]
+        for ai_type in ai_types:
+            await enhanced_project_horus_service.learn_from_ai_experiences([ai_type])
+        
+        # Generate additional synthetic weapons based on internet learning
+        await enhanced_project_horus_service.evolve_chaos_language()
+        
+        # Get updated synthesis report with new weapons
         report = await enhanced_project_horus_service.get_weapon_synthesis_report()
+        
+        logger.info(f"🔥 LIVE: Generated {report.get('total_weapons', 0)} weapons total")
         
         return {
             "status": "success",
-            "synthesis_report": report
+            "synthesis_report": report,
+            "generation_timestamp": datetime.utcnow().isoformat(),
+            "live_generation": True
         }
         
     except Exception as e:
-        logger.error(f"Error getting LIVE weapon synthesis report: {e}")
+        logger.error(f"Error generating LIVE weapon synthesis report: {e}")
         raise HTTPException(status_code=500, detail=f"LIVE weapon synthesis failed: {str(e)}")
 
 
@@ -165,13 +189,32 @@ async def get_integration_status() -> Dict[str, Any]:
                 "frontend_dependency": "removed",
                 "backend_integration": "LIVE",
                 "periodic_sync": "LIVE",
-                "complex_testing": "LIVE"
-            }
+                "complex_testing": "LIVE",
+                "ml_learning_system": "LIVE"
+            },
+            "ml_learning_metrics": await enhanced_project_horus_service.get_ml_performance_metrics()
         }
         
     except Exception as e:
         logger.error(f"Error getting LIVE integration status: {e}")
         raise HTTPException(status_code=500, detail=f"LIVE integration status failed: {str(e)}")
+
+
+@router.get("/horus/ml-metrics")
+async def get_horus_ml_metrics() -> Dict[str, Any]:
+    """Get detailed ML learning metrics from Project Horus"""
+    try:
+        ml_metrics = await enhanced_project_horus_service.get_ml_performance_metrics()
+        
+        return {
+            "status": "success",
+            "ml_metrics": ml_metrics,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting Horus ML metrics: {e}")
+        raise HTTPException(status_code=500, detail=f"ML metrics retrieval failed: {str(e)}")
 
 
 @router.get("/chaos-language/documentation")

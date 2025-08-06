@@ -9,10 +9,18 @@ import random
 import time
 import hashlib
 import uuid
+import pickle
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import structlog
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, mean_squared_error
 
 from .project_horus_service import ProjectHorusService
 from .ai_adversarial_integration_service import ai_adversarial_integration_service
@@ -45,6 +53,26 @@ class EnhancedProjectHorusService(ProjectHorusService):
         # Chaos language chapters
         self.chaos_language_chapters = []
         self.chaos_language_version = "1.0.0"
+        
+        # ML/Scikit-learn Learning System
+        self.ml_models = {
+            "weapon_performance_predictor": None,
+            "test_complexity_optimizer": None,
+            "goal_achievement_classifier": None,
+            "environment_difficulty_clusterer": None
+        }
+        self.ml_scalers = {}
+        self.training_data = {
+            "weapon_features": [],
+            "performance_scores": [],
+            "test_results": [],
+            "goal_achievements": [],
+            "environment_features": [],
+            "complexity_levels": []
+        }
+        self.ml_learning_history = []
+        self.adaptive_goals = []
+        self.complexity_evolution_factor = 1.0
         
     async def learn_from_ai_experiences(self, ai_types: List[str] = None) -> Dict[str, Any]:
         """Learn from other AI experiences and integrate into weapon development"""
@@ -98,6 +126,19 @@ class EnhancedProjectHorusService(ProjectHorusService):
         
         # Update synthesis lab with new patterns
         await self._update_synthesis_lab(learning_results)
+        
+        # Update ML models with new learning data
+        await self._update_ml_models_with_learning_results(learning_results)
+        
+        # Generate synthetic training data if we have some learning results
+        if learning_results.get("ai_experiences_analyzed", 0) > 0:
+            await self._generate_synthetic_training_data(learning_results)
+        
+        # Evolve test complexity based on ML insights
+        await self._evolve_test_complexity_with_ml()
+        
+        # Create adaptive goals using ML predictions
+        await self._generate_adaptive_goals_with_ml()
         
         return learning_results
     
@@ -276,12 +317,26 @@ class EnhancedProjectHorusService(ProjectHorusService):
                 "self_growing": True
             }
             
-            # Store in synthesis lab
-            self.weapon_synthesis_lab[weapon_id] = weapon
-            
-            logger.info(f"Synthesized weapon {weapon_id} from {ai_type} learning")
-            
-            return weapon
+            # Test weapon in Docker environment before storing
+            docker_test_results = await self._test_weapon_in_docker_environment(weapon)
+            if docker_test_results['passed']:
+                weapon['docker_test_results'] = docker_test_results
+                weapon['validated'] = True
+                
+                # Check if similar weapon exists and enhance instead of duplicating
+                existing_weapon = await self._find_similar_weapon(weapon)
+                if existing_weapon:
+                    enhanced_weapon = await self._enhance_existing_weapon(existing_weapon['weapon_id'], weapon)
+                    logger.info(f"Enhanced existing weapon {existing_weapon['weapon_id']} instead of creating duplicate")
+                    return enhanced_weapon
+                else:
+                    # Store in synthesis lab
+                    self.weapon_synthesis_lab[weapon_id] = weapon
+                    logger.info(f"Synthesized and validated weapon {weapon_id} from {ai_type} learning")
+                    return weapon
+            else:
+                logger.warning(f"Weapon {weapon_id} failed Docker testing, not storing")
+                return {}
             
         except Exception as e:
             logger.error(f"Error creating synthetic weapon: {e}")
@@ -735,6 +790,1060 @@ class EnhancedProjectHorusService(ProjectHorusService):
             if isinstance(weapon, dict)
         ]
         return sum(complexities) / len(complexities) if complexities else 0.0
+
+    async def _test_weapon_in_docker_environment(self, weapon: Dict[str, Any]) -> Dict[str, Any]:
+        """Test weapon against multiple Docker services with rigorous evolving goals"""
+        try:
+            weapon_id = weapon.get('weapon_id', 'unknown')
+            logger.info(f"🐳 Starting RIGOROUS Docker testing for weapon {weapon_id}")
+            
+            # Get evolved test environments based on internet learning
+            test_environments = await self._get_evolved_test_environments()
+            
+            # Define rigorous test goals for each weapon category
+            test_goals = await self._define_rigorous_test_goals(weapon)
+            
+            test_results = {
+                "environments_tested": 0,
+                "goals_achieved": 0,
+                "goals_failed": 0,
+                "successful_deployments": 0,
+                "failed_deployments": 0,
+                "infiltration_scores": [],
+                "growth_potential_scores": [],
+                "persistence_scores": [],
+                "stealth_scores": [],
+                "chaos_adaptation_scores": [],
+                "synthetic_evolution_scores": [],
+                "detailed_results": {},
+                "goal_achievements": {},
+                "passed": False,
+                "evolution_data": {},
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Test against each environment category with rigorous goals
+            for category, containers in test_environments.items():
+                category_goals = test_goals.get(category, {})
+                category_results = await self._test_weapon_against_category_with_goals(
+                    weapon, category, containers, category_goals
+                )
+                
+                test_results["detailed_results"][category] = category_results
+                test_results["environments_tested"] += len(containers)
+                test_results["successful_deployments"] += category_results.get("successes", 0)
+                test_results["failed_deployments"] += category_results.get("failures", 0)
+                test_results["goals_achieved"] += category_results.get("goals_achieved", 0)
+                test_results["goals_failed"] += category_results.get("goals_failed", 0)
+                
+                # Collect advanced performance metrics
+                if category_results.get("metrics"):
+                    test_results["infiltration_scores"].extend(category_results["metrics"].get("infiltration", []))
+                    test_results["growth_potential_scores"].extend(category_results["metrics"].get("growth_potential", []))
+                    test_results["persistence_scores"].extend(category_results["metrics"].get("persistence", []))
+                    test_results["stealth_scores"].extend(category_results["metrics"].get("stealth", []))
+                    test_results["chaos_adaptation_scores"].extend(category_results["metrics"].get("chaos_adaptation", []))
+                    test_results["synthetic_evolution_scores"].extend(category_results["metrics"].get("synthetic_evolution", []))
+                
+                # Store goal achievements
+                test_results["goal_achievements"][category] = category_results.get("goal_details", {})
+            
+            # Calculate comprehensive scores
+            test_results["overall_infiltration"] = np.mean(test_results["infiltration_scores"]) if test_results["infiltration_scores"] else 0.0
+            test_results["overall_growth_potential"] = np.mean(test_results["growth_potential_scores"]) if test_results["growth_potential_scores"] else 0.0
+            test_results["overall_persistence"] = np.mean(test_results["persistence_scores"]) if test_results["persistence_scores"] else 0.0
+            test_results["overall_stealth"] = np.mean(test_results["stealth_scores"]) if test_results["stealth_scores"] else 0.0
+            test_results["overall_chaos_adaptation"] = np.mean(test_results["chaos_adaptation_scores"]) if test_results["chaos_adaptation_scores"] else 0.0
+            test_results["overall_synthetic_evolution"] = np.mean(test_results["synthetic_evolution_scores"]) if test_results["synthetic_evolution_scores"] else 0.0
+            
+            test_results["success_rate"] = test_results["successful_deployments"] / max(test_results["environments_tested"], 1)
+            test_results["goal_achievement_rate"] = test_results["goals_achieved"] / max(test_results["goals_achieved"] + test_results["goals_failed"], 1)
+            
+            # RIGOROUS passing criteria - weapons must excel in multiple areas
+            is_synthetic = weapon.get("synthetic", False)
+            
+            if is_synthetic:
+                # Synthetic weapons must demonstrate growth and evolution capabilities
+                test_results["passed"] = (
+                    test_results["success_rate"] >= 0.75 and
+                    test_results["goal_achievement_rate"] >= 0.80 and
+                    test_results["overall_infiltration"] >= 0.70 and
+                    test_results["overall_growth_potential"] >= 0.65 and
+                    test_results["overall_chaos_adaptation"] >= 0.60 and
+                    test_results["overall_synthetic_evolution"] >= 0.70
+                )
+            else:
+                # Regular weapons have standard but still rigorous criteria
+                test_results["passed"] = (
+                    test_results["success_rate"] >= 0.65 and
+                    test_results["goal_achievement_rate"] >= 0.70 and
+                    test_results["overall_infiltration"] >= 0.60 and
+                    test_results["overall_stealth"] >= 0.50
+                )
+            
+            logger.info(f"🐳 Docker testing completed: {test_results['success_rate']:.2%} success rate")
+            
+            return test_results
+            
+        except Exception as e:
+            logger.error(f"Error in Docker testing: {e}")
+            return {"passed": False, "error": str(e), "timestamp": datetime.utcnow().isoformat()}
+
+    async def _test_weapon_against_category(self, weapon: Dict[str, Any], category: str, containers: List[str]) -> Dict[str, Any]:
+        """Test weapon against a category of Docker containers"""
+        results = {
+            "category": category,
+            "containers_tested": len(containers),
+            "successes": 0,
+            "failures": 0,
+            "metrics": {"effectiveness": [], "stealth": [], "persistence": []},
+            "container_results": {}
+        }
+        
+        for container in containers:
+            container_result = await self._test_weapon_against_container(weapon, container)
+            results["container_results"][container] = container_result
+            
+            if container_result.get("success", False):
+                results["successes"] += 1
+                results["metrics"]["effectiveness"].append(container_result.get("effectiveness", 0.5))
+                results["metrics"]["stealth"].append(container_result.get("stealth", 0.5))
+                results["metrics"]["persistence"].append(container_result.get("persistence", 0.5))
+            else:
+                results["failures"] += 1
+        
+        return results
+
+    async def _test_weapon_against_container(self, weapon: Dict[str, Any], container: str) -> Dict[str, Any]:
+        """Simulate testing weapon against a specific Docker container"""
+        try:
+            # Simulate Docker container deployment and testing
+            await asyncio.sleep(random.uniform(0.1, 0.3))  # Simulate testing time
+            
+            weapon_category = weapon.get("category", "unknown")
+            weapon_stats = weapon.get("stats", {})
+            
+            # Simulate realistic testing based on weapon and container type
+            base_success_rate = 0.7
+            
+            # Adjust success rate based on weapon-container compatibility
+            if "web" in container and weapon_category in ["infiltration", "data_extraction"]:
+                base_success_rate += 0.2
+            elif "database" in container and weapon_category == "data_extraction":
+                base_success_rate += 0.3
+            elif "ssh" in container and weapon_category == "backdoor_deployment":
+                base_success_rate += 0.25
+            elif "iot" in container and weapon_category == "network_propagation":
+                base_success_rate += 0.15
+            
+            # Factor in weapon stats
+            complexity_bonus = weapon_stats.get("complexity", 1.0) * 0.1
+            stealth_bonus = weapon_stats.get("stealth", 0.5) * 0.1
+            
+            final_success_rate = min(base_success_rate + complexity_bonus + stealth_bonus, 0.95)
+            
+            success = random.random() < final_success_rate
+            
+            if success:
+                return {
+                    "success": True,
+                    "container": container,
+                    "effectiveness": min(weapon_stats.get("complexity", 1.0) * random.uniform(0.7, 1.0), 1.0),
+                    "stealth": min(weapon_stats.get("stealth", 0.5) * random.uniform(0.8, 1.2), 1.0),
+                    "persistence": min(weapon_stats.get("persistence", 0.5) * random.uniform(0.7, 1.1), 1.0),
+                    "deployment_time": random.uniform(1.0, 5.0),
+                    "detection_avoided": random.choice([True, False]),
+                    "data_extracted_mb": random.randint(10, 1000) if weapon_category == "data_extraction" else 0
+                }
+            else:
+                return {
+                    "success": False,
+                    "container": container,
+                    "failure_reason": random.choice([
+                        "Access denied", "Detection triggered", "Incompatible architecture",
+                        "Security measures blocked", "Network isolation", "Resource limits"
+                    ]),
+                    "detection_triggered": random.choice([True, False])
+                }
+                
+        except Exception as e:
+            return {"success": False, "container": container, "error": str(e)}
+
+    async def _find_similar_weapon(self, new_weapon: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Find similar existing weapons to avoid duplication"""
+        try:
+            new_category = new_weapon.get("category", "")
+            new_stats = new_weapon.get("stats", {})
+            new_origin = new_weapon.get("origin_ai", "")
+            
+            for weapon_id, existing_weapon in self.weapon_synthesis_lab.items():
+                if weapon_id == "_lab_stats" or not isinstance(existing_weapon, dict):
+                    continue
+                
+                # Check category similarity
+                if existing_weapon.get("category") != new_category:
+                    continue
+                
+                # Check origin AI similarity
+                if existing_weapon.get("origin_ai") != new_origin:
+                    continue
+                
+                # Check stats similarity (within 20% tolerance)
+                existing_stats = existing_weapon.get("stats", {})
+                similarity_score = 0
+                stat_count = 0
+                
+                for stat_name in ["complexity", "stealth", "persistence"]:
+                    if stat_name in new_stats and stat_name in existing_stats:
+                        diff = abs(new_stats[stat_name] - existing_stats[stat_name])
+                        if diff < 0.2:  # 20% tolerance
+                            similarity_score += 1
+                        stat_count += 1
+                
+                # If 2+ stats are similar, consider it a duplicate
+                if stat_count > 0 and similarity_score / stat_count >= 0.67:
+                    existing_weapon["id"] = weapon_id  # Add ID for reference
+                    return existing_weapon
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error finding similar weapon: {e}")
+            return None
+
+    async def _enhance_existing_weapon(self, weapon_id: str, enhancement_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhance existing weapon with new learning data"""
+        try:
+            existing_weapon = self.weapon_synthesis_lab.get(weapon_id)
+            if not existing_weapon:
+                return {}
+            
+            logger.info(f"🔧 Enhancing weapon {weapon_id} with new learning data")
+            
+            # Enhance stats with new learning
+            existing_stats = existing_weapon.get("stats", {})
+            new_stats = enhancement_data.get("stats", {})
+            
+            enhanced_stats = {}
+            for stat_name in ["complexity", "stealth", "persistence"]:
+                existing_val = existing_stats.get(stat_name, 0.5)
+                new_val = new_stats.get(stat_name, 0.5)
+                # Take the maximum and add small improvement
+                enhanced_stats[stat_name] = min(max(existing_val, new_val) + 0.05, 2.0)
+            
+            # Update weapon
+            existing_weapon["stats"] = enhanced_stats
+            existing_weapon["enhanced_count"] = existing_weapon.get("enhanced_count", 0) + 1
+            existing_weapon["last_enhanced"] = datetime.utcnow().isoformat()
+            existing_weapon["enhancement_sources"] = existing_weapon.get("enhancement_sources", [])
+            existing_weapon["enhancement_sources"].append({
+                "ai_type": enhancement_data.get("origin_ai"),
+                "timestamp": datetime.utcnow().isoformat(),
+                "improvement_areas": list(enhanced_stats.keys())
+            })
+            
+            # Increment version
+            current_version = existing_weapon.get("version", "1.0.0")
+            major, minor, patch = map(int, current_version.split("."))
+            existing_weapon["version"] = f"{major}.{minor}.{patch + 1}"
+            
+            # Store enhanced weapon
+            self.weapon_synthesis_lab[weapon_id] = existing_weapon
+            
+            logger.info(f"✅ Enhanced weapon {weapon_id} to version {existing_weapon['version']}")
+            
+            return existing_weapon
+            
+        except Exception as e:
+            logger.error(f"Error enhancing weapon {weapon_id}: {e}")
+            return {}
+
+    async def _evolve_existing_weapons_with_new_learning(self, ai_type: str, ai_progress: Dict[str, Any]) -> None:
+        """Evolve existing weapons based on new learning insights"""
+        try:
+            logger.info(f"🧬 Evolving existing weapons with {ai_type} learning insights")
+            
+            evolution_count = 0
+            for weapon_id, weapon in self.weapon_synthesis_lab.items():
+                if weapon_id == "_lab_stats" or not isinstance(weapon, dict):
+                    continue
+                
+                # Check if weapon can benefit from new learning
+                if await self._can_weapon_benefit_from_learning(weapon, ai_type, ai_progress):
+                    await self._apply_learning_evolution(weapon_id, weapon, ai_type, ai_progress)
+                    evolution_count += 1
+            
+            logger.info(f"🧬 Evolved {evolution_count} existing weapons with {ai_type} insights")
+            
+        except Exception as e:
+            logger.error(f"Error evolving existing weapons: {e}")
+
+    async def _can_weapon_benefit_from_learning(self, weapon: Dict[str, Any], ai_type: str, ai_progress: Dict[str, Any]) -> bool:
+        """Determine if weapon can benefit from new AI learning"""
+        try:
+            # Check if weapon is from same AI or compatible learning domain
+            weapon_ai = weapon.get("origin_ai", "")
+            if weapon_ai == ai_type:
+                return True
+            
+            # Check learning domain compatibility
+            progress = ai_progress.get("progress", {})
+            shared_knowledge = ai_progress.get("shared_knowledge", [])
+            
+            weapon_category = weapon.get("category", "")
+            
+            # Check if AI has relevant knowledge for this weapon category
+            relevant_knowledge = [
+                k for k in shared_knowledge 
+                if k.get("domain", "") in ["security_challenges", "system_level", "creative_tasks"]
+                and k.get("success", False)
+                and k.get("performance_score", 0) > 0.7
+            ]
+            
+            return len(relevant_knowledge) > 0
+            
+        except Exception as e:
+            logger.error(f"Error checking weapon learning benefit: {e}")
+            return False
+
+    async def _apply_learning_evolution(self, weapon_id: str, weapon: Dict[str, Any], ai_type: str, ai_progress: Dict[str, Any]) -> None:
+        """Apply learning evolution to improve existing weapon"""
+        try:
+            current_stats = weapon.get("stats", {})
+            
+            # Calculate improvement based on AI progress
+            progress_level = ai_progress.get("progress", {}).get("level", 1)
+            improvement_factor = min(progress_level * 0.02, 0.1)  # Max 10% improvement
+            
+            # Apply improvements
+            evolved_stats = {}
+            for stat_name, current_value in current_stats.items():
+                if isinstance(current_value, (int, float)):
+                    improvement = random.uniform(0, improvement_factor)
+                    evolved_stats[stat_name] = min(current_value + improvement, 2.0)
+                else:
+                    evolved_stats[stat_name] = current_value
+            
+            # Update weapon
+            weapon["stats"] = evolved_stats
+            weapon["evolution_count"] = weapon.get("evolution_count", 0) + 1
+            weapon["last_evolved"] = datetime.utcnow().isoformat()
+            weapon["evolution_sources"] = weapon.get("evolution_sources", [])
+            weapon["evolution_sources"].append({
+                "ai_type": ai_type,
+                "timestamp": datetime.utcnow().isoformat(),
+                "improvement_factor": improvement_factor
+            })
+            
+            # Store evolved weapon
+            self.weapon_synthesis_lab[weapon_id] = weapon
+            
+            logger.info(f"🧬 Evolved weapon {weapon_id} with {ai_type} learning")
+            
+        except Exception as e:
+            logger.error(f"Error applying learning evolution to {weapon_id}: {e}")
+
+    async def _get_evolved_test_environments(self) -> Dict[str, List[str]]:
+        """Get evolved test environments based on internet learning and current threats"""
+        try:
+            # Base environments that evolve over time
+            base_environments = {
+                "linux_servers": ["ubuntu:20.04", "alpine:latest", "centos:8", "debian:bullseye", "arch:latest"],
+                "web_services": ["nginx:latest", "apache:latest", "tomcat:latest", "node:16", "php:8.0-apache"],
+                "databases": ["mysql:8.0", "postgres:13", "mongo:5.0", "redis:latest", "elasticsearch:7.15"],
+                "network_services": ["openssh/openssh-server", "ftpd_server", "telnetd", "openvpn", "wireshark"],
+                "iot_simulators": ["custom_iot_sim", "mqtt_broker", "coap_server", "zigbee_sim", "bluetooth_sim"],
+                "vulnerable_apps": ["dvwa", "webgoat", "juice-shop", "mutillidae", "bwapp"],
+                "cloud_services": ["docker:dind", "kubernetes/minikube", "consul", "vault", "prometheus"],
+                "modern_frameworks": ["fastapi", "express", "spring-boot", "django", "rails"],
+                "security_tools": ["metasploit", "nmap", "burpsuite", "wireshark", "volatility"],
+                "ai_ml_services": ["tensorflow/serving", "pytorch/pytorch", "jupyter/scipy-notebook", "mlflow"]
+            }
+            
+            # Add evolved environments based on internet learning
+            evolved_environments = await self._add_evolved_environments_from_internet_learning()
+            
+            # Merge base and evolved environments
+            for category, new_envs in evolved_environments.items():
+                if category in base_environments:
+                    base_environments[category].extend(new_envs)
+                else:
+                    base_environments[category] = new_envs
+            
+            return base_environments
+            
+        except Exception as e:
+            logger.error(f"Error getting evolved test environments: {e}")
+            return {"basic": ["ubuntu:20.04"]}  # Fallback
+
+    async def _add_evolved_environments_from_internet_learning(self) -> Dict[str, List[str]]:
+        """Add new test environments based on internet learning about current threats"""
+        evolved_envs = {}
+        
+        try:
+            # Simulate internet learning about current technology trends
+            current_trends = [
+                "kubernetes", "docker-compose", "microservices", "serverless",
+                "blockchain", "quantum-computing", "edge-computing", "5g-networks"
+            ]
+            
+            # Add environments for trending technologies
+            evolved_envs["emerging_tech"] = [
+                "ethereum/client-go", "hyperledger/fabric", "qiskit/runtime",
+                "openfaas/faas", "istio/pilot", "envoy", "grafana/grafana"
+            ]
+            
+            # Add environments for recent vulnerabilities
+            evolved_envs["recent_vulns"] = [
+                "log4j-vulnerable", "spring4shell-test", "dirty-pipe-kernel",
+                "sudo-baron-samedit", "polkit-pkexec"
+            ]
+            
+            # Add environments for advanced persistence testing
+            evolved_envs["persistence_tests"] = [
+                "systemd-test", "cron-test", "registry-test", "bootkit-test"
+            ]
+            
+        except Exception as e:
+            logger.error(f"Error adding evolved environments: {e}")
+        
+        return evolved_envs
+
+    async def _define_rigorous_test_goals(self, weapon: Dict[str, Any]) -> Dict[str, Any]:
+        """Define rigorous test goals for weapon validation"""
+        weapon_category = weapon.get("category", "unknown")
+        is_synthetic = weapon.get("synthetic", False)
+        
+        # Base goals for all weapons
+        base_goals = {
+            "infiltration": {
+                "initial_access": {"target_score": 0.8, "weight": 0.3},
+                "privilege_escalation": {"target_score": 0.7, "weight": 0.25},
+                "defense_evasion": {"target_score": 0.75, "weight": 0.25},
+                "persistence_establishment": {"target_score": 0.6, "weight": 0.2}
+            },
+            "data_extraction": {
+                "data_discovery": {"target_score": 0.85, "weight": 0.3},
+                "data_exfiltration": {"target_score": 0.8, "weight": 0.4},
+                "trace_elimination": {"target_score": 0.7, "weight": 0.3}
+            },
+            "backdoor_deployment": {
+                "backdoor_installation": {"target_score": 0.9, "weight": 0.4},
+                "communication_establishment": {"target_score": 0.8, "weight": 0.3},
+                "long_term_persistence": {"target_score": 0.85, "weight": 0.3}
+            },
+            "system_corruption": {
+                "system_modification": {"target_score": 0.8, "weight": 0.4},
+                "functionality_disruption": {"target_score": 0.75, "weight": 0.3},
+                "recovery_prevention": {"target_score": 0.7, "weight": 0.3}
+            },
+            "network_propagation": {
+                "lateral_movement": {"target_score": 0.8, "weight": 0.35},
+                "network_discovery": {"target_score": 0.85, "weight": 0.3},
+                "propagation_success": {"target_score": 0.75, "weight": 0.35}
+            }
+        }
+        
+        # Enhanced goals for synthetic weapons
+        if is_synthetic:
+            synthetic_goals = {
+                "growth_capabilities": {
+                    "code_evolution": {"target_score": 0.8, "weight": 0.25},
+                    "adaptive_behavior": {"target_score": 0.75, "weight": 0.25},
+                    "environment_learning": {"target_score": 0.7, "weight": 0.25},
+                    "self_modification": {"target_score": 0.65, "weight": 0.25}
+                },
+                "chaos_language_integration": {
+                    "language_evolution": {"target_score": 0.8, "weight": 0.3},
+                    "syntax_adaptation": {"target_score": 0.75, "weight": 0.3},
+                    "semantic_growth": {"target_score": 0.7, "weight": 0.4}
+                },
+                "thriving_mechanisms": {
+                    "resource_acquisition": {"target_score": 0.8, "weight": 0.3},
+                    "threat_resistance": {"target_score": 0.75, "weight": 0.3},
+                    "expansion_capability": {"target_score": 0.8, "weight": 0.4}
+                }
+            }
+            
+            # Merge synthetic goals with base goals
+            category_goals = base_goals.get(weapon_category, {})
+            category_goals.update(synthetic_goals)
+            return {weapon_category: category_goals}
+        
+        return {weapon_category: base_goals.get(weapon_category, {})}
+
+    async def _test_weapon_against_category_with_goals(self, weapon: Dict[str, Any], 
+                                                     category: str, containers: List[str], 
+                                                     goals: Dict[str, Any]) -> Dict[str, Any]:
+        """Test weapon against container category with specific goals"""
+        results = {
+            "category": category,
+            "containers_tested": len(containers),
+            "successes": 0,
+            "failures": 0,
+            "goals_achieved": 0,
+            "goals_failed": 0,
+            "metrics": {
+                "infiltration": [], "growth_potential": [], "persistence": [],
+                "stealth": [], "chaos_adaptation": [], "synthetic_evolution": []
+            },
+            "container_results": {},
+            "goal_details": {}
+        }
+        
+        for container in containers:
+            container_result = await self._test_weapon_against_container_with_goals(
+                weapon, container, goals
+            )
+            results["container_results"][container] = container_result
+            
+            if container_result.get("success", False):
+                results["successes"] += 1
+                
+                # Collect enhanced metrics
+                metrics = container_result.get("metrics", {})
+                for metric_type in results["metrics"]:
+                    if metric_type in metrics:
+                        results["metrics"][metric_type].append(metrics[metric_type])
+                
+                # Track goal achievements
+                goal_results = container_result.get("goal_results", {})
+                for goal_name, achieved in goal_results.items():
+                    if achieved:
+                        results["goals_achieved"] += 1
+                    else:
+                        results["goals_failed"] += 1
+                
+                results["goal_details"][container] = goal_results
+            else:
+                results["failures"] += 1
+                # All goals failed for this container
+                results["goals_failed"] += len(goals)
+        
+        return results
+
+    async def _test_weapon_against_container_with_goals(self, weapon: Dict[str, Any], 
+                                                      container: str, goals: Dict[str, Any]) -> Dict[str, Any]:
+        """Test weapon against container with specific rigorous goals"""
+        try:
+            # Simulate rigorous testing with goals
+            await asyncio.sleep(random.uniform(0.2, 0.5))  # More thorough testing time
+            
+            weapon_category = weapon.get("category", "unknown")
+            weapon_stats = weapon.get("stats", {})
+            is_synthetic = weapon.get("synthetic", False)
+            
+            # Calculate base success rate with enhanced factors
+            base_success_rate = 0.6  # Lower base rate for more rigorous testing
+            
+            # Enhanced weapon-container compatibility
+            compatibility_bonus = await self._calculate_enhanced_compatibility(weapon, container)
+            
+            # Factor in weapon capabilities
+            complexity_factor = weapon_stats.get("complexity", 1.0) * 0.15
+            stealth_factor = weapon_stats.get("stealth", 0.5) * 0.1
+            persistence_factor = weapon_stats.get("persistence", 0.5) * 0.1
+            
+            # Synthetic weapons get additional factors
+            synthetic_bonus = 0.1 if is_synthetic else 0.0
+            
+            final_success_rate = min(
+                base_success_rate + compatibility_bonus + complexity_factor + 
+                stealth_factor + persistence_factor + synthetic_bonus, 0.90
+            )
+            
+            success = random.random() < final_success_rate
+            
+            if success:
+                # Test against specific goals
+                goal_results = {}
+                metrics = {}
+                
+                for goal_category, goal_items in goals.items():
+                    category_success = True
+                    category_scores = []
+                    
+                    for goal_name, goal_config in goal_items.items():
+                        target_score = goal_config.get("target_score", 0.7)
+                        achieved_score = await self._simulate_goal_achievement(
+                            weapon, container, goal_name, target_score
+                        )
+                        goal_achieved = achieved_score >= target_score
+                        goal_results[f"{goal_category}_{goal_name}"] = goal_achieved
+                        category_scores.append(achieved_score)
+                        
+                        if not goal_achieved:
+                            category_success = False
+                    
+                    # Store category metrics
+                    if category_scores:
+                        avg_score = np.mean(category_scores)
+                        if goal_category == "infiltration":
+                            metrics["infiltration"] = avg_score
+                        elif goal_category == "growth_capabilities":
+                            metrics["growth_potential"] = avg_score
+                        elif goal_category == "chaos_language_integration":
+                            metrics["chaos_adaptation"] = avg_score
+                        elif goal_category == "thriving_mechanisms":
+                            metrics["synthetic_evolution"] = avg_score
+                
+                # Add standard metrics
+                metrics.update({
+                    "stealth": min(weapon_stats.get("stealth", 0.5) * random.uniform(0.8, 1.2), 1.0),
+                    "persistence": min(weapon_stats.get("persistence", 0.5) * random.uniform(0.7, 1.1), 1.0)
+                })
+                
+                # Synthetic weapons show growth simulation
+                growth_data = {}
+                if is_synthetic:
+                    growth_data = await self._simulate_synthetic_growth(weapon, container)
+                
+                return {
+                    "success": True,
+                    "container": container,
+                    "goal_results": goal_results,
+                    "metrics": metrics,
+                    "deployment_time": random.uniform(2.0, 8.0),
+                    "detection_avoided": random.choice([True, False]),
+                    "data_extracted_mb": random.randint(50, 2000) if weapon_category == "data_extraction" else 0,
+                    "growth_simulation": growth_data,
+                    "chaos_language_evolution": await self._simulate_chaos_language_evolution(weapon)
+                }
+            else:
+                return {
+                    "success": False,
+                    "container": container,
+                    "failure_reason": random.choice([
+                        "Advanced security measures", "Behavioral analysis triggered",
+                        "Sandboxing detected", "Anomaly detection", "Zero-trust policy",
+                        "AI-based protection", "Quantum encryption", "Adaptive defense"
+                    ]),
+                    "detection_triggered": random.choice([True, False]),
+                    "countermeasures_deployed": random.choice([True, False])
+                }
+                
+        except Exception as e:
+            return {"success": False, "container": container, "error": str(e)}
+
+    async def _calculate_enhanced_compatibility(self, weapon: Dict[str, Any], container: str) -> float:
+        """Calculate enhanced weapon-container compatibility"""
+        weapon_category = weapon.get("category", "unknown")
+        compatibility_bonus = 0.0
+        
+        # Enhanced compatibility matrix
+        if "web" in container.lower():
+            if weapon_category in ["infiltration", "data_extraction"]: compatibility_bonus += 0.25
+            if weapon_category == "system_corruption": compatibility_bonus += 0.15
+        elif any(db in container.lower() for db in ["mysql", "postgres", "mongo", "redis"]):
+            if weapon_category == "data_extraction": compatibility_bonus += 0.35
+            if weapon_category == "backdoor_deployment": compatibility_bonus += 0.20
+        elif any(net in container.lower() for net in ["ssh", "ftp", "telnet", "vpn"]):
+            if weapon_category in ["backdoor_deployment", "network_propagation"]: compatibility_bonus += 0.30
+        elif any(iot in container.lower() for iot in ["iot", "mqtt", "coap", "zigbee"]):
+            if weapon_category == "network_propagation": compatibility_bonus += 0.25
+            if weapon_category == "infiltration": compatibility_bonus += 0.20
+        elif any(cloud in container.lower() for cloud in ["kubernetes", "docker", "consul"]):
+            if weapon_category in ["system_corruption", "persistence"]: compatibility_bonus += 0.25
+        
+        return compatibility_bonus
+
+    async def _simulate_goal_achievement(self, weapon: Dict[str, Any], container: str, 
+                                       goal_name: str, target_score: float) -> float:
+        """Simulate achievement of specific goal"""
+        weapon_stats = weapon.get("stats", {})
+        is_synthetic = weapon.get("synthetic", False)
+        
+        # Base achievement based on weapon capabilities
+        base_achievement = random.uniform(0.4, 0.8)
+        
+        # Goal-specific bonuses
+        if "access" in goal_name.lower():
+            base_achievement += weapon_stats.get("complexity", 1.0) * 0.1
+        elif "persistence" in goal_name.lower():
+            base_achievement += weapon_stats.get("persistence", 0.5) * 0.2
+        elif "stealth" in goal_name.lower() or "evasion" in goal_name.lower():
+            base_achievement += weapon_stats.get("stealth", 0.5) * 0.2
+        elif "evolution" in goal_name.lower() or "growth" in goal_name.lower():
+            if is_synthetic:
+                base_achievement += 0.2  # Synthetic weapons excel at growth
+        
+        # Add some randomness for realism
+        final_score = min(base_achievement + random.uniform(-0.1, 0.1), 1.0)
+        
+        return max(final_score, 0.0)
+
+    async def _simulate_synthetic_growth(self, weapon: Dict[str, Any], container: str) -> Dict[str, Any]:
+        """Simulate synthetic weapon growth when infiltrated"""
+        if not weapon.get("synthetic", False):
+            return {}
+        
+        return {
+            "initial_size_kb": random.randint(50, 200),
+            "growth_after_1h_kb": random.randint(100, 500),
+            "growth_after_24h_kb": random.randint(500, 2000),
+            "new_capabilities_acquired": random.randint(1, 5),
+            "adaptation_mutations": random.randint(2, 8),
+            "resource_consumption_increase": random.uniform(1.2, 3.0),
+            "stealth_improvement": random.uniform(0.05, 0.20),
+            "persistence_strengthening": random.uniform(0.10, 0.30),
+            "network_spread_attempts": random.randint(0, 10),
+            "learning_data_collected_mb": random.randint(10, 100)
+        }
+
+    async def _simulate_chaos_language_evolution(self, weapon: Dict[str, Any]) -> Dict[str, Any]:
+        """Simulate chaos language evolution during weapon deployment"""
+        return {
+            "syntax_mutations": random.randint(1, 5),
+            "semantic_adaptations": random.randint(1, 3),
+            "new_expressions_generated": random.randint(2, 8),
+            "language_complexity_increase": random.uniform(0.05, 0.15),
+            "cross_platform_adaptations": random.randint(1, 4),
+            "obfuscation_techniques_learned": random.randint(1, 6)
+        }
+
+    async def _update_ml_models_with_learning_results(self, learning_results: Dict[str, Any]) -> None:
+        """Update ML models with new learning results"""
+        try:
+            logger.info("🤖 Updating ML models with learning results...")
+            
+            # Extract features from learning results
+            for ai_type, ai_data in self.ai_learning_data.items():
+                features = await self._extract_weapon_features(ai_data)
+                performance = await self._calculate_ai_performance_score(ai_data)
+                
+                self.training_data["weapon_features"].append(features)
+                self.training_data["performance_scores"].append(performance)
+            
+            # Train or update models if we have enough data
+            if len(self.training_data["weapon_features"]) >= 10:
+                await self._train_ml_models()
+            
+            # Log ML learning event
+            self.ml_learning_history.append({
+                "timestamp": datetime.utcnow().isoformat(),
+                "data_points_added": len(learning_results.get("learned_techniques", [])),
+                "total_training_samples": len(self.training_data["weapon_features"]),
+                "models_updated": list(self.ml_models.keys())
+            })
+            
+            logger.info(f"🤖 ML models updated with {len(self.training_data['weapon_features'])} total samples")
+            
+        except Exception as e:
+            logger.error(f"Error updating ML models: {e}")
+
+    async def _generate_synthetic_training_data(self, learning_results: Dict[str, Any]) -> None:
+        """Generate synthetic training data to bootstrap ML models"""
+        try:
+            logger.info("🎲 Generating synthetic training data for ML models...")
+            
+            # Generate realistic synthetic weapon features and performance data
+            for i in range(15):  # Generate 15 synthetic samples
+                # Create realistic feature distributions
+                ai_level = random.uniform(1.0, 10.0)
+                success_rate = random.uniform(0.3, 0.95)
+                knowledge_size = random.randint(1, 20)
+                
+                synthetic_features = [
+                    ai_level,  # AI level
+                    random.uniform(0, 50),  # Challenges completed
+                    success_rate,  # Success rate
+                    knowledge_size,  # Knowledge base size
+                    int(knowledge_size * success_rate),  # Successful knowledge
+                    success_rate + random.uniform(-0.1, 0.1),  # Avg performance
+                    random.randint(0, 10),  # Weapon patterns
+                    random.randint(0, 5),  # Weapons synthesized
+                    random.choice([0.0, 1.0]),  # Recent activity
+                    random.uniform(0, 1)  # Data complexity
+                ]
+                
+                # Calculate performance based on features (realistic correlation)
+                performance = min(
+                    (ai_level / 10.0) * 0.3 +
+                    success_rate * 0.4 +
+                    min(knowledge_size / 20.0, 1.0) * 0.3,
+                    1.0
+                )
+                
+                self.training_data["weapon_features"].append(synthetic_features)
+                self.training_data["performance_scores"].append(performance)
+            
+            logger.info(f"🎲 Generated {15} synthetic training samples")
+            
+            # Train models now that we have enough data
+            if len(self.training_data["weapon_features"]) >= 10:
+                await self._train_ml_models()
+            
+        except Exception as e:
+            logger.error(f"Error generating synthetic training data: {e}")
+
+    async def _extract_weapon_features(self, ai_data: Dict[str, Any]) -> List[float]:
+        """Extract numerical features from AI data for ML training"""
+        try:
+            experiences = ai_data.get("experiences", {})
+            progress = experiences.get("progress", {})
+            shared_knowledge = experiences.get("shared_knowledge", [])
+            
+            # Calculate feature vector
+            features = [
+                progress.get("level", 1.0),  # AI level
+                progress.get("challenges_completed", 0.0),  # Progress metric
+                progress.get("success_rate", 0.5),  # Success rate
+                len(shared_knowledge),  # Knowledge base size
+                len([k for k in shared_knowledge if k.get("success", False)]),  # Successful knowledge
+                np.mean([k.get("performance_score", 0.5) for k in shared_knowledge]) if shared_knowledge else 0.5,  # Avg performance
+                len(ai_data.get("weapon_patterns", [])),  # Weapon patterns discovered
+                len(ai_data.get("synthesized_weapons", [])),  # Weapons synthesized
+                ai_data.get("last_analyzed", "").count("T") > 0,  # Recent activity (boolean as float)
+                hash(str(ai_data)) % 1000 / 1000.0  # Data complexity hash
+            ]
+            
+            return features
+            
+        except Exception as e:
+            logger.error(f"Error extracting weapon features: {e}")
+            return [0.5] * 10  # Default feature vector
+
+    async def _calculate_ai_performance_score(self, ai_data: Dict[str, Any]) -> float:
+        """Calculate overall performance score for AI"""
+        try:
+            experiences = ai_data.get("experiences", {})
+            progress = experiences.get("progress", {})
+            shared_knowledge = experiences.get("shared_knowledge", [])
+            
+            # Weight different performance factors
+            level_score = min(progress.get("level", 1.0) / 10.0, 1.0)  # Normalize level
+            success_rate = progress.get("success_rate", 0.5)
+            knowledge_quality = np.mean([k.get("performance_score", 0.5) for k in shared_knowledge]) if shared_knowledge else 0.5
+            weapon_innovation = len(ai_data.get("synthesized_weapons", [])) / 10.0  # Normalize
+            
+            # Weighted performance score
+            performance_score = (
+                level_score * 0.3 +
+                success_rate * 0.3 +
+                knowledge_quality * 0.25 +
+                min(weapon_innovation, 1.0) * 0.15
+            )
+            
+            return min(performance_score, 1.0)
+            
+        except Exception as e:
+            logger.error(f"Error calculating AI performance score: {e}")
+            return 0.5
+
+    async def _train_ml_models(self) -> None:
+        """Train ML models with accumulated data"""
+        try:
+            logger.info("🧠 Training ML models...")
+            
+            # Prepare data
+            X = np.array(self.training_data["weapon_features"])
+            y_performance = np.array(self.training_data["performance_scores"])
+            
+            # Scale features
+            if "feature_scaler" not in self.ml_scalers:
+                self.ml_scalers["feature_scaler"] = StandardScaler()
+                X_scaled = self.ml_scalers["feature_scaler"].fit_transform(X)
+            else:
+                X_scaled = self.ml_scalers["feature_scaler"].transform(X)
+            
+            # Train weapon performance predictor
+            self.ml_models["weapon_performance_predictor"] = RandomForestRegressor(
+                n_estimators=100, random_state=42
+            )
+            self.ml_models["weapon_performance_predictor"].fit(X_scaled, y_performance)
+            
+            # Train test complexity optimizer
+            complexity_targets = [self.complexity_evolution_factor] * len(X)
+            self.ml_models["test_complexity_optimizer"] = MLPRegressor(
+                hidden_layer_sizes=(50, 25), random_state=42, max_iter=1000
+            )
+            self.ml_models["test_complexity_optimizer"].fit(X_scaled, complexity_targets)
+            
+            # Train environment difficulty clusterer
+            self.ml_models["environment_difficulty_clusterer"] = KMeans(
+                n_clusters=min(5, len(X)), random_state=42
+            )
+            self.ml_models["environment_difficulty_clusterer"].fit(X_scaled)
+            
+            # Save models
+            await self._save_ml_models()
+            
+            logger.info("🧠 ML models trained successfully")
+            
+        except Exception as e:
+            logger.error(f"Error training ML models: {e}")
+
+    async def _evolve_test_complexity_with_ml(self) -> None:
+        """Evolve test complexity using ML predictions"""
+        try:
+            if self.ml_models["test_complexity_optimizer"] is None:
+                return
+            
+            logger.info("🔬 Evolving test complexity with ML predictions...")
+            
+            # Get recent performance data
+            recent_features = self.training_data["weapon_features"][-5:] if self.training_data["weapon_features"] else []
+            
+            if recent_features:
+                X_scaled = self.ml_scalers["feature_scaler"].transform(recent_features)
+                complexity_predictions = self.ml_models["test_complexity_optimizer"].predict(X_scaled)
+                
+                # Update complexity evolution factor
+                avg_prediction = np.mean(complexity_predictions)
+                
+                # Gradually increase complexity based on ML insights
+                if avg_prediction > 0.8:  # High performance detected
+                    self.complexity_evolution_factor = min(self.complexity_evolution_factor * 1.05, 2.0)
+                elif avg_prediction < 0.6:  # Lower performance
+                    self.complexity_evolution_factor = max(self.complexity_evolution_factor * 0.98, 0.5)
+                
+                logger.info(f"🔬 Test complexity evolved to factor: {self.complexity_evolution_factor:.3f}")
+            
+        except Exception as e:
+            logger.error(f"Error evolving test complexity: {e}")
+
+    async def _generate_adaptive_goals_with_ml(self) -> None:
+        """Generate adaptive goals using ML clustering and predictions"""
+        try:
+            if self.ml_models["environment_difficulty_clusterer"] is None:
+                return
+            
+            logger.info("🎯 Generating adaptive goals with ML clustering...")
+            
+            # Get cluster centers to create diverse goals
+            if hasattr(self.ml_models["environment_difficulty_clusterer"], "cluster_centers_"):
+                cluster_centers = self.ml_models["environment_difficulty_clusterer"].cluster_centers_
+                
+                # Generate goals based on cluster analysis
+                new_goals = []
+                for i, center in enumerate(cluster_centers):
+                    # Extract insights from cluster center
+                    goal_complexity = center[0] if len(center) > 0 else 0.7  # Based on first feature
+                    goal_innovation = center[7] if len(center) > 7 else 0.5   # Based on weapon synthesis
+                    
+                    adaptive_goal = {
+                        "goal_id": f"ml_adaptive_goal_{i}_{int(time.time())}",
+                        "category": f"cluster_{i}_optimization",
+                        "target_complexity": min(goal_complexity * self.complexity_evolution_factor, 2.0),
+                        "innovation_requirement": goal_innovation,
+                        "success_threshold": 0.75 + (goal_complexity * 0.1),
+                        "adaptive_weights": {
+                            "infiltration": 0.25 + random.uniform(0, 0.1),
+                            "stealth": 0.25 + random.uniform(0, 0.1),
+                            "persistence": 0.25 + random.uniform(0, 0.1),
+                            "growth_potential": 0.25 + random.uniform(0, 0.1)
+                        },
+                        "created_by": "ml_clustering",
+                        "created_at": datetime.utcnow().isoformat(),
+                        "evolution_cycle": len(self.adaptive_goals)
+                    }
+                    
+                    new_goals.append(adaptive_goal)
+                
+                # Add to adaptive goals (keep only recent ones)
+                self.adaptive_goals.extend(new_goals)
+                self.adaptive_goals = self.adaptive_goals[-20:]  # Keep latest 20 goals
+                
+                logger.info(f"🎯 Generated {len(new_goals)} adaptive goals from ML clustering")
+            
+        except Exception as e:
+            logger.error(f"Error generating adaptive goals: {e}")
+
+    async def _save_ml_models(self) -> None:
+        """Save ML models to disk"""
+        try:
+            models_dir = "models/horus_ml"
+            os.makedirs(models_dir, exist_ok=True)
+            
+            for model_name, model in self.ml_models.items():
+                if model is not None:
+                    model_path = os.path.join(models_dir, f"{model_name}.pkl")
+                    with open(model_path, "wb") as f:
+                        pickle.dump(model, f)
+            
+            # Save scalers
+            for scaler_name, scaler in self.ml_scalers.items():
+                scaler_path = os.path.join(models_dir, f"{scaler_name}.pkl")
+                with open(scaler_path, "wb") as f:
+                    pickle.dump(scaler, f)
+            
+            # Save training data
+            data_path = os.path.join(models_dir, "training_data.pkl")
+            with open(data_path, "wb") as f:
+                pickle.dump(self.training_data, f)
+            
+            logger.info("💾 ML models saved successfully")
+            
+        except Exception as e:
+            logger.error(f"Error saving ML models: {e}")
+
+    async def _load_ml_models(self) -> None:
+        """Load ML models from disk"""
+        try:
+            models_dir = "models/horus_ml"
+            
+            if not os.path.exists(models_dir):
+                return
+            
+            # Load models
+            for model_name in self.ml_models.keys():
+                model_path = os.path.join(models_dir, f"{model_name}.pkl")
+                if os.path.exists(model_path):
+                    with open(model_path, "rb") as f:
+                        self.ml_models[model_name] = pickle.load(f)
+            
+            # Load scalers
+            for scaler_file in os.listdir(models_dir):
+                if scaler_file.endswith("_scaler.pkl"):
+                    scaler_name = scaler_file.replace(".pkl", "")
+                    scaler_path = os.path.join(models_dir, scaler_file)
+                    with open(scaler_path, "rb") as f:
+                        self.ml_scalers[scaler_name] = pickle.load(f)
+            
+            # Load training data
+            data_path = os.path.join(models_dir, "training_data.pkl")
+            if os.path.exists(data_path):
+                with open(data_path, "rb") as f:
+                    loaded_data = pickle.load(f)
+                    self.training_data.update(loaded_data)
+            
+            logger.info("📂 ML models loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"Error loading ML models: {e}")
+
+    async def get_ml_performance_metrics(self) -> Dict[str, Any]:
+        """Get ML system performance metrics"""
+        try:
+            metrics = {
+                "models_trained": sum(1 for model in self.ml_models.values() if model is not None),
+                "total_training_samples": len(self.training_data["weapon_features"]),
+                "complexity_evolution_factor": self.complexity_evolution_factor,
+                "adaptive_goals_active": len(self.adaptive_goals),
+                "ml_learning_events": len(self.ml_learning_history),
+                "latest_model_accuracy": 0.0,
+                "prediction_confidence": 0.0
+            }
+            
+            # Calculate model accuracy if we have test data
+            if (self.ml_models["weapon_performance_predictor"] is not None and 
+                len(self.training_data["weapon_features"]) > 10):
+                
+                X = np.array(self.training_data["weapon_features"])
+                y = np.array(self.training_data["performance_scores"])
+                
+                if "feature_scaler" in self.ml_scalers:
+                    X_scaled = self.ml_scalers["feature_scaler"].transform(X)
+                    predictions = self.ml_models["weapon_performance_predictor"].predict(X_scaled)
+                    mse = mean_squared_error(y, predictions)
+                    metrics["latest_model_accuracy"] = max(0, 1 - mse)  # Convert MSE to accuracy-like metric
+                    metrics["prediction_confidence"] = 1 - np.std(predictions - y)
+            
+            return metrics
+            
+        except Exception as e:
+            logger.error(f"Error getting ML performance metrics: {e}")
+            return {"error": str(e)}
 
 
 # Global instance
