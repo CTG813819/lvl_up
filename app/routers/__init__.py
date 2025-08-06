@@ -35,6 +35,6 @@ from .system_status import router as system_status
 from .ai import router as ai
 from .agent_metrics import router as agent_metrics
 from .scheduling import router as scheduling
-from .enhanced_adversarial_testing import router as enhanced_adversarial_testing
+from .ai_integration_router import router as ai_integration_router
 from .offline_chaos_router import router as offline_chaos_router
 from .weapons import router as weapons 

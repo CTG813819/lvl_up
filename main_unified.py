@@ -62,7 +62,7 @@ from app.routers.system_status import router as system_status_router
 from app.routers.ai import router as ai_router
 from app.routers.agent_metrics import router as agent_metrics_router
 from app.routers.scheduling import router as scheduling_router
-from app.routers.enhanced_adversarial_testing import router as enhanced_adversarial_router
+from app.routers.ai_integration_router import router as ai_integration_router
 from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
 from app.routers.weapons import router as weapons_router
@@ -494,7 +494,7 @@ app.include_router(system_status_router, prefix="/api/system", tags=["System"])
 app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
 app.include_router(agent_metrics_router, prefix="/api/agent-metrics", tags=["Agent Metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
-app.include_router(enhanced_adversarial_router, prefix="/api/enhanced-adversarial", tags=["Enhanced Adversarial Testing"])
+app.include_router(ai_integration_router, tags=["AI Integration"])
 app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
