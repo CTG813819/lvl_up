@@ -1,12 +1,6 @@
 # Transfer the fixed Flutter file
 Write-Host "Transferring fixed Flutter file..." -ForegroundColor Green
 
-<<<<<<< HEAD
-=======
-# Navigate to the correct directory and transfer the file
-cd C:\projects\lvl_up
-
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 # Transfer the updated the_warp_screen.dart file
 scp -i "C:\projects\lvl_up\New.pem" "lib/screens/the_warp_screen.dart" ubuntu@ec2-34-202-215-209.compute-1.amazonaws.com:/home/ubuntu/lvl_up/lib/screens/
 

@@ -60,11 +60,6 @@ class WeaponCombineRequest(BaseModel):
     weapon_ids: List[str]
     user_id: str
 
-class WeaponImproveRequest(BaseModel):
-    weapon_id: str
-    user_id: str
-    improvement_type: str = "comprehensive"  # comprehensive, targeted, the_arts
-
 @router.post("/training-ground/scenario")
 async def generate_training_ground_scenario(request: TrainingGroundScenarioRequest = Body(...)):
     """Generate a training ground scenario with progressive difficulty."""
@@ -720,7 +715,10 @@ async def improve_weapon_reliability(request: WeaponImproveRequest):
             content={"error": f"Failed to improve weapon: {str(e)}"}
         )
 
-
+class WeaponImproveRequest(BaseModel):
+    weapon_id: str
+    user_id: str
+    improvement_type: str = "comprehensive"  # comprehensive, targeted, the_arts
 
 @router.post("/weapons/deploy")
 async def deploy_weapon_against_target(request: dict = Body(...)):

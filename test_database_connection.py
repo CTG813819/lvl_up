@@ -8,16 +8,10 @@ import asyncio
 import asyncpg
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-<<<<<<< HEAD
 from sqlalchemy import text
 
 # Set the database URL - fixed format for SQLAlchemy
 DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb"
-=======
-
-# Set the database URL
-DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-fragrant-night-aea4nuof-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 async def test_database_connection():
     """Test the database connection"""
@@ -39,17 +33,10 @@ async def test_database_connection():
         
         # Test with SQLAlchemy
         print("\n📦 Testing SQLAlchemy connection...")
-<<<<<<< HEAD
         engine = create_async_engine(DATABASE_URL, echo=False)
         
         async with engine.begin() as conn:
             result = await conn.execute(text("SELECT 1"))
-=======
-        engine = create_async_engine(DATABASE_URL, echo=True)
-        
-        async with engine.begin() as conn:
-            result = await conn.execute("SELECT 1")
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
             print("✅ SQLAlchemy connection successful!")
         
         await engine.dispose()

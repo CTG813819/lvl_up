@@ -14,7 +14,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 async def check_token_status():
     """Check current token usage status"""
     try:
-<<<<<<< HEAD
         from app.core.database import get_session, init_database
         from app.models.sql_models import TokenUsage
         from sqlalchemy import select
@@ -22,12 +21,6 @@ async def check_token_status():
         # Initialize database first
         await init_database()
         
-=======
-        from app.core.database import get_session
-        from app.models.sql_models import TokenUsage
-        from sqlalchemy import select
-        
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
         async with get_session() as session:
             result = await session.execute(select(TokenUsage))
             records = result.scalars().all()

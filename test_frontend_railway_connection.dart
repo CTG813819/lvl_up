@@ -6,15 +6,15 @@ void main() async {
 
   // Test the network configuration endpoints
   final testUrls = [
-    'https://lvlup-production-1a5a.up.railway.app',
-    'https://lvlup-production-1a5a.up.railway.app/health',
-    'https://lvlup-production-1a5a.up.railway.app/api/health',
-    'https://lvlup-production-1a5a.up.railway.app/api/learning/data',
-    'https://lvlup-production-1a5a.up.railway.app/api/imperium/status',
-    'https://lvlup-production-1a5a.up.railway.app/api/agents/status',
-    'https://lvlup-production-1a5a.up.railway.app/api/proposals',
-    'https://lvlup-production-1a5a.up.railway.app/api/missions/statistics',
-    'https://lvlup-production-1a5a.up.railway.app/api/growth/insights',
+      'https://compassionate-truth-production-2fcd.up.railway.app',
+  'https://compassionate-truth-production-2fcd.up.railway.app/health',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/health',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/learning/data',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/imperium/status',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/agents/status',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/proposals',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/missions/statistics',
+  'https://compassionate-truth-production-2fcd.up.railway.app/api/growth/insights',
   ];
 
   print('\n📡 Testing Railway Backend Connectivity...');
@@ -51,7 +51,7 @@ void main() async {
   // Test WebSocket connection
   try {
     final wsUrl =
-        'wss://lvlup-production-1a5a.up.railway.app/api/imperium/status';
+        'wss://compassionate-truth-production-2fcd.up.railway.app/api/imperium/status';
     print('🔌 Testing WebSocket: $wsUrl');
 
     // Note: WebSocket testing would require a WebSocket client
@@ -59,7 +59,7 @@ void main() async {
     final client = HttpClient();
     final request = await client.getUrl(
       Uri.parse(
-        'https://lvlup-production-1a5a.up.railway.app/api/imperium/status',
+        'https://compassionate-truth-production-2fcd.up.railway.app/api/imperium/status',
       ),
     );
     final response = await request.close();

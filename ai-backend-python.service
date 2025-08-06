@@ -1,20 +1,13 @@
-<<<<<<< HEAD
 [Unit]
 Description=AI Backend Python Service
 After=network.target
 Wants=network.target
-=======
-﻿[Unit]
-Description=AI Backend Python Service
-After=network.target
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 [Service]
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/ai-backend-python
 Environment=PATH=/home/ubuntu/ai-backend-python/venv/bin
-<<<<<<< HEAD
 ExecStart=/home/ubuntu/ai-backend-python/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 Restart=always
 RestartSec=10
@@ -29,12 +22,3 @@ Environment=DATABASE_URL="postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-
 
 [Install]
 WantedBy=multi-user.target 
-=======
-ExecStart=/home/ubuntu/ai-backend-python/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
-Restart=always
-RestartSec=10
-Environment=DATABASE_URL="postgresql+asyncpg://neondb_owner:npg_TV1hbOzC9ReA@ep-red-fire-aekqiiwr-pooler.c-2.us-east-2.aws.neon.tech/neondb"
-
-[Install]
-WantedBy=multi-user.target
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5

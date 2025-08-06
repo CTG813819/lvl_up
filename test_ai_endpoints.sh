@@ -1,57 +1,17 @@
 #!/bin/bash
 
 # AI Endpoints Test Script
-<<<<<<< HEAD
 # This script tests all the AI endpoints once the backend is working
-=======
-# This script tests all the AI endpoints
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 echo "🧪 Testing AI Endpoints..."
 
 # Wait for backend to be ready
 echo "⏳ Waiting for backend to be ready..."
-<<<<<<< HEAD
 sleep 5
 
 # Test basic health endpoint
 echo "🔍 Testing health endpoint..."
 curl -s http://localhost:4000/health | jq . || echo "Health endpoint failed"
-=======
-sleep 2
-
-# Test basic endpoints that should exist
-echo "🔍 Testing basic endpoints..."
-
-# Test root endpoint
-echo "Testing root endpoint..."
-curl -s http://localhost:4000/ | jq . || echo "Root endpoint failed"
-
-# Test API root
-echo "Testing API root..."
-curl -s http://localhost:4000/api/ | jq . || echo "API root failed"
-
-# Test imperium endpoints (we saw these in logs)
-echo ""
-echo "⚔️ Testing Imperium endpoints..."
-curl -s http://localhost:4000/api/imperium/dashboard | jq . || echo "Imperium dashboard failed"
-curl -s http://localhost:4000/api/imperium/agents | jq . || echo "Imperium agents failed"
-
-# Test guardian endpoints
-echo ""
-echo "🛡️ Testing Guardian endpoints..."
-curl -s http://localhost:4000/api/guardian/suggestions | jq . || echo "Guardian suggestions failed"
-
-# Test proposals endpoint
-echo ""
-echo "📋 Testing Proposals endpoint..."
-curl -s "http://localhost:4000/api/proposals/?status=pending" | jq . || echo "Proposals endpoint failed"
-
-# Test sandbox endpoints
-echo ""
-echo "🧪 Testing Sandbox endpoints..."
-curl -s http://localhost:4000/api/sandbox/experiments | jq . || echo "Sandbox experiments failed"
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 # Test AI code generation
 echo ""
@@ -89,11 +49,7 @@ curl -X POST http://localhost:4000/api/conquest/analyze-code-complexity \
 # Test sandbox AI endpoints
 echo ""
 echo "🧪 Testing Sandbox AI endpoints..."
-<<<<<<< HEAD
 curl -X GET http://localhost:4000/api/agents/sandbox/ai-capabilities | jq . || echo "Sandbox AI capabilities failed"
-=======
-curl -s http://localhost:4000/api/agents/sandbox/ai-capabilities | jq . || echo "Sandbox AI capabilities failed"
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 # Test AI experiments
 echo ""
@@ -123,17 +79,12 @@ curl -X POST http://localhost:4000/api/agents/sandbox/analyze-code-quality \
 # Test agent status
 echo ""
 echo "📊 Testing agent status..."
-<<<<<<< HEAD
 curl -X GET http://localhost:4000/api/agents/status | jq . || echo "Agent status failed"
-=======
-curl -s http://localhost:4000/api/agents/status | jq . || echo "Agent status failed"
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 
 echo ""
 echo "🎉 AI endpoints testing complete!"
 echo ""
 echo "📋 Test Results Summary:"
-<<<<<<< HEAD
 echo "  ✅ Health endpoint"
 echo "  ✅ AI code generation"
 echo "  ✅ Conquest AI endpoints"
@@ -142,15 +93,6 @@ echo "  ✅ Sandbox AI endpoints"
 echo "  ✅ AI experiments"
 echo "  ✅ Code quality analysis"
 echo "  ✅ Agent status"
-=======
-echo "  ✅ Backend is running and responding"
-echo "  ✅ Port 4000 is listening"
-echo "  ✅ Imperium endpoints working"
-echo "  ✅ Guardian endpoints working"
-echo "  ✅ Proposals endpoint working"
-echo "  ✅ Sandbox endpoints working"
-echo "  ✅ AI code generation endpoints"
->>>>>>> d1b3e6353067c4166fd183c12c225678794528f5
 echo ""
 echo "🔧 Next steps:"
 echo "  1. Set OPENAI_API_KEY in .env for full AI capabilities"

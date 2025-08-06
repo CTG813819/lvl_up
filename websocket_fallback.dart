@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 // Add this to your Flutter app for WebSocket fallback
 class WebSocketFallback {
-  static const String baseUrl = 'https://lvlup-production-1a5a.up.railway.app';
+  static const String baseUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
   static const Duration pollInterval = Duration(seconds: 5);
 
   static Future<void> startPolling(Function(dynamic) onData) async {

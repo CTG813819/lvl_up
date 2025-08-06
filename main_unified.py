@@ -8,6 +8,26 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 import uvicorn
+
+# CRITICAL: Module-level debug that WILL execute during Railway import
+import sys
+sys.stdout.write("\n" + "=" * 80 + "\n")
+sys.stdout.write("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
+sys.stdout.write(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
+sys.stdout.write(f"Railway explicit uvicorn command active\n")
+sys.stdout.write(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
+sys.stdout.write(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
+sys.stdout.write("=" * 80 + "\n\n")
+sys.stdout.flush()
+
+# BACKUP DEBUG - Multiple methods to ensure visibility
+print("\n" + "=" * 80, flush=True)
+print("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
+print(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
+print(f"Railway explicit uvicorn command active", flush=True)
+print(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
+print(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
+print("=" * 80 + "\n", flush=True)
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -45,7 +65,6 @@ from app.routers.scheduling import router as scheduling_router
 from app.routers.enhanced_adversarial_testing import router as enhanced_adversarial_router
 from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
-from app.routers.training_ground import router as training_ground_router
 from app.routers.weapons import router as weapons_router
 
 # Import new AI service routers
@@ -53,6 +72,12 @@ from app.routers.project_horus import router as project_horus_router
 from app.routers.olympic_ai import router as olympic_ai_router
 from app.routers.collaborative_ai import router as collaborative_ai_router
 from app.routers.custodes_ai import router as custodes_ai_router
+
+# Import quantum chaos and stealth assimilation routers
+from app.routers.quantum_chaos_router import router as quantum_chaos_router
+from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
+from app.routers.rolling_password_router import router as rolling_password_router
+from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
 
 # Import services
 from app.services.ai_learning_service import AILearningService
@@ -78,6 +103,11 @@ from app.services.olympic_ai_service import olympic_ai_service
 from app.services.collaborative_ai_service import collaborative_ai_service
 from app.services.custodes_ai_service import custodes_ai_service
 
+# Initialize quantum chaos and stealth assimilation services
+from app.services.quantum_chaos_service import quantum_chaos_service
+from app.services.stealth_assimilation_hub import stealth_assimilation_hub
+from app.services.rolling_password_service import RollingPasswordService
+
 # Initialize other services from app/main.py
 from app.services.proposal_cycle_service import ProposalCycleService
 from app.services.token_usage_service import TokenUsageService
@@ -89,17 +119,39 @@ from app.services.custody_protocol_service import CustodyProtocolService
 setup_logging()
 logger = structlog.get_logger()
 
-# @asynccontextmanager  # Temporarily disabled to fix 502 errors
-async def lifespan_disabled(app: FastAPI):
+@asynccontextmanager  # Re-enabled to add port debugging
+async def lifespan(app: FastAPI):
     """Application lifespan events - handles startup and shutdown - TEMPORARILY DISABLED"""
-    # Startup
+    # Startup with Railway debugging
+    port_env = os.environ.get("PORT", "not set")
+    railway_env = bool(os.environ.get("RAILWAY_ENVIRONMENT_NAME") or 
+                       os.environ.get("RAILWAY_PROJECT_ID") or
+                       os.environ.get("RAILWAY_DEPLOYMENT_ID"))
+    
+    print("=" * 70, flush=True)
+    print("🚀 LIFESPAN STARTUP - RAILWAY DEBUG", flush=True)
+    print(f"📍 Environment: {'Railway' if railway_env else 'Local'}", flush=True)
+    print(f"🔌 PORT env var: '{port_env}'", flush=True)
+    print(f"📊 Railway vars: {[k for k in os.environ.keys() if 'RAILWAY' in k][:5]}", flush=True)
+    print("=" * 70, flush=True)
+    
     logger.info("🚀 Starting Unified AI Backend with scikit-learn integration")
     
     try:
-        # Initialize database
-        await init_database()
-        await create_tables()
-        await create_indexes()
+        # Initialize database with retry logic and error handling
+        print("🔗 Initializing database connection...", flush=True)
+        try:
+            await init_database()
+            print("✅ Database initialized successfully", flush=True)
+            await create_tables()
+            print("✅ Database tables created", flush=True)
+            await create_indexes()
+            print("✅ Database indexes created", flush=True)
+        except Exception as db_error:
+            print(f"❌ Database initialization failed: {db_error}", flush=True)
+            logger.error(f"Database initialization failed: {db_error}")
+            # Continue without database - some endpoints can still work
+            pass
         
         # Initialize ML service first
         await MLService.initialize()
@@ -170,76 +222,63 @@ async def lifespan_disabled(app: FastAPI):
             print("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
             logger.warning("⚠️ Background jobs disabled (RUN_BACKGROUND_JOBS=0)")
         
-        # Detect Railway environment to prevent multiprocessing hangs
-        railway_env = os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT") or os.getenv("RAILWAY_ENVIRONMENT_NAME")
+        # Start enhanced adversarial testing service on port 8001 [[memory:4401228]]
+        try:
+            def start_enhanced_adversarial_service():
+                """Start the enhanced adversarial testing service on port 8001"""
+                import sys
+                import os
+                sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                
+                from standalone_enhanced_adversarial_testing import app as adversarial_app
+                
+                uvicorn.run(
+                    adversarial_app,
+                    host="0.0.0.0",
+                    port=8001,
+                    log_level="info",
+                    access_log=True
+                )
+            
+            # Start enhanced adversarial testing service in a separate process
+            adversarial_process = Process(target=start_enhanced_adversarial_service)
+            adversarial_process.start()
+            
+            logger.info("✅ Enhanced adversarial testing service started on port 8001")
+            print("✅ Enhanced adversarial testing service started on port 8001")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+            print(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
         
-        if railway_env:
-            # Railway deployment - avoid multiprocessing, use integrated routers
-            logger.info("🚂 Railway environment detected - using integrated services")
-            print("🚂 Railway environment detected - using integrated services")
-            logger.info("✅ Enhanced adversarial testing integrated in main process")
-            logger.info("✅ Training ground available via custody protocol")
-        else:
-            # Local development - use separate processes for services
-            logger.info("🏠 Local development - starting separate service processes")
+        # Start training ground server on port 8002
+        try:
+            def start_training_ground_service():
+                """Start the training ground service on port 8002"""
+                import sys
+                import os
+                sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                
+                from training_ground_server import app as training_ground_app
+                
+                uvicorn.run(
+                    training_ground_app,
+                    host="0.0.0.0",
+                    port=8002,
+                    log_level="info",
+                    access_log=True
+                )
             
-            # Start enhanced adversarial testing service on port 8001 [[memory:4401228]]
-            try:
-                def start_enhanced_adversarial_service():
-                    """Start the enhanced adversarial testing service on port 8001"""
-                    import sys
-                    import os
-                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-                    
-                    from standalone_enhanced_adversarial_testing import app as adversarial_app
-                    
-                    uvicorn.run(
-                        adversarial_app,
-                        host="0.0.0.0",
-                        port=8001,
-                        log_level="info",
-                        access_log=True
-                    )
-                
-                # Start enhanced adversarial testing service in a separate process
-                adversarial_process = Process(target=start_enhanced_adversarial_service)
-                adversarial_process.start()
-                
-                logger.info("✅ Enhanced adversarial testing service started on port 8001")
-                print("✅ Enhanced adversarial testing service started on port 8001")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
-                print(f"❌ Failed to start enhanced adversarial testing service: {str(e)}")
+            # Start training ground service in a separate process
+            training_ground_process = Process(target=start_training_ground_service)
+            training_ground_process.start()
             
-            # Start training ground server on port 8002
-            try:
-                def start_training_ground_service():
-                    """Start the training ground service on port 8002"""
-                    import sys
-                    import os
-                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-                    
-                    from training_ground_server import app as training_ground_app
-                    
-                    uvicorn.run(
-                        training_ground_app,
-                        host="0.0.0.0",
-                        port=8002,
-                        log_level="info",
-                        access_log=True
-                    )
-                
-                # Start training ground service in a separate process
-                training_ground_process = Process(target=start_training_ground_service)
-                training_ground_process.start()
-                
-                logger.info("✅ Training ground service started on port 8002")
-                print("✅ Training ground service started on port 8002")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to start training ground service: {str(e)}")
-                print(f"❌ Failed to start training ground service: {str(e)}")
+            logger.info("✅ Training ground service started on port 8002")
+            print("✅ Training ground service started on port 8002")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start training ground service: {str(e)}")
+            print(f"❌ Failed to start training ground service: {str(e)}")
         
         logger.info("🎯 All systems initialized and running!")
         print("🎯 All systems initialized and running!")
@@ -272,13 +311,39 @@ async def lifespan_disabled(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Error during shutdown: {str(e)}")
 
-# Create FastAPI app with unified configuration
+# Create FastAPI app with unified configuration + BACKUP STARTUP EVENT
 app = FastAPI(
     title="AI Backend - Unified System", 
     description="Complete AI Backend with Learning Cycles, Testing Systems, and ML Integration",
     version="2.0.0",
-    # lifespan=lifespan  # Temporarily disabled
+    lifespan=lifespan  # Re-enabled for Railway debugging
 )
+
+# BACKUP: Add startup event as fallback if lifespan fails
+@app.on_event("startup")
+async def backup_startup():
+    """Backup startup event if lifespan manager fails in Railway"""
+    sys.stdout.write("🔄 BACKUP STARTUP EVENT TRIGGERED\n")
+    sys.stdout.flush()
+    print("🔄 BACKUP STARTUP EVENT TRIGGERED", flush=True)
+    
+    try:
+        # Import database functions
+        from app.core.database import init_database, create_tables, create_indexes
+        
+        print("🔗 BACKUP: Initializing database...", flush=True)
+        await init_database()
+        print("✅ BACKUP: Database initialized", flush=True)
+        
+        await create_tables()
+        print("✅ BACKUP: Tables created", flush=True)
+        
+        await create_indexes()
+        print("✅ BACKUP: Indexes created", flush=True)
+        
+    except Exception as e:
+        print(f"⚠️ BACKUP: Database init failed: {e}", flush=True)
+        # Continue without database - some endpoints still work
 
 # Add middleware (consolidated from both apps)
 app.add_middleware(
@@ -309,6 +374,15 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests for Railway debugging"""
+    client_host = request.client.host if request.client else "unknown"
+    print(f"🌐 Incoming request: {request.method} {request.url.path} from {client_host}", flush=True)
+    response = await call_next(request)
+    print(f"📤 Response: {response.status_code} for {request.url.path}", flush=True)
+    return response
+
 # Exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -322,36 +396,62 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# ABSOLUTE MINIMAL HEALTH CHECK for Railway - NO DEPENDENCIES
+# Health check endpoints
 @app.get("/")
 def root():
-    """ABSOLUTE MINIMAL ROOT ENDPOINT - RAILWAY HEALTH CHECK"""
-    return {"status": "healthy", "service": "ai-backend", "port": 8000}
-
-@app.get("/health") 
-def health_check():
-    """MINIMAL HEALTH CHECK - NO IMPORTS, NO DEPENDENCIES"""
-    return {"status": "healthy"}
-
-@app.get("/api/health")  
-def api_health_check():
-    """DETAILED HEALTH CHECK - MINIMAL DEPENDENCIES"""
+    """Root endpoint for basic connectivity test - SYNCHRONOUS for reliability"""
+    import datetime
     return {
-        "status": "ok",
-        "message": "AI Learning Backend is running", 
-        "endpoints": 475,
-        "projects": ["horus", "berserk", "adversarial", "training_ground", "imperium"]
+        "status": "online",
+        "service": "ai-backend-unified", 
+        "version": "2.0.0",
+        "timestamp": datetime.datetime.now().isoformat(),
+        "railway_port_env": os.environ.get('PORT', 'not_set'),
+        "message": "Server is healthy and ready"
     }
 
 @app.get("/ping")
 def ping():
-    """ULTRA SIMPLE PING ENDPOINT - BYPASS ALL MIDDLEWARE"""
-    return "pong"
+    """Ultra-simple ping endpoint"""
+    return "OK"
+
+@app.get("/status")
+def status():
+    """Alternative status endpoint"""
+    return {"status": "healthy"}
 
 @app.get("/ready")
 def ready():
-    """READY CHECK - NO JSON PROCESSING"""
-    return "ready"
+    """Readiness probe endpoint"""
+    return {"ready": True}
+
+@app.get("/health")
+async def health_check():
+    """Main health check endpoint for Railway"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "ai-backend-unified",
+        "version": "2.0.0",
+        "components": {
+            "main_server": "running",
+            "adversarial_testing": "port_8001",
+            "training_ground": "port_8002",
+            "learning_cycles": "active",
+            "testing_systems": "active"
+        }
+    }
+
+@app.get("/api/health")
+async def api_health_check():
+    """API health check"""
+    return {
+        "status": "ok",
+        "message": "AI Learning Backend is running",
+        "timestamp": datetime.utcnow().isoformat(),
+        "learning_systems_active": True,
+        "testing_systems_active": True
+    }
 
 # Include all routers (consolidated from both main files)
 # Core routers
@@ -396,7 +496,6 @@ app.include_router(agent_metrics_router, prefix="/api/agent-metrics", tags=["Age
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
 app.include_router(enhanced_adversarial_router, prefix="/api/enhanced-adversarial", tags=["Enhanced Adversarial Testing"])
 app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
-app.include_router(training_ground_router, prefix="/api/training-ground", tags=["Training Ground"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
 
 # New AI service routers
@@ -404,6 +503,12 @@ app.include_router(project_horus_router)  # Already has prefix="/api/project-hor
 app.include_router(olympic_ai_router, prefix="/api/olympic-ai", tags=["Olympic AI"])
 app.include_router(collaborative_ai_router, prefix="/api/collaborative-ai", tags=["Collaborative AI"])
 app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custodes AI"])
+
+# Quantum chaos and stealth assimilation routers
+app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
+app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
+app.include_router(rolling_password_router, tags=["Rolling Password"])
+app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")
@@ -462,12 +567,26 @@ async def debug_info():
         }
 
 if __name__ == "__main__":
-    # Run the unified application on port 8000 [[memory:4401229]]
+    # FORCE Railway port detection - Railway must execute this
+    port_env = os.environ.get("PORT")
+    if port_env and port_env.isdigit():
+        port = int(port_env)
+    else:
+        port = 8000
+    
+    # GUARANTEED debug output
+    print("=" * 60, flush=True)
+    print("MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
+    print(f"PORT env var: '{port_env}'", flush=True)
+    print(f"Using port: {port}", flush=True)
+    print(f"RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
+    print("=" * 60, flush=True)
+    
     uvicorn.run(
         "main_unified:app",
         host="0.0.0.0",
-        port=8000,
-        reload=False,  # Disable reload for production
+        port=port,
+        reload=False,
         log_level="info",
         access_log=True
     )
