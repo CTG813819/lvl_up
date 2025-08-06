@@ -73,6 +73,13 @@ from app.routers.olympic_ai import router as olympic_ai_router
 from app.routers.collaborative_ai import router as collaborative_ai_router
 from app.routers.custodes_ai import router as custodes_ai_router
 
+# Import new quantum chaos and stealth assimilation routers
+from app.routers.quantum_chaos_router import router as quantum_chaos_router
+from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
+from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
+from app.routers.test_enhanced_router import router as test_enhanced_router
+from app.routers.rolling_password_router import router as rolling_password_router
+
 # Import services
 from app.services.ai_learning_service import AILearningService
 from app.services.ml_service import MLService
@@ -96,6 +103,10 @@ from app.services.project_horus_service import project_horus_service
 from app.services.olympic_ai_service import olympic_ai_service
 from app.services.collaborative_ai_service import collaborative_ai_service
 from app.services.custodes_ai_service import custodes_ai_service
+
+# Initialize quantum chaos and stealth assimilation services
+from app.services.quantum_chaos_service import quantum_chaos_service
+from app.services.stealth_assimilation_hub import stealth_assimilation_hub
 
 # Initialize other services from app/main.py
 from app.services.proposal_cycle_service import ProposalCycleService
@@ -492,6 +503,13 @@ app.include_router(project_horus_router)  # Already has prefix="/api/project-hor
 app.include_router(olympic_ai_router, prefix="/api/olympic-ai", tags=["Olympic AI"])
 app.include_router(collaborative_ai_router, prefix="/api/collaborative-ai", tags=["Collaborative AI"])
 app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custodes AI"])
+
+# Quantum Chaos and Stealth Assimilation Hub routers
+app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
+app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
+app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
+app.include_router(test_enhanced_router, tags=["Test Enhanced"])
+app.include_router(rolling_password_router, tags=["Rolling Password"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")

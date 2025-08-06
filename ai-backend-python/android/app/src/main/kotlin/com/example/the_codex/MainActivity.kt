@@ -1,4 +1,4 @@
-package com.example.the_codex
+package com.example.mechanicum
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -7,7 +7,7 @@ void main() async {
   // Test the network configuration
   print('\n📡 Testing Network Configuration...');
 
-  final railwayUrl = 'https://lvlup-production.up.railway.app';
+  final railwayUrl = 'https://lvlup-production-1a5a.up.railway.app';
   final testEndpoints = [
     '/health',
     '/api/health',

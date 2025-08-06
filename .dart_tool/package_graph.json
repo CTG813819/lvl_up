@@ -1,10 +1,10 @@
 {
   "roots": [
-    "the_codex"
+    "mechanicum"
   ],
   "packages": [
     {
-      "name": "the_codex",
+      "name": "mechanicum",
       "version": "1.0.0+1",
       "dependencies": [
         "app_badge_plus",

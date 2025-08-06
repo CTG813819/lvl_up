@@ -139,7 +139,7 @@ class GeneratedWidget extends StatelessWidget {
     def _postprocess_dart_code(self, code: str) -> str:
         # Remove any bad imports or self-imports
         lines = code.splitlines()
-        lines = [l for l in lines if "package:the_codex/extensions" not in l and not l.strip().startswith("import './")]
+        lines = [l for l in lines if "package:mechanicum/extensions" not in l and not l.strip().startswith("import './")]
         # Ensure required import is present
         if not any("import 'package:flutter/material.dart';" in l for l in lines):
             lines.insert(0, "import 'package:flutter/material.dart';")

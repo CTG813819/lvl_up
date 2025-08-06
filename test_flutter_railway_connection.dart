@@ -4,7 +4,7 @@ import 'dart:convert';
 void main() async {
   print('🔍 Testing Flutter -> Railway Connection...\n');
 
-  const railwayUrl = 'https://lvlup-production.up.railway.app';
+  const railwayUrl = 'https://lvlup-production-1a5a.up.railway.app';
 
   // Test the exact endpoints your Flutter app uses
   final flutterEndpoints = [
