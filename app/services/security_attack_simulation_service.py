@@ -51,7 +51,7 @@ from .enhanced_project_horus_service import EnhancedProjectHorusService
 from .project_berserk_enhanced_service import ProjectBerserkEnhancedService
 from .guardian_ai_service import GuardianAIService
 from .ai_learning_service import AILearningService
-from .internet_cybersecurity_learning_service import InternetCybersecurityLearningService
+from .internet_cybersecurity_learning_service import get_internet_cybersecurity_learning_service
 from .chaos_language_service import ChaosLanguageService
 
 logger = structlog.get_logger()
@@ -66,7 +66,7 @@ class SecurityAttackSimulationService:
         self.project_berserk = ProjectBerserkEnhancedService()
         self.guardian_ai = GuardianAIService()
         self.ai_learning = AILearningService()
-        self.internet_learning = InternetCybersecurityLearningService()
+        self.internet_learning = None  # Lazy initialization
         self.chaos_language = ChaosLanguageService()
         
         # Docker client for containerized testing
@@ -120,6 +120,12 @@ class SecurityAttackSimulationService:
         
         # Initialize security testing
         asyncio.create_task(self._initialize_security_testing())
+    
+    def _get_internet_learning_service(self):
+        """Get the internet learning service with lazy initialization"""
+        if self.internet_learning is None:
+            self.internet_learning = get_internet_cybersecurity_learning_service()
+        return self.internet_learning
     
     async def _initialize_security_testing(self):
         """Initialize the security testing system"""
@@ -391,8 +397,9 @@ class SecurityAttackSimulationService:
         try:
             logger.info("🌐 Learning latest cybersecurity threats from internet")
             
-            # Use internet learning service to get latest threats
-            threat_intelligence = await self.internet_learning.learn_latest_cybersecurity_threats()
+            # Use internet learning service to get latest threats (lazy initialization)
+            internet_service = self._get_internet_learning_service()
+            threat_intelligence = await internet_service.learn_latest_cybersecurity_threats()
             
             # Enhance threat intelligence with real-world context
             enhanced_intelligence = {
@@ -1060,7 +1067,8 @@ if __name__ == "__main__":
             
             # Generate test scenarios from internet learning
             if internet_learning_results:
-                test_scenarios = await self.internet_learning.generate_docker_test_scenarios()
+                internet_service = self._get_internet_learning_service()
+                test_scenarios = await internet_service.generate_docker_test_scenarios()
             else:
                 test_scenarios = await self._generate_default_docker_security_scenarios()
             

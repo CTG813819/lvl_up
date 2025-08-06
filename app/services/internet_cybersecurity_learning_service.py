@@ -71,8 +71,14 @@ class InternetCybersecurityLearningService:
             "IoT security", "cloud security", "mobile security", "endpoint security"
         ]
         
-        # Initialize the service
-        asyncio.create_task(self._initialize_learning_system())
+        # Initialize the service (lazy initialization)
+        self._initialized = False
+    
+    async def _ensure_initialized(self):
+        """Ensure the service is initialized before use"""
+        if not self._initialized:
+            await self._initialize_learning_system()
+            self._initialized = True
     
     async def _initialize_learning_system(self):
         """Initialize the cybersecurity learning system"""
@@ -126,6 +132,7 @@ class InternetCybersecurityLearningService:
     
     async def learn_latest_cybersecurity_threats(self) -> Dict[str, Any]:
         """Learn about latest cybersecurity threats from internet sources"""
+        await self._ensure_initialized()
         logger.info("🔍 Learning latest cybersecurity threats from internet")
         
         learning_results = {
@@ -605,6 +612,7 @@ class InternetCybersecurityLearningService:
     
     async def get_threat_intelligence_summary(self) -> Dict[str, Any]:
         """Get summary of current threat intelligence"""
+        await self._ensure_initialized()
         try:
             if not self.threat_intelligence:
                 return {
@@ -645,6 +653,7 @@ class InternetCybersecurityLearningService:
     
     async def generate_docker_test_scenarios(self) -> List[Dict[str, Any]]:
         """Generate Docker test scenarios based on learned threats"""
+        await self._ensure_initialized()
         try:
             logger.info("🐳 Generating Docker test scenarios from threat intelligence")
             
@@ -779,5 +788,12 @@ class InternetCybersecurityLearningService:
         return default_scenarios
 
 
-# Global instance
-internet_cybersecurity_learning_service = InternetCybersecurityLearningService()
+# Global instance (lazy initialization)
+internet_cybersecurity_learning_service = None
+
+def get_internet_cybersecurity_learning_service():
+    """Get or create the internet cybersecurity learning service instance"""
+    global internet_cybersecurity_learning_service
+    if internet_cybersecurity_learning_service is None:
+        internet_cybersecurity_learning_service = InternetCybersecurityLearningService()
+    return internet_cybersecurity_learning_service
