@@ -1155,10 +1155,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 print("Quantum-Resistant Crypto System running")
 print("Features: SHA-3, Lattice-based, Post-quantum signatures")
 
-import time
-while True:
-    time.sleep(10)
-    print("Quantum-resistant system active...")
+# Note: Quantum-resistant system monitoring moved to background processes
+# to prevent blocking application startup
 '''
     
     def _generate_chaos_crypto_test_code(self) -> str:
