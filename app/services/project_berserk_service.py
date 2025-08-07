@@ -1344,14 +1344,20 @@ class ProjectWarmasterService:
         try:
             print(" Starting live background processes with advanced security...")
             
-            # Temporarily disable background processes to fix 500 errors
-            # self._live_processes['simulated_attacks'] = asyncio.create_task(self._simulated_attack_cycle())
-            # self._live_processes['jarvis_evolution'] = asyncio.create_task(self._jarvis_evolution_cycle())
-            # self._live_processes['repository_building'] = asyncio.create_task(self._repository_building_cycle())
-            # self._live_processes['internet_learning'] = asyncio.create_task(self._internet_learning_cycle())
+            # Start simulated attack cycle
+            self._live_processes['simulated_attacks'] = asyncio.create_task(self._simulated_attack_cycle())
+            
+            # Start JARVIS evolution cycle
+            self._live_processes['jarvis_evolution'] = asyncio.create_task(self._jarvis_evolution_cycle())
+            
+            # Start repository building cycle
+            self._live_processes['repository_building'] = asyncio.create_task(self._repository_building_cycle())
+            
+            # Start internet learning cycle
+            self._live_processes['internet_learning'] = asyncio.create_task(self._internet_learning_cycle())
             
             _global_live_data["background_processes_started"] = True
-            print(" Live background processes temporarily disabled for stability")
+            print(" Live background processes with advanced security started successfully")
             
         except Exception as e:
             print(f" Error starting background processes: {e}")
