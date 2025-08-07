@@ -25,7 +25,7 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
   String errorMessage = '';
   final pinController = TextEditingController();
   late AnimationController _pulseAnimationController;
-  
+
   // Timer variables
   Timer? _passwordTimer;
   String _timeUntilExpiry = '';
@@ -77,7 +77,7 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
       final status = await RollingPasswordService.getPasswordStatus();
       if (status['success'] == true) {
         final timeUntilExpiry = status['status']?['time_until_expiry'];
-        
+
         if (timeUntilExpiry != null) {
           setState(() {
             _timeUntilExpiry = timeUntilExpiry;
@@ -205,6 +205,20 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                   Text(
                     'Enter admin credentials to reset password',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                    ),
+                    child: Text(
+                      '💡 Tip: You can also try your last known password if you remember it.',
+                      style: TextStyle(color: Colors.blue[300], fontSize: 10),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   TextField(
@@ -724,15 +738,16 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                               // Don't call widget.onPinEntered here if we're showing the new password dialog
                               // The dialog will handle the navigation
                               if (!mounted) return;
-                              
+
                               // Check if we have a next password to show
-                              final prefs = await SharedPreferences.getInstance();
+                              final prefs =
+                                  await SharedPreferences.getInstance();
                               final nextPassword = prefs.getString('app_pin');
                               if (nextPassword != value) {
                                 // We have a new password, the dialog will handle navigation
                                 return;
                               }
-                              
+
                               // No new password, proceed normally
                               widget.onPinEntered(value, context);
                             } else if (mounted) {

@@ -329,6 +329,12 @@ class RollingPasswordService:
                 password_used = await self._check_previous_passwords(password)
                 if password_used:
                     password_valid = True
+                else:
+                    # Check if this is a user's last known password (even if expired)
+                    password_used = await self._check_user_last_password(user_id, password)
+                    if password_used:
+                        password_valid = True
+                        logger.info(f"🔑 User {user_id} authenticated with last known password")
             
             if password_valid:
                 # Successful authentication
@@ -622,6 +628,27 @@ class RollingPasswordService:
         if hasattr(self, '_current_plain_password') and self._current_plain_password:
             return self._current_plain_password
         return None
+
+    async def _check_user_last_password(self, user_id: str, password: str) -> Optional[str]:
+        """Check if password matches user's last known password from session history"""
+        try:
+            async with get_session() as session:
+                # Get user's last successful login password
+                result = await session.execute(text("""
+                    SELECT password_used FROM user_sessions 
+                    WHERE user_id = :user_id 
+                    ORDER BY login_time DESC 
+                    LIMIT 1
+                """), {"user_id": user_id})
+                
+                last_password_hash = result.scalar()
+                if last_password_hash and self._verify_password(password, last_password_hash):
+                    return last_password_hash
+                
+                return None
+        except Exception as e:
+            logger.error(f"Failed to check user last password: {e}")
+            return None
 
 
 # Global instance
