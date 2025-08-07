@@ -202,19 +202,125 @@ async def get_integration_status() -> Dict[str, Any]:
 
 @router.get("/horus/ml-metrics")
 async def get_horus_ml_metrics() -> Dict[str, Any]:
-    """Get detailed ML learning metrics from Project Horus"""
+    """Get ML performance metrics from Project Horus"""
     try:
-        ml_metrics = await enhanced_project_horus_service.get_ml_performance_metrics()
+        metrics = await enhanced_project_horus_service.get_ml_performance_metrics()
+        return {
+            "status": "success",
+            "ml_metrics": metrics,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Horus ML metrics: {e}")
+        return {"status": "error", "error": str(e)}
+
+# NEW: Failure Learning Endpoints
+@router.post("/horus/learn-from-failure")
+async def horus_learn_from_failure(failure_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Trigger Project Horus to learn from a failure"""
+    try:
+        result = await enhanced_project_horus_service.learn_from_failure(failure_data)
+        return {
+            "status": "success",
+            "learning_result": result,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error triggering Horus failure learning: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.get("/horus/failure-learning-status")
+async def get_horus_failure_learning_status() -> Dict[str, Any]:
+    """Get Project Horus failure learning status"""
+    try:
+        status = await enhanced_project_horus_service.get_failure_learning_status()
+        return {
+            "status": "success",
+            "failure_learning_status": status,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Horus failure learning status: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.get("/horus/failure-analysis-report")
+async def get_horus_failure_analysis_report() -> Dict[str, Any]:
+    """Get comprehensive failure analysis report from Project Horus"""
+    try:
+        report = await enhanced_project_horus_service.get_failure_analysis_report()
+        return {
+            "status": "success",
+            "failure_analysis_report": report,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Horus failure analysis report: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.post("/berserk/learn-from-failure")
+async def berserk_learn_from_failure(failure_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Trigger Project Berserk to learn from a failure"""
+    try:
+        result = await project_berserk_enhanced_service.learn_from_failure(failure_data)
+        return {
+            "status": "success",
+            "learning_result": result,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error triggering Berserk failure learning: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.get("/berserk/failure-learning-status")
+async def get_berserk_failure_learning_status() -> Dict[str, Any]:
+    """Get Project Berserk failure learning status"""
+    try:
+        status = await project_berserk_enhanced_service.get_failure_learning_status()
+        return {
+            "status": "success",
+            "failure_learning_status": status,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Berserk failure learning status: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.get("/berserk/failure-analysis-report")
+async def get_berserk_failure_analysis_report() -> Dict[str, Any]:
+    """Get comprehensive failure analysis report from Project Berserk"""
+    try:
+        report = await project_berserk_enhanced_service.get_failure_analysis_report()
+        return {
+            "status": "success",
+            "failure_analysis_report": report,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Berserk failure analysis report: {e}")
+        return {"status": "error", "error": str(e)}
+
+@router.post("/ai/learn-from-failure")
+async def ai_learn_from_failure(failure_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Trigger all AIs to learn from a failure"""
+    try:
+        results = {}
+        
+        # Trigger Horus learning
+        horus_result = await enhanced_project_horus_service.learn_from_failure(failure_data)
+        results["horus"] = horus_result
+        
+        # Trigger Berserk learning
+        berserk_result = await project_berserk_enhanced_service.learn_from_failure(failure_data)
+        results["berserk"] = berserk_result
         
         return {
             "status": "success",
-            "ml_metrics": ml_metrics,
+            "ai_learning_results": results,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
     except Exception as e:
-        logger.error(f"Error getting Horus ML metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"ML metrics retrieval failed: {str(e)}")
+        logger.error(f"Error triggering AI failure learning: {e}")
+        return {"status": "error", "error": str(e)}
 
 
 @router.get("/chaos-language/documentation")

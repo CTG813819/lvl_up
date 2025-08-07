@@ -80,6 +80,7 @@ from app.routers.quantum_chaos_router import router as quantum_chaos_router
 from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
 from app.routers.rolling_password_router import router as rolling_password_router
 from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
+from app.routers.app_assimilation_router import router as app_assimilation_router
 
 # Import services
 from app.services.ai_learning_service import AILearningService
@@ -513,6 +514,7 @@ app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
 app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
 app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
+app.include_router(app_assimilation_router, prefix="/api/app-assimilation", tags=["App Assimilation"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")
