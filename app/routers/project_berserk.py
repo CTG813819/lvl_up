@@ -89,6 +89,18 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
     try:
         berserk_service = await ProjectWarmasterService.initialize()
         status = await berserk_service.get_system_status(db)
+        
+        # Ensure all required fields are present
+        status.setdefault("system_name", "HORUS")
+        status.setdefault("version", "1.0.0")
+        status.setdefault("status", "operational")
+        status.setdefault("learning_progress", 0.0)
+        status.setdefault("knowledge_base_size", 0)
+        status.setdefault("neural_connections", 0)
+        status.setdefault("capabilities", {})
+        status.setdefault("neural_network_structure", {})
+        status.setdefault("is_learning", False)
+        
         return SystemStatusResponse(**status)
     except Exception as e:
         logger.error(f"Error getting system status: {str(e)}")
@@ -197,11 +209,13 @@ async def get_brain_visualization_data(db: AsyncSession = Depends(get_db)):
         berserk_service = await ProjectWarmasterService.initialize()
         status = await berserk_service.get_system_status(db)
         
-        # Extract brain visualization data from system status
+        # Extract brain visualization data from system status with safe defaults
+        neural_structure = status.get("neural_network_structure", {})
+        
         return BrainVisualizationResponse(
-            neural_layers=status.get("neural_network_structure", {}).get("layers", []),
-            synapses=status.get("neural_network_structure", {}).get("synapses", []),
-            learning_pathways=status.get("neural_network_structure", {}).get("learning_pathways", []),
+            neural_layers=neural_structure.get("layers", []),
+            synapses=neural_structure.get("synapses", []),
+            learning_pathways=neural_structure.get("learning_pathways", []),
             learning_progress=status.get("learning_progress", 0.0),
             knowledge_base_size=status.get("knowledge_base_size", 0),
             neural_connections=status.get("neural_connections", 0)

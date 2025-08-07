@@ -142,6 +142,11 @@ async def deploy_weapon(request: WeaponDeploymentRequest) -> Dict[str, Any]:
 async def create_synthetic_weapons(count: int = 3) -> Dict[str, Any]:
     """Create LIVE synthetic self-growing weapons"""
     try:
+        # Ensure service is initialized
+        if not hasattr(project_berserk_enhanced_service, 'initialized'):
+            await project_berserk_enhanced_service.initialize()
+            project_berserk_enhanced_service.initialized = True
+        
         result = await project_berserk_enhanced_service.create_synthetic_growing_weapons(count)
         
         return {
