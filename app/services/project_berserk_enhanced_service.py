@@ -76,6 +76,10 @@ class ProjectBerserkEnhancedService:
         # Initialize failure learning system
         self._initialize_failure_learning_system()
     
+    def _initialize_failure_learning_system(self):
+        """Initialize failure learning system attributes"""
+        pass
+    
     async def initialize(self):
         """Initialize Enhanced Project Berserk"""
         try:
