@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class RollingPasswordService {
   static const String baseUrl =
-      'http://localhost:8000'; // Update with your backend URL
+      'https://compassionate-truth-production-2fcd.up.railway.app'; // Railway backend URL
   static const String adminPassword = '813819';
   static const String adminPhrase = 'there are no wolves on fenris';
 
