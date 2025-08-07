@@ -5,12 +5,12 @@
   "growth_metrics": {
     "guardian": {
       "total_sources": 4,
-      "new_sources_this_week": 162,
+      "new_sources_this_week": 171,
       "growth_rate": 0.25,
-      "last_updated": "2025-08-06T20:08:31.802634"
+      "last_updated": "2025-08-07T07:30:44.482107"
     }
   },
-  "last_updated": "2025-08-06T20:08:31.802634",
+  "last_updated": "2025-08-07T07:30:44.482107",
   "events": [
     {
       "type": "source_discovered",

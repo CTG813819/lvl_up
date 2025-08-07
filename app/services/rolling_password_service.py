@@ -49,8 +49,14 @@ class RollingPasswordService:
         self.password_rotation_interval = timedelta(hours=1)
         self.grace_period = timedelta(minutes=5)  # Grace period for password transition
         
-        # Initialize the service
-        asyncio.create_task(self._initialize_rolling_password_system())
+        # Initialize the service lazily - will be called when first needed
+        self._initialized = False
+    
+    async def _ensure_initialized(self):
+        """Ensure the service is initialized before use"""
+        if not self._initialized:
+            await self._initialize_rolling_password_system()
+            self._initialized = True
     
     async def _initialize_rolling_password_system(self):
         """Initialize the rolling password system"""
@@ -299,6 +305,9 @@ class RollingPasswordService:
     
     async def authenticate_user(self, user_id: str, password: str, ip_address: str = None) -> Dict[str, Any]:
         """Authenticate user with current or previous password"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
         try:
             logger.info(f"🔐 Authentication attempt for user: {user_id}")
             
@@ -518,6 +527,9 @@ class RollingPasswordService:
     
     async def get_current_password_info(self) -> Dict[str, Any]:
         """Get information about current password (for admin use)"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
         try:
             return {
                 "has_active_password": self.current_password_hash is not None,
@@ -535,6 +547,9 @@ class RollingPasswordService:
     
     async def get_security_analytics(self) -> Dict[str, Any]:
         """Get security analytics for the rolling password system"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
         try:
             async with get_session() as session:
                 # Get failed attempt statistics

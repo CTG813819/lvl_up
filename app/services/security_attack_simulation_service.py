@@ -118,8 +118,14 @@ class SecurityAttackSimulationService:
             "privilege_escalation"
         ]
         
-        # Initialize security testing
-        asyncio.create_task(self._initialize_security_testing())
+        # Initialize security testing lazily - will be called when first needed
+        self._initialized = False
+    
+    async def _ensure_initialized(self):
+        """Ensure the service is initialized before use"""
+        if not self._initialized:
+            await self._initialize_security_testing()
+            self._initialized = True
     
     def _get_internet_learning_service(self):
         """Get the internet learning service with lazy initialization"""
@@ -243,6 +249,9 @@ class SecurityAttackSimulationService:
     
     async def simulate_hacker_attack_on_app(self, attack_type: str = "comprehensive") -> Dict[str, Any]:
         """Simulate comprehensive hacker attacks on the app's security systems"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
         logger.info(f"🚨 Starting {attack_type} security attack simulation")
         
         attack_results = {
@@ -1625,6 +1634,9 @@ if __name__ == "__main__":
     
     async def get_security_status(self) -> Dict[str, Any]:
         """Get current security status and recommendations"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
         try:
             status = {
                 "security_testing_active": True,
@@ -1690,5 +1702,12 @@ if __name__ == "__main__":
             logger.error(f"Error integrating learning with AI systems: {e}")
 
 
-# Global instance
-security_attack_simulation_service = SecurityAttackSimulationService()
+# Global instance (lazy initialization)
+security_attack_simulation_service = None
+
+def get_security_attack_simulation_service():
+    """Get or create the security attack simulation service instance"""
+    global security_attack_simulation_service
+    if security_attack_simulation_service is None:
+        security_attack_simulation_service = SecurityAttackSimulationService()
+    return security_attack_simulation_service

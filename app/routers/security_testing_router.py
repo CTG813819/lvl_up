@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import structlog
 
-from app.services.security_attack_simulation_service import security_attack_simulation_service
+from app.services.security_attack_simulation_service import get_security_attack_simulation_service
 
 logger = structlog.get_logger()
 
@@ -24,8 +24,9 @@ async def start_security_attack_simulation(
     try:
         logger.info(f"🚨 Starting security attack simulation: {attack_type}")
         
-        # Run simulation
-        attack_results = await security_attack_simulation_service.simulate_hacker_attack_on_app(
+        # Get service instance and run simulation
+        service = get_security_attack_simulation_service()
+        attack_results = await service.simulate_hacker_attack_on_app(
             attack_type=attack_type
         )
         
@@ -44,7 +45,8 @@ async def start_security_attack_simulation(
 async def get_security_testing_status() -> Dict[str, Any]:
     """Get current security testing status"""
     try:
-        status = await security_attack_simulation_service.get_security_status()
+        service = get_security_attack_simulation_service()
+        status = await service.get_security_status()
         return {
             "status": "success",
             "security_status": status,
@@ -61,8 +63,9 @@ async def start_encryption_testing() -> Dict[str, Any]:
     try:
         logger.info("🔐 Starting encryption vulnerability testing")
         
-        # Simulate encryption testing
-        encryption_results = await security_attack_simulation_service._test_encryption_vulnerabilities()
+        # Get service instance and simulate encryption testing
+        service = get_security_attack_simulation_service()
+        encryption_results = await service._test_encryption_vulnerabilities()
         
         return {
             "status": "completed",
@@ -81,8 +84,9 @@ async def start_authentication_testing() -> Dict[str, Any]:
     try:
         logger.info("🔑 Starting authentication vulnerability testing")
         
-        # Simulate authentication testing
-        auth_results = await security_attack_simulation_service._test_authentication_vulnerabilities()
+        # Get service instance and simulate authentication testing
+        service = get_security_attack_simulation_service()
+        auth_results = await service._test_authentication_vulnerabilities()
         
         return {
             "status": "completed",
@@ -102,7 +106,8 @@ async def start_api_security_testing() -> Dict[str, Any]:
         logger.info("🌐 Starting API security testing")
         
         # Simulate API security testing
-        api_results = await security_attack_simulation_service._test_api_security_vulnerabilities()
+        service = get_security_attack_simulation_service()
+        api_results = await service._test_api_security_vulnerabilities()
         
         return {
             "status": "completed",
@@ -122,7 +127,8 @@ async def start_mobile_security_testing() -> Dict[str, Any]:
         logger.info("📱 Starting mobile app security testing")
         
         # Simulate mobile security testing
-        mobile_results = await security_attack_simulation_service._test_mobile_app_security()
+        service = get_security_attack_simulation_service()
+        mobile_results = await service._test_mobile_app_security()
         
         return {
             "status": "completed",
@@ -142,7 +148,8 @@ async def start_apt_simulation() -> Dict[str, Any]:
         logger.info("🎯 Starting APT simulation")
         
         # Simulate APT attack
-        apt_results = await security_attack_simulation_service._simulate_apt_attack()
+        service = get_security_attack_simulation_service()
+        apt_results = await service._simulate_apt_attack()
         
         return {
             "status": "completed",
@@ -162,7 +169,8 @@ async def get_latest_guardian_analysis() -> Dict[str, Any]:
         logger.info("🛡️ Getting latest Guardian AI security analysis")
         
         # Get Guardian AI health check and analysis
-        guardian_service = security_attack_simulation_service.guardian_ai
+        service = get_security_attack_simulation_service()
+        guardian_service = service.guardian_ai
         health_check = await guardian_service.run_comprehensive_health_check()
         
         return {
@@ -196,7 +204,8 @@ async def start_ml_security_analysis() -> Dict[str, Any]:
         }
         
         # Perform ML analysis
-        ml_analysis = await security_attack_simulation_service._ml_vulnerability_analysis(sample_attack_results)
+        service = get_security_attack_simulation_service()
+        ml_analysis = await service._ml_vulnerability_analysis(sample_attack_results)
         
         return {
             "status": "completed",
@@ -213,7 +222,8 @@ async def start_ml_security_analysis() -> Dict[str, Any]:
 async def get_docker_environments_status() -> Dict[str, Any]:
     """Get status of Docker security testing environments"""
     try:
-        docker_client = security_attack_simulation_service.docker_client
+        service = get_security_attack_simulation_service()
+        docker_client = service.docker_client
         
         if not docker_client:
             return {
@@ -260,7 +270,8 @@ async def test_ai_collaboration() -> Dict[str, Any]:
     try:
         logger.info("🤝 Testing AI collaboration for security")
         
-        collaboration = await security_attack_simulation_service._setup_ai_collaboration_for_security()
+        service = get_security_attack_simulation_service()
+        collaboration = await service._setup_ai_collaboration_for_security()
         
         return {
             "status": "success",
@@ -292,7 +303,8 @@ async def get_security_recommendations() -> Dict[str, Any]:
             }
         }
         
-        improvements = await security_attack_simulation_service._generate_security_improvements(sample_results)
+        service = get_security_attack_simulation_service()
+        improvements = await service._generate_security_improvements(sample_results)
         
         return {
             "status": "success",
@@ -327,7 +339,8 @@ async def enable_continuous_testing(interval_hours: int = 24) -> Dict[str, Any]:
 async def get_attack_history(limit: int = 10) -> Dict[str, Any]:
     """Get history of security attack simulations"""
     try:
-        attack_scenarios = security_attack_simulation_service.attack_scenarios
+        service = get_security_attack_simulation_service()
+        attack_scenarios = service.attack_scenarios
         
         # Get recent attacks (limited)
         recent_attacks = list(attack_scenarios.values())[-limit:]
