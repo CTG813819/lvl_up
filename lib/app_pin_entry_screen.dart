@@ -70,6 +70,21 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
       if (passwordStatus['success'] == true) {
         // Backend has a password, use rolling password system
         print('[APP_PIN_ENTRY] ✅ Using rolling password system');
+
+        // Get the current password from backend
+        final currentPassword =
+            await RollingPasswordService.getCurrentPassword();
+        if (currentPassword != null) {
+          // Store the current password locally for the user to use
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('app_pin', currentPassword);
+          print('[APP_PIN_ENTRY] 🔑 Current password stored: $currentPassword');
+
+          // Show the current password to the user
+          if (mounted) {
+            _showCurrentPasswordDialog(context, currentPassword);
+          }
+        }
         return;
       }
     } catch (e) {
@@ -103,6 +118,11 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
         if (authResult['next_password'] != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('app_pin', authResult['next_password']);
+
+          // Show the new password to the user
+          if (mounted) {
+            _showNewPasswordDialog(context, authResult['next_password']);
+          }
         }
         return true;
       }
@@ -294,7 +314,7 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
               Icon(Icons.check_circle, color: Colors.green),
               const SizedBox(width: 8),
               Text(
-                'Password Reset Successful',
+                'Login Successful!',
                 style: TextStyle(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,
@@ -305,8 +325,28 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.security, color: Colors.green, size: 20),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your password has been rotated for security.',
+                      style: TextStyle(color: Colors.green, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               Text(
-                'Your new password is:',
+                'Your new password for next login is:',
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 16),
@@ -328,8 +368,117 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                 ),
               ),
               const SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                    const SizedBox(height: 8),
+                    Text(
+                      '⚠️ Remember this password! You will need it for your next login.',
+                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Continue to the main app
+                widget.onPinEntered(newPassword, context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Continue to App'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCurrentPasswordDialog(
+    BuildContext context,
+    String currentPassword,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Row(
+            children: [
+              Icon(Icons.lock, color: Colors.blue),
+              const SizedBox(width: 8),
               Text(
-                'Please remember this password. You can use it to access the app.',
+                'Rolling Password System',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your current password to log in:',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Text(
+                  currentPassword,
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                    const SizedBox(height: 8),
+                    Text(
+                      'After successful login, you will receive a new password for next time.',
+                      style: TextStyle(color: Colors.orange, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Enter the current password above to access the app.',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
@@ -339,15 +488,9 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Clear the PIN input and show the new password
-                pinController.clear();
-                setState(() {
-                  enteredPin = '';
-                  errorMessage = '';
-                });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
               child: Text('OK'),
@@ -502,6 +645,20 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                           if (value.length == 6) {
                             final isValid = await _verifyPin(value);
                             if (isValid && mounted) {
+                              // Don't call widget.onPinEntered here if we're showing the new password dialog
+                              // The dialog will handle the navigation
+                              if (!mounted) return;
+
+                              // Check if we have a next password to show
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final nextPassword = prefs.getString('app_pin');
+                              if (nextPassword != value) {
+                                // We have a new password, the dialog will handle navigation
+                                return;
+                              }
+
+                              // No new password, proceed normally
                               widget.onPinEntered(value, context);
                             } else if (mounted) {
                               setState(() {
@@ -562,6 +719,19 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                       child: Text(
                         'Forgot Password?',
                         style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final currentPassword = await RollingPasswordService.getCurrentPassword();
+                        if (currentPassword != null && mounted) {
+                          _showCurrentPasswordDialog(context, currentPassword);
+                        }
+                      },
+                      child: Text(
+                        'Show Current Password',
+                        style: TextStyle(color: Colors.blue[400], fontSize: 14),
                       ),
                     ),
                   ],

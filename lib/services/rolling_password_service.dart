@@ -52,6 +52,27 @@ class RollingPasswordService {
     }
   }
 
+  /// Get current password from backend
+  static Future<String?> getCurrentPassword() async {
+    try {
+      final url = Uri.parse('$baseUrl/api/auth/current-password');
+
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['current_password'];
+      }
+      return null;
+    } catch (e) {
+      print('[ROLLING_PASSWORD_SERVICE] ❌ Error getting current password: $e');
+      return null;
+    }
+  }
+
   /// Verify current password with backend
   static Future<Map<String, dynamic>> verifyPassword(String password) async {
     try {
@@ -96,6 +117,26 @@ class RollingPasswordService {
         };
       }
     } catch (e) {
+      print('[ROLLING_PASSWORD_SERVICE] ❌ Backend not available: $e');
+      
+      // Fallback: check against local storage
+      final prefs = await SharedPreferences.getInstance();
+      final savedPassword = prefs.getString('app_pin');
+      
+      if (savedPassword == password) {
+        // Generate a new password for next time
+        final newPassword = _generateNewPassword();
+        await prefs.setString('app_pin', newPassword);
+        
+        return {
+          'success': true,
+          'message': 'Password verified (offline mode)',
+          'next_password': newPassword,
+          'password_expires_at': DateTime.now().add(Duration(hours: 1)).toIso8601String(),
+          'time_until_expiry': '1 hour',
+        };
+      }
+      
       return {
         'success': false,
         'message': 'Failed to connect to backend',
