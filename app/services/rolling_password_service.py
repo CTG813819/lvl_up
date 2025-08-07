@@ -193,6 +193,9 @@ class RollingPasswordService:
             self.password_generation_time = generation_time
             self.password_expiry_time = expiry_time
             
+            # Store plain text password for development/testing
+            self._current_plain_password = password
+            
             # Add to history
             self.password_history.append({
                 "password_hash": password_hash,
@@ -207,12 +210,12 @@ class RollingPasswordService:
                 if datetime.fromisoformat(p["generation_time"]) > cutoff_time
             ]
             
-            logger.info(f"🔐 Generated new rolling password, expires at {expiry_time.isoformat()}")
+            logger.info(f"🔐 Generated new rolling password: {password}, expires at {expiry_time.isoformat()}")
             return password
         except Exception as e:
             logger.error(f"Failed to generate new password: {e}")
             raise
-    
+
     def _generate_secure_password(self) -> str:
         """Generate a cryptographically secure password"""
         # Character sets
@@ -232,42 +235,35 @@ class RollingPasswordService:
         if self.password_complexity["special_chars"]:
             chars += special
         
-        # Generate password ensuring at least one character from each required set
-        password = []
-        
         # Ensure at least one character from each required set
+        password = ""
         if self.password_complexity["uppercase"]:
-            password.append(secrets.choice(uppercase))
+            password += secrets.choice(uppercase)
         if self.password_complexity["lowercase"]:
-            password.append(secrets.choice(lowercase))
+            password += secrets.choice(lowercase)
         if self.password_complexity["digits"]:
-            password.append(secrets.choice(digits))
+            password += secrets.choice(digits)
         if self.password_complexity["special_chars"]:
-            password.append(secrets.choice(special))
+            password += secrets.choice(special)
         
         # Fill remaining length with random characters
-        for _ in range(self.password_length - len(password)):
-            password.append(secrets.choice(chars))
+        remaining_length = self.password_length - len(password)
+        password += ''.join(secrets.choice(chars) for _ in range(remaining_length))
         
-        # Shuffle the password
-        secrets.SystemRandom().shuffle(password)
+        # Shuffle the password to avoid predictable patterns
+        password_list = list(password)
+        secrets.SystemRandom().shuffle(password_list)
+        password = ''.join(password_list)
         
-        return ''.join(password)
-    
+        return password
+
     def _hash_password(self, password: str) -> str:
-        """Hash password with salt"""
-        salt = secrets.token_hex(32)
-        password_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
-        return f"{salt}:{password_hash.hex()}"
-    
+        """Hash password using SHA-256"""
+        return hashlib.sha256(password.encode()).hexdigest()
+
     def _verify_password(self, password: str, stored_hash: str) -> bool:
         """Verify password against stored hash"""
-        try:
-            salt, hash_hex = stored_hash.split(':')
-            password_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
-            return secrets.compare_digest(password_hash.hex(), hash_hex)
-        except Exception:
-            return False
+        return self._hash_password(password) == stored_hash
     
     async def _start_password_rotation_scheduler(self):
         """Start the password rotation scheduler"""
@@ -621,6 +617,15 @@ class RollingPasswordService:
             logger.info("🚫 All user sessions invalidated")
         except Exception as e:
             logger.error(f"Failed to invalidate sessions: {e}")
+
+    async def get_current_plain_password(self) -> Optional[str]:
+        """Get current password in plain text (for development/testing only)"""
+        # Ensure service is initialized
+        await self._ensure_initialized()
+        
+        if hasattr(self, '_current_plain_password') and self._current_plain_password:
+            return self._current_plain_password
+        return None
 
 
 # Global instance

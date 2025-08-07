@@ -32,6 +32,68 @@ class AuthenticationResponse(BaseModel):
     attempts_remaining: Optional[int] = None
 
 
+@router.post("/initialize")
+async def initialize_rolling_password_system() -> Dict[str, Any]:
+    """Initialize the rolling password system and get current password"""
+    try:
+        logger.info("🔐 Initializing rolling password system")
+        
+        # Force initialization
+        await rolling_password_service._ensure_initialized()
+        
+        # Get current password info
+        password_info = await rolling_password_service.get_current_password_info()
+        
+        # Generate a test password for initial setup
+        if not password_info.get("has_active_password"):
+            # Force password generation
+            await rolling_password_service._generate_new_password()
+            password_info = await rolling_password_service.get_current_password_info()
+        
+        return {
+            "status": "success",
+            "message": "Rolling password system initialized",
+            "password_info": password_info,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to initialize rolling password system: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to initialize system: {str(e)}")
+
+
+@router.get("/current-password")
+async def get_current_password() -> Dict[str, Any]:
+    """Get the current active password (for testing/development only)"""
+    try:
+        # Ensure system is initialized
+        await rolling_password_service._ensure_initialized()
+        
+        # Get current password info
+        password_info = await rolling_password_service.get_current_password_info()
+        
+        if password_info.get("has_active_password"):
+            # Get the plain text password for development/testing
+            current_password = await rolling_password_service.get_current_plain_password()
+            
+            return {
+                "status": "success",
+                "message": "Current password is active",
+                "current_password": current_password,
+                "expires_at": password_info.get("expiry_time"),
+                "time_until_expiry": password_info.get("time_until_expiry"),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "No active password found",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        logger.error(f"Failed to get current password: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current password: {str(e)}")
+
+
 @router.post("/login", response_model=AuthenticationResponse)
 async def authenticate_user(auth_request: AuthenticationRequest, request: Request) -> AuthenticationResponse:
     """Authenticate user with rolling password system"""

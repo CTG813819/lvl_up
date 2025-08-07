@@ -3572,22 +3572,25 @@ class BackdoorAccessProtocol {
     try {
       final random = Random();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      
+
       // Simulate testing delay
       await Future.delayed(Duration(milliseconds: random.nextInt(2000) + 1000));
-      
+
       // Generate test results based on weapon and scenario
       final weaponComplexity = weapon['complexity_level'] ?? 1.0;
       final weaponStealth = weapon['stealth_level'] ?? 0.5;
-      final scenarioDifficulty = _getScenarioDifficulty(scenario['difficulty'] ?? 'medium');
-      
+      final scenarioDifficulty = _getScenarioDifficulty(
+        scenario['difficulty'] ?? 'medium',
+      );
+
       // Calculate success probability
-      final baseSuccessRate = (weaponComplexity * weaponStealth) / scenarioDifficulty;
+      final baseSuccessRate =
+          (weaponComplexity * weaponStealth) / scenarioDifficulty;
       final successRate = (baseSuccessRate * 100).clamp(10.0, 95.0);
-      
+
       // Determine if test was successful
       final isSuccessful = random.nextDouble() < (successRate / 100);
-      
+
       // Generate detailed test results
       final testResult = {
         'success': isSuccessful,
@@ -3604,13 +3607,20 @@ class BackdoorAccessProtocol {
         'data_extracted_mb': isSuccessful ? random.nextInt(500) + 100 : 0,
         'backdoors_established': isSuccessful ? random.nextInt(2) + 1 : 0,
         'detection_avoided': isSuccessful,
-        'learning_progress': isSuccessful ? random.nextDouble() * 0.3 + 0.1 : 0.0,
+        'learning_progress':
+            isSuccessful ? random.nextDouble() * 0.3 + 0.1 : 0.0,
         'failure_reason': isSuccessful ? null : _getRandomFailureReason(),
-        'recommendations': _generateTestRecommendations(weapon, scenario, isSuccessful),
+        'recommendations': _generateTestRecommendations(
+          weapon,
+          scenario,
+          isSuccessful,
+        ),
       };
-      
-      print('[PROJECT_HORUS_SERVICE] 🧪 Weapon testing completed: ${testResult['success'] ? 'SUCCESS' : 'FAILED'}');
-      
+
+      print(
+        '[PROJECT_HORUS_SERVICE] 🧪 Weapon testing completed: ${testResult['success'] ? 'SUCCESS' : 'FAILED'}',
+      );
+
       return testResult;
     } catch (e) {
       print('[PROJECT_HORUS_SERVICE] ❌ Error testing weapon: $e');
@@ -3650,7 +3660,7 @@ class BackdoorAccessProtocol {
       'Target environment has unexpected configurations',
       'Weapon signature was detected by security systems',
     ];
-    
+
     return reasons[Random().nextInt(reasons.length)];
   }
 
@@ -3661,7 +3671,7 @@ class BackdoorAccessProtocol {
     bool isSuccessful,
   ) {
     final recommendations = <String>[];
-    
+
     if (isSuccessful) {
       recommendations.add('Weapon performed well against this scenario');
       recommendations.add('Consider deploying to similar environments');
@@ -3672,7 +3682,7 @@ class BackdoorAccessProtocol {
       recommendations.add('Analyze target environment more thoroughly');
       recommendations.add('Update weapon with latest evasion techniques');
     }
-    
+
     return recommendations;
   }
 }
