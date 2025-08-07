@@ -348,7 +348,7 @@ class AdvancedChaosSecuritySystem:
             "learning_progress": 0.0,
             "cryptographic_patterns": [],
             "quantum_entanglement_keys": {},
-            "chaos_entropy_pools": [],
+            "chaos_entropy_pools": {},
             "neural_crypto_networks": {},
             "mathematical_constants": {},
             "evolution_triggers": [],
@@ -1168,245 +1168,10 @@ import time
 import math
 import random
 
-# Chaos-based cryptographic system for testing
-print("Chaos Cryptographic Test System running")
 
-def run_cryptographic_attack_simulation(self) -> Dict[str, Any]:
-    """Run attack simulation against Docker containers to test cryptographic defenses"""
-    try:
-        import docker
-        import time
-        import random
-        
-        client = docker.from_env()
-        attack_results = []
-        
-        # Test each container with different attack vectors
-        for container_name, container_info in self.chaos_crypto_system["docker_test_containers"].items():
-            if container_info is None:
-                continue
-            
-            print(f" Testing cryptographic defenses against {container_name}...")
-            
-            # Generate attack vectors based on container type
-            attack_vectors = self._generate_attack_vectors(container_name)
-            
-            for attack_vector in attack_vectors:
-                result = self._execute_attack_vector(client, container_info, attack_vector)
-                attack_results.append(result)
-                
-                # Learn from attack results
-                self._learn_from_attack_result(result)
-                
-                time.sleep(1)  # Brief pause between attacks
-        
-        # Update cryptographic patterns based on attack results
-        self._update_defense_patterns(attack_results)
-        
-        # Store results
-        self.chaos_crypto_system["attack_simulation_results"].extend(attack_results)
-        
-        return {
-            "status": "success",
-            "attacks_executed": len(attack_results),
-            "containers_tested": len(self.chaos_crypto_system["docker_test_containers"]),
-            "new_defense_patterns": len(self.chaos_crypto_system["breach_detection_patterns"]),
-            "attack_results": attack_results
-        }
-        
-    except Exception as e:
-        print(f" Error in cryptographic attack simulation: {e}")
-        return {
-            "status": "error",
-            "message": f"Attack simulation failed: {str(e)}"
-        }
 
-def _generate_attack_vectors(self, container_type: str) -> List[Dict[str, Any]]:
-    """Generate attack vectors based on container vulnerability type"""
-    import random
-    
-    attack_vectors = []
-    
-    if container_type == "weak_crypto":
-        # Cryptographic attacks
-        attack_vectors.extend([
-            {
-                "type": "brute_force",
-                "target": "encryption_key",
-                "method": "exhaustive_search",
-                "payload": "weak_secret_key_12345"
-            },
-            {
-                "type": "hash_collision",
-                "target": "md5_hash",
-                "method": "birthday_attack",
-                "payload": "collision_payload"
-            },
-            {
-                "type": "known_plaintext",
-                "target": "encryption_system",
-                "method": "differential_cryptanalysis",
-                "payload": "known_plaintext_data"
-            }
-        ])
-    
-    elif container_type == "sql_injection":
-        # SQL injection attacks
-        attack_vectors.extend([
-            {
-                "type": "sql_injection",
-                "target": "user_authentication",
-                "method": "union_based",
-                "payload": "' OR '1'='1"
-            },
-            {
-                "type": "sql_injection",
-                "target": "user_authentication",
-                "method": "boolean_based",
-                "payload": "' AND 1=1--"
-            },
-            {
-                "type": "sql_injection",
-                "target": "database_query",
-                "method": "time_based",
-                "payload": "'; WAITFOR DELAY '00:00:05'--"
-            }
-        ])
-    
-    elif container_type == "buffer_overflow":
-        # Buffer overflow attacks
-        attack_vectors.extend([
-            {
-                "type": "buffer_overflow",
-                "target": "stack_buffer",
-                "method": "stack_overflow",
-                "payload": "A" * 1000
-            },
-            {
-                "type": "buffer_overflow",
-                "target": "heap_buffer",
-                "method": "heap_overflow",
-                "payload": "B" * 2000
-            },
-            {
-                "type": "buffer_overflow",
-                "target": "format_string",
-                "method": "format_string_attack",
-                "payload": "%x%x%x%x%x%x%x%x"
-            }
-        ])
-    
-    return attack_vectors
 
-def _execute_attack_vector(self, client, container_info: Dict[str, Any], attack_vector: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute a specific attack vector against a container"""
-    try:
-        container = client.containers.get(container_info["id"])
-        
-        # Simulate attack execution
-        attack_result = {
-            "attack_type": attack_vector["type"],
-            "target": attack_vector["target"],
-            "method": attack_vector["method"],
-            "payload": attack_vector["payload"],
-            "container_name": container_info["name"],
-            "execution_time": random.uniform(0.1, 2.0),
-            "success": random.choice([True, False]),
-            "vulnerability_found": random.choice([True, False]),
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        # Simulate learning from attack
-        if attack_result["vulnerability_found"]:
-            attack_result["learning_gain"] = random.uniform(0.1, 0.5)
-        else:
-            attack_result["learning_gain"] = random.uniform(0.01, 0.1)
-        
-        return attack_result
-        
-    except Exception as e:
-        return {
-            "attack_type": attack_vector["type"],
-            "target": attack_vector["target"],
-            "method": attack_vector["method"],
-            "payload": attack_vector["payload"],
-            "container_name": container_info["name"],
-            "execution_time": 0.0,
-            "success": False,
-            "vulnerability_found": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
 
-def _learn_from_attack_result(self, attack_result: Dict[str, Any]):
-    """Learn from attack results to improve future attacks"""
-    if attack_result.get("vulnerability_found", False):
-        # Learn from successful vulnerability discovery
-        learning_gain = attack_result.get("learning_gain", 0.1)
-        
-        # Update cryptographic patterns
-        if "crypto_patterns" not in self.chaos_crypto_system:
-            self.chaos_crypto_system["crypto_patterns"] = []
-        
-        new_pattern = {
-            "type": attack_result["attack_type"],
-            "target": attack_result["target"],
-            "method": attack_result["method"],
-            "success_rate": 0.8,
-            "learned_at": datetime.now().isoformat()
-        }
-        
-        self.chaos_crypto_system["crypto_patterns"].append(new_pattern)
-        
-        # Update breach detection patterns
-        if "breach_detection_patterns" not in self.chaos_crypto_system:
-            self.chaos_crypto_system["breach_detection_patterns"] = []
-        
-        detection_pattern = {
-            "vulnerability_type": attack_result["attack_type"],
-            "detection_method": f"pattern_based_{attack_result['method']}",
-            "confidence": random.uniform(0.7, 0.95),
-            "created_at": datetime.now().isoformat()
-        }
-        
-        self.chaos_crypto_system["breach_detection_patterns"].append(detection_pattern)
-
-def _update_defense_patterns(self, attack_results: List[Dict[str, Any]]):
-    """Update defense patterns based on attack results"""
-    successful_attacks = [r for r in attack_results if r.get("vulnerability_found", False)]
-    
-    if successful_attacks:
-        # Create new defense mechanisms
-        for attack in successful_attacks:
-            defense_mechanism = self._generate_defense_mechanism(attack)
-            
-            if "defense_mechanisms" not in self.chaos_crypto_system:
-                self.chaos_crypto_system["defense_mechanisms"] = []
-            
-            self.chaos_crypto_system["defense_mechanisms"].append(defense_mechanism)
-
-def _generate_defense_mechanism(self, attack: Dict[str, Any]) -> str:
-    """Generate a defense mechanism based on attack type"""
-    if attack["attack_type"] == "brute_force":
-        return "rate_limiting_and_account_lockout"
-    elif attack["attack_type"] == "sql_injection":
-        return "parameterized_queries_and_input_validation"
-    elif attack["attack_type"] == "buffer_overflow":
-        return "stack_canaries_and_address_space_layout_randomization"
-    else:
-        return "generic_input_validation_and_sanitization"
-
-def get_cryptographic_status(self) -> Dict[str, Any]:
-    """Get the current status of the cryptographic system"""
-    return {
-        "status": "active",
-        "patterns_learned": len(self.chaos_crypto_system.get("crypto_patterns", [])),
-        "defense_mechanisms": len(self.chaos_crypto_system.get("defense_mechanisms", [])),
-        "breach_detection_patterns": len(self.chaos_crypto_system.get("breach_detection_patterns", [])),
-        "attack_simulation_results": len(self.chaos_crypto_system.get("attack_simulation_results", [])),
-        "docker_test_containers": len(self.chaos_crypto_system.get("docker_test_containers", {})),
-        "timestamp": datetime.now().isoformat()
-    }
 
 class SimulatedAttackSystem:
     """Advanced simulated attack system using chaos code and internet learning"""
@@ -1579,20 +1344,14 @@ class ProjectWarmasterService:
         try:
             print(" Starting live background processes with advanced security...")
             
-            # Start simulated attack cycle
-            self._live_processes['simulated_attacks'] = asyncio.create_task(self._simulated_attack_cycle())
-            
-            # Start JARVIS evolution cycle
-            self._live_processes['jarvis_evolution'] = asyncio.create_task(self._jarvis_evolution_cycle())
-            
-            # Start repository building cycle
-            self._live_processes['repository_building'] = asyncio.create_task(self._repository_building_cycle())
-            
-            # Start internet learning cycle
-            self._live_processes['internet_learning'] = asyncio.create_task(self._internet_learning_cycle())
+            # Temporarily disable background processes to fix 500 errors
+            # self._live_processes['simulated_attacks'] = asyncio.create_task(self._simulated_attack_cycle())
+            # self._live_processes['jarvis_evolution'] = asyncio.create_task(self._jarvis_evolution_cycle())
+            # self._live_processes['repository_building'] = asyncio.create_task(self._repository_building_cycle())
+            # self._live_processes['internet_learning'] = asyncio.create_task(self._internet_learning_cycle())
             
             _global_live_data["background_processes_started"] = True
-            print(" Live background processes with advanced security started successfully")
+            print(" Live background processes temporarily disabled for stability")
             
         except Exception as e:
             print(f" Error starting background processes: {e}")
@@ -1634,7 +1393,7 @@ class ProjectWarmasterService:
                 crypto_evolution = self.security_system.evolve_cryptographic_system()
                 
                 # Run Docker attack simulation to test cryptographic defenses
-                attack_simulation = self.security_system.run_cryptographic_attack_simulation()
+                attack_simulation = self.security_system._setup_docker_attack_simulation()
                 
                 # Update global data
                 _global_live_data["jarvis_evolution_stage"] = evolution_stage
@@ -1731,14 +1490,14 @@ class ProjectWarmasterService:
             if not _global_live_data["background_processes_started"]:
                 await self._start_live_background_processes()
             
-            # Get live data from global state
-            live_learning_progress = _global_live_data["learning_progress"]
-            live_neural_connections = _global_live_data["neural_connections"]
-            live_knowledge_base_size = _global_live_data["knowledge_base_size"]
-            live_capabilities = _global_live_data["capabilities"]
+            # Get live data from global state with safe defaults
+            live_learning_progress = _global_live_data.get("learning_progress", 0.0)
+            live_neural_connections = _global_live_data.get("neural_connections", 0)
+            live_knowledge_base_size = _global_live_data.get("knowledge_base_size", 0)
+            live_capabilities = _global_live_data.get("capabilities", {})
             
-            # Get security information
-            security_info = _global_live_data["security_system"]
+            # Get security information with safe defaults
+            security_info = _global_live_data.get("security_system", {})
             
             return {
                 "system_name": "HORUS",
@@ -1748,9 +1507,9 @@ class ProjectWarmasterService:
                 "knowledge_base_size": live_knowledge_base_size,
                 "neural_connections": live_neural_connections,
                 "capabilities": live_capabilities,
-                "jarvis_evolution_stage": _global_live_data["jarvis_evolution_stage"],
-                "repositories_created": len(_global_live_data["repositories_created"]),
-                "extensions_built": len(_global_live_data["extensions_built"]),
+                "jarvis_evolution_stage": _global_live_data.get("jarvis_evolution_stage", 0),
+                "repositories_created": len(_global_live_data.get("repositories_created", [])),
+                "extensions_built": len(_global_live_data.get("extensions_built", [])),
                 "neural_network_structure": {
                     "layers": [
                         {"name": "input", "neurons": 1000, "connections": []},
@@ -1767,28 +1526,28 @@ class ProjectWarmasterService:
                 "last_self_improvement": datetime.utcnow() if live_learning_progress > 0 else None,
                 "is_learning": live_learning_progress > 0,
                 "security_system": {
-                    "threat_level": security_info["threat_level"],
-                    "security_protocols": security_info["security_protocols"],
-                    "last_security_update": security_info["last_security_update"],
+                    "threat_level": security_info.get("threat_level", 0),
+                    "security_protocols": security_info.get("security_protocols", []),
+                    "last_security_update": security_info.get("last_security_update"),
                     "chaos_security_active": True,
                     "encryption_enabled": True,
                     "threat_detection_active": True,
-                    "simulated_attacks": self.simulated_attack_system.get_attack_status()
+                    "simulated_attacks": self.simulated_attack_system.get_attack_status() if hasattr(self, 'simulated_attack_system') else {}
                 },
                 "jarvis_system": {
-                    "evolution_stage": self.jarvis_system.evolution_stage,
-                    "modules": self.jarvis_system.jarvis_modules,
+                    "evolution_stage": self.jarvis_system.evolution_stage if hasattr(self, 'jarvis_system') else 0,
+                    "modules": self.jarvis_system.jarvis_modules if hasattr(self, 'jarvis_system') else [],
                     "capabilities": {
                         "voice_interface": live_capabilities.get("jarvis_interface", 0.0),
                         "autonomous_coding": live_capabilities.get("autonomous_coding", 0.0),
                         "repository_management": live_capabilities.get("repository_management", 0.0)
                     }
                 },
-                "repository_system": self.repository_builder.get_repository_status()
+                "repository_system": self.repository_builder.get_repository_status() if hasattr(self, 'repository_builder') else {}
             }
             
         except Exception as e:
-            print(f" Error getting system status: {e}")
+            logger.error(f"Error getting system status: {e}")
             return {
                 "system_name": "HORUS",
                 "version": "1.0.0",
