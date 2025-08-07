@@ -1,363 +1,229 @@
 """
-Security Testing Router
-API endpoints for security attack simulation and testing
+Security Testing Router - Advanced cryptographic system testing endpoints
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, Any, List
 from datetime import datetime
-from typing import Dict, Any, List, Optional
-import structlog
 
-from app.services.security_attack_simulation_service import get_security_attack_simulation_service
+from app.core.database import get_db
+from app.services.project_berserk_service import ProjectWarmasterService
 
-logger = structlog.get_logger()
+router = APIRouter(prefix="/api/security", tags=["Security Testing"])
 
-router = APIRouter(prefix="/api/security", tags=["security-testing"])
-
-
-@router.post("/attack-simulation/start")
-async def start_security_attack_simulation(
-    attack_type: str = "comprehensive",
-    background_tasks: BackgroundTasks = None
-) -> Dict[str, Any]:
-    """Start comprehensive security attack simulation"""
+@router.get("/cryptographic-status")
+async def get_cryptographic_status(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get the current status of the evolving cryptographic system"""
     try:
-        logger.info(f"🚨 Starting security attack simulation: {attack_type}")
+        service = ProjectWarmasterService(db)
+        crypto_status = service.security_system.get_cryptographic_status()
         
-        # Get service instance and run simulation
-        service = get_security_attack_simulation_service()
-        attack_results = await service.simulate_hacker_attack_on_app(
-            attack_type=attack_type
+        return {
+            "status": "success",
+            "cryptographic_system": crypto_status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get cryptographic status: {str(e)}")
+
+@router.post("/evolve-cryptography")
+async def evolve_cryptographic_system(
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """Trigger evolution of the cryptographic system"""
+    try:
+        service = ProjectWarmasterService(db)
+        
+        # Evolve the cryptographic system
+        evolution_result = service.security_system.evolve_cryptographic_system()
+        
+        # Run attack simulation in background
+        background_tasks.add_task(
+            service.security_system.run_cryptographic_attack_simulation
         )
         
         return {
-            "status": "completed",
-            "attack_results": attack_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": f"Security attack simulation '{attack_type}' completed successfully"
-        }
-    except Exception as e:
-        logger.error(f"❌ Security attack simulation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Security simulation failed: {str(e)}")
-
-
-@router.get("/attack-simulation/status")
-async def get_security_testing_status() -> Dict[str, Any]:
-    """Get current security testing status"""
-    try:
-        service = get_security_attack_simulation_service()
-        status = await service.get_security_status()
-        return {
             "status": "success",
-            "security_status": status,
-            "timestamp": datetime.utcnow().isoformat()
+            "evolution_result": evolution_result,
+            "message": "Cryptographic system evolution triggered",
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ Failed to get security status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get security status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to evolve cryptographic system: {str(e)}")
 
-
-@router.post("/encryption-testing/start")
-async def start_encryption_testing() -> Dict[str, Any]:
-    """Start specific encryption vulnerability testing"""
+@router.post("/attack-simulation")
+async def run_attack_simulation(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Run Docker attack simulation against cryptographic defenses"""
     try:
-        logger.info("🔐 Starting encryption vulnerability testing")
+        service = ProjectWarmasterService(db)
         
-        # Get service instance and simulate encryption testing
-        service = get_security_attack_simulation_service()
-        encryption_results = await service._test_encryption_vulnerabilities()
-        
-        return {
-            "status": "completed",
-            "encryption_test_results": encryption_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Encryption vulnerability testing completed"
-        }
-    except Exception as e:
-        logger.error(f"❌ Encryption testing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Encryption testing failed: {str(e)}")
-
-
-@router.post("/authentication-testing/start")
-async def start_authentication_testing() -> Dict[str, Any]:
-    """Start authentication and session management testing"""
-    try:
-        logger.info("🔑 Starting authentication vulnerability testing")
-        
-        # Get service instance and simulate authentication testing
-        service = get_security_attack_simulation_service()
-        auth_results = await service._test_authentication_vulnerabilities()
-        
-        return {
-            "status": "completed",
-            "authentication_test_results": auth_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Authentication vulnerability testing completed"
-        }
-    except Exception as e:
-        logger.error(f"❌ Authentication testing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Authentication testing failed: {str(e)}")
-
-
-@router.post("/api-security-testing/start")
-async def start_api_security_testing() -> Dict[str, Any]:
-    """Start API security vulnerability testing"""
-    try:
-        logger.info("🌐 Starting API security testing")
-        
-        # Simulate API security testing
-        service = get_security_attack_simulation_service()
-        api_results = await service._test_api_security_vulnerabilities()
-        
-        return {
-            "status": "completed",
-            "api_test_results": api_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "API security testing completed"
-        }
-    except Exception as e:
-        logger.error(f"❌ API security testing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"API security testing failed: {str(e)}")
-
-
-@router.post("/mobile-security-testing/start")
-async def start_mobile_security_testing() -> Dict[str, Any]:
-    """Start mobile app security testing"""
-    try:
-        logger.info("📱 Starting mobile app security testing")
-        
-        # Simulate mobile security testing
-        service = get_security_attack_simulation_service()
-        mobile_results = await service._test_mobile_app_security()
-        
-        return {
-            "status": "completed",
-            "mobile_test_results": mobile_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Mobile app security testing completed"
-        }
-    except Exception as e:
-        logger.error(f"❌ Mobile security testing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Mobile security testing failed: {str(e)}")
-
-
-@router.post("/apt-simulation/start")
-async def start_apt_simulation() -> Dict[str, Any]:
-    """Start Advanced Persistent Threat simulation"""
-    try:
-        logger.info("🎯 Starting APT simulation")
-        
-        # Simulate APT attack
-        service = get_security_attack_simulation_service()
-        apt_results = await service._simulate_apt_attack()
-        
-        return {
-            "status": "completed",
-            "apt_simulation_results": apt_results,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "APT simulation completed"
-        }
-    except Exception as e:
-        logger.error(f"❌ APT simulation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"APT simulation failed: {str(e)}")
-
-
-@router.get("/guardian-analysis/latest")
-async def get_latest_guardian_analysis() -> Dict[str, Any]:
-    """Get latest Guardian AI security analysis"""
-    try:
-        logger.info("🛡️ Getting latest Guardian AI security analysis")
-        
-        # Get Guardian AI health check and analysis
-        service = get_security_attack_simulation_service()
-        guardian_service = service.guardian_ai
-        health_check = await guardian_service.run_comprehensive_health_check()
+        # Run attack simulation
+        simulation_result = service.security_system.run_cryptographic_attack_simulation()
         
         return {
             "status": "success",
-            "guardian_health_check": health_check,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Guardian AI analysis retrieved"
+            "simulation_result": simulation_result,
+            "message": "Attack simulation completed",
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ Guardian analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Guardian analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to run attack simulation: {str(e)}")
 
-
-@router.post("/ml-security-analysis/start")
-async def start_ml_security_analysis() -> Dict[str, Any]:
-    """Start ML-driven security analysis"""
+@router.get("/docker-containers")
+async def get_docker_containers(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get status of Docker test containers"""
     try:
-        logger.info("🧠 Starting ML security analysis")
+        service = ProjectWarmasterService(db)
         
-        # Generate sample attack results for ML analysis
-        sample_attack_results = {
-            "attack_type": "ml_analysis",
-            "overall_security_score": 8.5,
-            "encryption_tests": [{"security_score": 8.8}],
-            "authentication_tests": [{"security_score": 8.2}],
-            "api_tests": [{"security_score": 9.0}],
-            "mobile_tests": {"overall_mobile_security_score": 8.7},
-            "apt_simulation": {"defensive_effectiveness": 8.5},
-            "vulnerability_findings": [],
-            "security_improvements": []
-        }
+        containers = service.security_system.chaos_crypto_system["docker_test_containers"]
+        container_status = {}
         
-        # Perform ML analysis
-        service = get_security_attack_simulation_service()
-        ml_analysis = await service._ml_vulnerability_analysis(sample_attack_results)
+        for name, container_info in containers.items():
+            if container_info:
+                container_status[name] = {
+                    "status": container_info.get("status", "unknown"),
+                    "vulnerability_type": container_info.get("vulnerability_type", "unknown"),
+                    "container_id": container_info.get("container_id", "unknown")
+                }
+            else:
+                container_status[name] = {"status": "failed", "error": "Container creation failed"}
         
         return {
-            "status": "completed",
-            "ml_analysis_results": ml_analysis,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "ML security analysis completed"
+            "status": "success",
+            "containers": container_status,
+            "total_containers": len(containers),
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ ML security analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"ML security analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get Docker containers: {str(e)}")
 
-
-@router.get("/docker-environments/status")
-async def get_docker_environments_status() -> Dict[str, Any]:
-    """Get status of Docker security testing environments"""
+@router.get("/attack-results")
+async def get_attack_results(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get results from recent attack simulations"""
     try:
-        service = get_security_attack_simulation_service()
-        docker_client = service.docker_client
+        service = ProjectWarmasterService(db)
         
-        if not docker_client:
-            return {
-                "status": "unavailable",
-                "message": "Docker not available",
-                "environments": []
+        attack_results = service.security_system.chaos_crypto_system["attack_simulation_results"]
+        breach_patterns = service.security_system.chaos_crypto_system["breach_detection_patterns"]
+        defense_mechanisms = service.security_system.chaos_crypto_system["real_time_defense_mechanisms"]
+        
+        # Analyze results
+        successful_attacks = [r for r in attack_results if r.get("successful", False)]
+        blocked_attacks = [r for r in attack_results if not r.get("successful", True)]
+        
+        return {
+            "status": "success",
+            "attack_analysis": {
+                "total_attacks": len(attack_results),
+                "successful_attacks": len(successful_attacks),
+                "blocked_attacks": len(blocked_attacks),
+                "success_rate": len(successful_attacks) / len(attack_results) if attack_results else 0,
+                "defense_effectiveness": len(blocked_attacks) / len(attack_results) if attack_results else 0
+            },
+            "breach_patterns": len(breach_patterns),
+            "defense_mechanisms": len(defense_mechanisms),
+            "recent_attacks": attack_results[-10:] if attack_results else [],  # Last 10 attacks
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get attack results: {str(e)}")
+
+@router.post("/setup-docker-environment")
+async def setup_docker_environment(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Setup Docker attack simulation environment"""
+    try:
+        service = ProjectWarmasterService(db)
+        
+        # Setup Docker containers
+        setup_result = service.security_system._setup_docker_attack_simulation()
+        
+        return {
+            "status": "success",
+            "setup_result": setup_result,
+            "message": "Docker attack simulation environment setup completed",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to setup Docker environment: {str(e)}")
+
+@router.get("/neural-networks-status")
+async def get_neural_networks_status(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get status of neural cryptographic networks"""
+    try:
+        service = ProjectWarmasterService(db)
+        
+        networks = service.security_system.chaos_crypto_system["neural_crypto_networks"]
+        network_status = {}
+        
+        for network_name, network_data in networks.items():
+            network_status[network_name] = {
+                "layers": network_data["layers"],
+                "activation_functions": network_data["activation_functions"],
+                "learning_rate": network_data["learning_rate"],
+                "training_data_size": len(network_data["training_data"]),
+                "training_progress": min(1.0, len(network_data["training_data"]) / 1000)
             }
         
-        # Get running containers
-        containers = docker_client.containers.list()
-        security_containers = [
-            container for container in containers 
-            if "security_test" in container.name
-        ]
-        
-        container_info = []
-        for container in security_containers:
-            container_info.append({
-                "id": container.id[:12],
-                "name": container.name,
-                "status": container.status,
-                "image": container.image.tags[0] if container.image.tags else "unknown"
-            })
-        
-        return {
-            "status": "active",
-            "docker_available": True,
-            "security_containers": container_info,
-            "total_containers": len(container_info),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"❌ Docker status check failed: {e}")
-        return {
-            "status": "error",
-            "error": str(e),
-            "docker_available": False
-        }
-
-
-@router.post("/ai-collaboration/test")
-async def test_ai_collaboration() -> Dict[str, Any]:
-    """Test AI collaboration for security testing"""
-    try:
-        logger.info("🤝 Testing AI collaboration for security")
-        
-        service = get_security_attack_simulation_service()
-        collaboration = await service._setup_ai_collaboration_for_security()
-        
         return {
             "status": "success",
-            "ai_collaboration": collaboration,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "AI collaboration test completed"
+            "neural_networks": network_status,
+            "total_networks": len(networks),
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ AI collaboration test failed: {e}")
-        raise HTTPException(status_code=500, detail=f"AI collaboration test failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get neural networks status: {str(e)}")
 
-
-@router.get("/security-improvements/recommendations")
-async def get_security_recommendations() -> Dict[str, Any]:
-    """Get latest security improvement recommendations"""
+@router.get("/quantum-keys")
+async def get_quantum_keys(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get status of quantum entanglement keys"""
     try:
-        # Generate sample attack results for recommendations
-        sample_results = {
-            "encryption_tests": [{"security_score": 8.5, "test_name": "JWT Token Security"}],
-            "authentication_tests": [{"security_score": 8.0}],
-            "api_tests": [{"security_score": 9.0}],
-            "mobile_tests": {"overall_mobile_security_score": 8.5},
-            "guardian_analysis": {
-                "priority_actions": [
-                    "Enhance monitoring capabilities",
-                    "Implement additional threat detection",
-                    "Update security policies"
-                ]
+        service = ProjectWarmasterService(db)
+        
+        quantum_keys = service.security_system.chaos_crypto_system["quantum_entanglement_keys"]
+        key_status = {}
+        
+        for key_id, key_data in quantum_keys.items():
+            key_status[key_id] = {
+                "creation_time": key_data["creation_time"],
+                "usage_count": key_data["usage_count"],
+                "entanglement_state": key_data["entanglement_state"],
+                "public_key_length": len(key_data["public_key"]),
+                "private_key_length": len(key_data["private_key"])
             }
-        }
-        
-        service = get_security_attack_simulation_service()
-        improvements = await service._generate_security_improvements(sample_results)
         
         return {
             "status": "success",
-            "security_improvements": improvements,
-            "total_recommendations": len(improvements),
-            "timestamp": datetime.utcnow().isoformat()
+            "quantum_keys": key_status,
+            "total_keys": len(quantum_keys),
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ Security recommendations failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Security recommendations failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get quantum keys: {str(e)}")
 
-
-@router.post("/continuous-testing/enable")
-async def enable_continuous_testing(interval_hours: int = 24) -> Dict[str, Any]:
-    """Enable continuous security testing"""
+@router.get("/entropy-pools")
+async def get_entropy_pools(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+    """Get status of chaos entropy pools"""
     try:
-        logger.info(f"⏰ Enabling continuous security testing every {interval_hours} hours")
+        service = ProjectWarmasterService(db)
         
-        return {
-            "status": "enabled",
-            "interval_hours": interval_hours,
-            "next_test": datetime.utcnow().isoformat(),
-            "message": f"Continuous security testing enabled every {interval_hours} hours",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"❌ Failed to enable continuous testing: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to enable continuous testing: {str(e)}")
-
-
-@router.get("/attack-history")
-async def get_attack_history(limit: int = 10) -> Dict[str, Any]:
-    """Get history of security attack simulations"""
-    try:
-        service = get_security_attack_simulation_service()
-        attack_scenarios = service.attack_scenarios
+        entropy_pools = service.security_system.chaos_crypto_system["chaos_entropy_pools"]
+        pool_status = {}
         
-        # Get recent attacks (limited)
-        recent_attacks = list(attack_scenarios.values())[-limit:]
-        
-        # Summary statistics
-        if recent_attacks:
-            avg_score = sum(attack.get('overall_security_score', 0) for attack in recent_attacks) / len(recent_attacks)
-        else:
-            avg_score = 0
+        for pool_id, pool_data in entropy_pools.items():
+            pool_status[pool_id] = {
+                "chaos_factor": pool_data["chaos_factor"],
+                "last_refresh": pool_data["last_refresh"],
+                "usage_pattern_count": len(pool_data["usage_pattern"]),
+                "entropy_data_length": len(pool_data["entropy_data"])
+            }
         
         return {
             "status": "success",
-            "attack_history": recent_attacks,
-            "total_attacks_simulated": len(attack_scenarios),
-            "average_security_score": round(avg_score, 2),
-            "timestamp": datetime.utcnow().isoformat()
+            "entropy_pools": pool_status,
+            "total_pools": len(entropy_pools),
+            "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ Failed to get attack history: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get attack history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get entropy pools: {str(e)}")

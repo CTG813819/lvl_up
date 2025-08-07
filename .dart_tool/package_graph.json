@@ -12,6 +12,7 @@
         "device_info_plus",
         "dio",
         "fast_noise",
+        "file_picker",
         "fl_chart",
         "flutter",
         "flutter_background_service",
@@ -2016,6 +2017,21 @@
         "flutter",
         "meta",
         "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "file_picker",
+      "version": "8.3.7",
+      "dependencies": [
+        "cross_file",
+        "ffi",
+        "flutter",
+        "flutter_plugin_android_lifecycle",
+        "flutter_web_plugins",
+        "path",
+        "plugin_platform_interface",
+        "web",
+        "win32"
       ]
     }
   ],
