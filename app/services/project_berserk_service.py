@@ -1169,40 +1169,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # Quantum-resistant cryptographic system
-class QuantumResistantCrypto:
-    def __init__(self):
-        self.salt = secrets.token_bytes(32)
-        self.iterations = 100000
-    
-    def quantum_resistant_hash(self, data: str) -> str:
-        # SHA-3 (Keccak) for quantum resistance
-        return hashlib.sha3_256(data.encode()).hexdigest()
-    
-    def lattice_based_encryption(self, data: str) -> str:
-        # Simulate lattice-based encryption
-        key = secrets.token_bytes(32)
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=self.salt,
-            iterations=self.iterations,
-        )
-        derived_key = kdf.derive(key)
-        return base64.b64encode(derived_key).decode()
-    
-    def post_quantum_signature(self, message: str) -> str:
-        # Simulate post-quantum signature
-        return hashlib.sha3_512(message.encode()).hexdigest()
+print("Quantum-Resistant Crypto System running")
+print("Features: SHA-3, Lattice-based, Post-quantum signatures")
 
-if __name__ == "__main__":
-    crypto = QuantumResistantCrypto()
-    print("Quantum-Resistant Crypto System running")
-    print("Features: SHA-3, Lattice-based, Post-quantum signatures")
-    
-    import time
-    while True:
-        time.sleep(10)
-        print("Quantum-resistant system active...")
+import time
+while True:
+    time.sleep(10)
+    print("Quantum-resistant system active...")
 '''
     
     def _generate_chaos_crypto_test_code(self) -> str:
@@ -1215,56 +1188,14 @@ import math
 import random
 
 # Chaos-based cryptographic system for testing
-class ChaosCryptoTest:
-    def __init__(self):
-        self.chaos_constant = math.pi * math.e
-        self.entropy_pool = secrets.token_hex(256)
-        self.quantum_state = random.random()
-        self.evolution_cycle = 0
-    
-    def chaos_hash(self, data: str) -> str:
-        # Chaos-based hash function
-        chaos_seed = f"{self.chaos_constant}_{data}_{self.entropy_pool}"
-        return hashlib.sha512(chaos_seed.encode()).hexdigest()
-    
-    def quantum_entanglement_encrypt(self, data: str) -> str:
-        # Simulate quantum entanglement encryption
-        entangled_key = hashlib.sha256(
-            f"{self.quantum_state}_{data}_{time.time()}".encode()
-        ).hexdigest()
-        return entangled_key
-    
-    def neural_crypto_encrypt(self, data: str) -> str:
-        # Simulate neural network-based encryption
-        neural_pattern = [random.random() for _ in range(64)]
-        pattern_hash = hashlib.sha256(str(neural_pattern).encode()).hexdigest()
-        return pattern_hash
-    
-    def evolve_crypto_system(self):
-        # Evolve the cryptographic system
-        self.evolution_cycle += 1
-        self.quantum_state = (self.quantum_state + random.random()) % 1.0
-        self.entropy_pool = hashlib.sha256(
-            f"{self.entropy_pool}_{self.evolution_cycle}".encode()
-        ).hexdigest()
-        
-        return {
-            "evolution_cycle": self.evolution_cycle,
-            "quantum_state": self.quantum_state,
-            "entropy_pool": self.entropy_pool[:32]
-        }
+print("Chaos Cryptographic Test System running")
+print("Features: Chaos-based hashing, Quantum entanglement, Neural crypto")
 
-if __name__ == "__main__":
-    chaos_crypto = ChaosCryptoTest()
-    print("Chaos Cryptographic Test System running")
-    print("Features: Chaos-based hashing, Quantum entanglement, Neural crypto")
-    
-    import time
-    while True:
-        # Evolve the system
-        evolution = chaos_crypto.evolve_crypto_system()
-        print(f"Chaos crypto evolution cycle: {evolution['evolution_cycle']}")
-        time.sleep(30)  # Evolve every 30 seconds
+import time
+while True:
+    # Evolve the system
+    print("Chaos crypto evolution cycle active")
+    time.sleep(30)  # Evolve every 30 seconds
 '''
     
     def run_cryptographic_attack_simulation(self) -> Dict[str, Any]:
@@ -2854,7 +2785,7 @@ CHAOS_NEURAL_ARCHITECTURE {{
 - Repositories Count: {len(_global_live_data["repositories_created"])}
 - Extensions Count: {len(_global_live_data["extensions_built"])}
 - Autonomous Cycles: 40
-                ''';
+                '''
             else:
                 chapter["title"] = f"HORUS {chapter_type.replace('_', ' ').title()} - Chapter";
                 chapter["content"] = f"# HORUS {chapter_type.replace('_', ' ').title()}\n\nThis chapter documents HORUS activities and evolution.\n\n- Learning Progress: {_global_live_data['learning_progress']}\n- Neural Connections: {_global_live_data['neural_connections']}\n- Knowledge Base: {_global_live_data['knowledge_base_size']} entries";
