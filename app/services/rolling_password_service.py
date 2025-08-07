@@ -15,6 +15,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy import text
 
 from app.core.database import get_session
 from app.core.config import settings
@@ -81,7 +82,7 @@ class RollingPasswordService:
         try:
             async with get_session() as session:
                 # Create table for rolling passwords
-                await session.execute("""
+                await session.execute(text("""
                     CREATE TABLE IF NOT EXISTS rolling_passwords (
                         id SERIAL PRIMARY KEY,
                         password_hash VARCHAR(256) NOT NULL,
@@ -90,51 +91,51 @@ class RollingPasswordService:
                         is_active BOOLEAN DEFAULT TRUE,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
-                """)
+                """))
                 
                 # Create table for user sessions
-                await session.execute("""
+                await session.execute(text("""
                     CREATE TABLE IF NOT EXISTS user_sessions (
                         id SERIAL PRIMARY KEY,
                         user_id VARCHAR(256) NOT NULL,
                         session_token VARCHAR(256) NOT NULL,
-                        password_used VARCHAR(256) NOT NULL,
-                        login_time TIMESTAMP NOT NULL,
-                        last_activity TIMESTAMP NOT NULL,
-                        is_active BOOLEAN DEFAULT TRUE,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        ip_address VARCHAR(45),
+                        password_used VARCHAR(256),
+                        is_active BOOLEAN DEFAULT TRUE
                     )
-                """)
+                """))
                 
                 # Create table for failed login attempts
-                await session.execute("""
+                await session.execute(text("""
                     CREATE TABLE IF NOT EXISTS failed_login_attempts (
                         id SERIAL PRIMARY KEY,
                         user_identifier VARCHAR(256) NOT NULL,
-                        attempted_password_hash VARCHAR(256),
-                        attempt_time TIMESTAMP NOT NULL,
+                        attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         ip_address VARCHAR(45),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        password_attempted VARCHAR(256)
                     )
-                """)
+                """))
                 
                 await session.commit()
                 logger.info("✅ Rolling password database tables created")
         except Exception as e:
             logger.error(f"Failed to create password tables: {e}")
+            raise
     
     async def _load_or_generate_initial_password(self):
         """Load existing password state or generate initial password"""
         try:
             async with get_session() as session:
                 # Check for existing active password
-                result = await session.execute("""
+                result = await session.execute(text("""
                     SELECT password_hash, generation_time, expiry_time 
                     FROM rolling_passwords 
                     WHERE is_active = TRUE 
                     ORDER BY generation_time DESC 
                     LIMIT 1
-                """)
+                """))
                 existing_password = result.fetchone()
                 
                 if existing_password:
@@ -170,17 +171,17 @@ class RollingPasswordService:
             # Store in database
             async with get_session() as session:
                 # Deactivate old passwords
-                await session.execute("""
+                await session.execute(text("""
                     UPDATE rolling_passwords 
                     SET is_active = FALSE 
                     WHERE is_active = TRUE
-                """)
+                """))
                 
                 # Insert new password
-                await session.execute("""
+                await session.execute(text("""
                     INSERT INTO rolling_passwords (password_hash, generation_time, expiry_time, is_active)
                     VALUES (:hash, :gen_time, :exp_time, TRUE)
-                """, {
+                """), {
                     "hash": password_hash,
                     "gen_time": generation_time,
                     "exp_time": expiry_time
@@ -371,11 +372,11 @@ class RollingPasswordService:
             grace_cutoff = datetime.utcnow() - self.grace_period
             
             async with get_session() as session:
-                result = await session.execute("""
+                result = await session.execute(text("""
                     SELECT password_hash FROM rolling_passwords 
                     WHERE generation_time > :cutoff 
                     ORDER BY generation_time DESC
-                """, {"cutoff": grace_cutoff})
+                """), {"cutoff": grace_cutoff})
                 
                 for row in result:
                     if self._verify_password(password, row[0]):
@@ -392,11 +393,11 @@ class RollingPasswordService:
             lockout_cutoff = datetime.utcnow() - self.lockout_duration
             
             async with get_session() as session:
-                result = await session.execute("""
+                result = await session.execute(text("""
                     SELECT COUNT(*) FROM failed_login_attempts 
                     WHERE user_identifier = :user_id 
                     AND attempt_time > :cutoff
-                """, {"user_id": user_id, "cutoff": lockout_cutoff})
+                """), {"user_id": user_id, "cutoff": lockout_cutoff})
                 
                 failed_count = result.scalar()
                 return failed_count >= self.max_failed_attempts
@@ -408,10 +409,10 @@ class RollingPasswordService:
         """Get lockout expiry time for user"""
         try:
             async with get_session() as session:
-                result = await session.execute("""
+                result = await session.execute(text("""
                     SELECT MAX(attempt_time) FROM failed_login_attempts 
                     WHERE user_identifier = :user_id
-                """, {"user_id": user_id})
+                """), {"user_id": user_id})
                 
                 last_attempt = result.scalar()
                 if last_attempt:
@@ -428,14 +429,14 @@ class RollingPasswordService:
             password_hash = hashlib.sha256(password.encode()).hexdigest()  # Store hash for analysis
             
             async with get_session() as session:
-                await session.execute("""
-                    INSERT INTO failed_login_attempts (user_identifier, attempted_password_hash, attempt_time, ip_address)
-                    VALUES (:user_id, :password_hash, :attempt_time, :ip_address)
-                """, {
+                await session.execute(text("""
+                    INSERT INTO failed_login_attempts (user_identifier, attempt_time, ip_address, password_attempted)
+                    VALUES (:user_id, :attempt_time, :ip_address, :password_hash)
+                """), {
                     "user_id": user_id,
-                    "password_hash": password_hash,
                     "attempt_time": datetime.utcnow(),
-                    "ip_address": ip_address
+                    "ip_address": ip_address,
+                    "password_hash": password_hash
                 })
                 await session.commit()
             
@@ -447,10 +448,10 @@ class RollingPasswordService:
         """Clear failed attempts for user after successful login"""
         try:
             async with get_session() as session:
-                await session.execute("""
+                await session.execute(text("""
                     DELETE FROM failed_login_attempts 
                     WHERE user_identifier = :user_id
-                """, {"user_id": user_id})
+                """), {"user_id": user_id})
                 await session.commit()
         except Exception as e:
             logger.error(f"Failed to clear failed attempts: {e}")
@@ -461,11 +462,11 @@ class RollingPasswordService:
             lockout_cutoff = datetime.utcnow() - self.lockout_duration
             
             async with get_session() as session:
-                result = await session.execute("""
+                result = await session.execute(text("""
                     SELECT COUNT(*) FROM failed_login_attempts 
                     WHERE user_identifier = :user_id 
                     AND attempt_time > :cutoff
-                """, {"user_id": user_id, "cutoff": lockout_cutoff})
+                """), {"user_id": user_id, "cutoff": lockout_cutoff})
                 
                 failed_count = result.scalar()
                 return max(0, self.max_failed_attempts - failed_count)
@@ -479,10 +480,10 @@ class RollingPasswordService:
             session_token = secrets.token_urlsafe(32)
             
             async with get_session() as session:
-                await session.execute("""
+                await session.execute(text("""
                     INSERT INTO user_sessions (user_id, session_token, password_used, login_time, last_activity)
                     VALUES (:user_id, :session_token, :password_used, :login_time, :last_activity)
-                """, {
+                """), {
                     "user_id": user_id,
                     "session_token": session_token,
                     "password_used": password_used,
@@ -549,19 +550,19 @@ class RollingPasswordService:
         try:
             async with get_session() as session:
                 # Get failed attempt statistics
-                failed_attempts_result = await session.execute("""
+                failed_attempts_result = await session.execute(text("""
                     SELECT COUNT(*), COUNT(DISTINCT user_identifier) 
                     FROM failed_login_attempts 
                     WHERE attempt_time > :cutoff
-                """, {"cutoff": datetime.utcnow() - timedelta(hours=24)})
+                """), {"cutoff": datetime.utcnow() - timedelta(hours=24)})
                 failed_stats = failed_attempts_result.fetchone()
                 
                 # Get successful login statistics
-                successful_logins_result = await session.execute("""
+                successful_logins_result = await session.execute(text("""
                     SELECT COUNT(*), COUNT(DISTINCT user_id) 
                     FROM user_sessions 
                     WHERE login_time > :cutoff
-                """, {"cutoff": datetime.utcnow() - timedelta(hours=24)})
+                """), {"cutoff": datetime.utcnow() - timedelta(hours=24)})
                 success_stats = successful_logins_result.fetchone()
                 
                 return {
@@ -604,11 +605,11 @@ class RollingPasswordService:
         """Invalidate all active user sessions"""
         try:
             async with get_session() as session:
-                await session.execute("""
+                await session.execute(text("""
                     UPDATE user_sessions 
                     SET is_active = FALSE 
                     WHERE is_active = TRUE
-                """)
+                """))
                 await session.commit()
             
             # Clear memory sessions
