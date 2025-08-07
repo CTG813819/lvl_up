@@ -31,6 +31,9 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
   String _timeUntilExpiry = '';
   String _timeUntilNextPassword = '';
 
+  // Loading state
+  bool isLoading = false;
+
   final defaultPinTheme = PinTheme(
     width: 56,
     height: 56,
@@ -73,12 +76,15 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
 
   void _updatePasswordTimers() async {
     try {
+      // Check if widget is still mounted before proceeding
+      if (!mounted) return;
+
       // Get password status from backend
       final status = await RollingPasswordService.getPasswordStatus();
       if (status['success'] == true) {
         final timeUntilExpiry = status['status']?['time_until_expiry'];
 
-        if (timeUntilExpiry != null) {
+        if (timeUntilExpiry != null && mounted) {
           setState(() {
             _timeUntilExpiry = timeUntilExpiry;
             // Don't show next password timing - it should only be generated after login
@@ -124,33 +130,79 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
 
   Future<bool> _verifyPin(String pin) async {
     try {
-      // Try to authenticate with the rolling password system
+      setState(() {
+        isLoading = true;
+        errorMessage = '';
+      });
+
+      print('[APP_PIN_ENTRY] 🔐 Verifying password: $pin');
+
+      // Try rolling password authentication first
       final authResult = await RollingPasswordService.verifyPassword(pin);
 
+      print('[APP_PIN_ENTRY] 🔍 Auth result: $authResult');
+
       if (authResult['success'] == true) {
-        // Store the new password if provided
-        if (authResult['next_password'] != null) {
+        // Check if we have a next password to show
+        final nextPassword = authResult['next_password'];
+
+        if (nextPassword != null && nextPassword.isNotEmpty) {
+          print('[APP_PIN_ENTRY] 🔄 New password received: $nextPassword');
+
+          // Store the new password locally
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('app_pin', authResult['next_password']);
+          await prefs.setString('app_pin', nextPassword);
 
-          // Show the new password to the user
+          // Show new password dialog and wait for user to continue
           if (mounted) {
-            _showNewPasswordDialog(context, authResult['next_password']);
+            await _showNewPasswordDialog(context, nextPassword);
           }
+          return true;
+        } else {
+          print('[APP_PIN_ENTRY] ✅ No new password, proceeding normally');
+          // No new password, proceed normally
+          widget.onPinEntered(pin, context);
+          return true;
         }
-        return true;
-      }
+      } else {
+        print(
+          '[APP_PIN_ENTRY] ❌ Rolling password failed, trying local storage',
+        );
 
-      // Fallback to local storage for backward compatibility
-      final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('app_pin');
-      return savedPin == pin;
+        // Try local storage as fallback
+        final prefs = await SharedPreferences.getInstance();
+        final savedPin = prefs.getString('app_pin');
+
+        if (savedPin == pin) {
+          print('[APP_PIN_ENTRY] ✅ Local storage verification successful');
+
+          // Accept password locally but don't generate new one
+          // Backend will provide new password on next successful verification
+          print('[APP_PIN_ENTRY] 🔄 Password accepted locally');
+
+          // Continue to app without showing new password dialog
+          // since we don't have a new password from backend
+          return true;
+        } else {
+          print('[APP_PIN_ENTRY] ❌ Invalid password');
+          setState(() {
+            errorMessage = authResult['message'] ?? 'Invalid password';
+          });
+          return false;
+        }
+      }
     } catch (e) {
-      print('[APP_PIN_ENTRY] ❌ Error verifying pin: $e');
-      // Fallback to local storage on error
-      final prefs = await SharedPreferences.getInstance();
-      final savedPin = prefs.getString('app_pin');
-      return savedPin == pin;
+      print('[APP_PIN_ENTRY] ❌ Error verifying password: $e');
+      setState(() {
+        errorMessage = 'Authentication error: $e';
+      });
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -330,8 +382,11 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
     );
   }
 
-  void _showNewPasswordDialog(BuildContext context, String newPassword) {
-    showDialog(
+  Future<void> _showNewPasswordDialog(
+    BuildContext context,
+    String newPassword,
+  ) async {
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -421,7 +476,10 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Continue to the main app
+                // Continue to the main app with the new password
+                print(
+                  '[APP_PIN_ENTRY] 🚀 Continuing to app with new password: $newPassword',
+                );
                 widget.onPinEntered(newPassword, context);
               },
               style: ElevatedButton.styleFrom(
@@ -772,35 +830,83 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          if (enteredPin.length == 6) {
-                            final isValid = await _verifyPin(enteredPin);
-                            if (isValid && mounted) {
-                              widget.onPinEntered(enteredPin, context);
-                            } else if (mounted) {
-                              setState(() {
-                                errorMessage = 'Invalid PIN';
-                              });
-                              pinController.clear();
-                            }
-                          } else if (mounted) {
-                            setState(() {
-                              errorMessage = 'PIN must be 6 digits';
-                            });
-                          }
-                        },
+                        onPressed:
+                            isLoading
+                                ? null
+                                : () async {
+                                  if (enteredPin.isNotEmpty) {
+                                    setState(() {
+                                      isLoading = true;
+                                      errorMessage = '';
+                                    });
+
+                                    try {
+                                      final isValid = await _verifyPin(
+                                        enteredPin,
+                                      );
+                                      if (isValid && mounted) {
+                                        widget.onPinEntered(
+                                          enteredPin,
+                                          context,
+                                        );
+                                      } else if (mounted) {
+                                        setState(() {
+                                          errorMessage = 'Invalid PIN';
+                                        });
+                                        pinController.clear();
+                                      }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          isLoading = false;
+                                        });
+                                      }
+                                    }
+                                  } else if (mounted) {
+                                    setState(() {
+                                      errorMessage = 'Please enter a PIN';
+                                    });
+                                  }
+                                },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.yellow,
+                          backgroundColor:
+                              isLoading ? Colors.grey : Colors.yellow,
                           foregroundColor: Colors.black,
                         ),
-                        child: const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child:
+                            isLoading
+                                ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.black,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Verifying...',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                                : const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                       ),
                     ),
                     const SizedBox(height: 16),

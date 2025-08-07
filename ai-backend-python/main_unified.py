@@ -79,6 +79,7 @@ from app.routers.stealth_assimilation_hub_router import router as stealth_assimi
 from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
 from app.routers.test_enhanced_router import router as test_enhanced_router
 from app.routers.rolling_password_router import router as rolling_password_router
+from app.routers.jarvis_router import router as jarvis_router
 
 # Import services
 from app.services.ai_learning_service import AILearningService
@@ -510,6 +511,7 @@ app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation 
 app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
 app.include_router(test_enhanced_router, tags=["Test Enhanced"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
+app.include_router(jarvis_router, tags=["Jarvis"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")
