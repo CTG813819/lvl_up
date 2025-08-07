@@ -508,16 +508,11 @@ class RollingPasswordService:
     async def _get_next_password_for_user(self, user_id: str) -> Optional[str]:
         """Get next password for authenticated user"""
         try:
-            # Check if user recently logged in and needs next password
-            time_until_expiry = self.password_expiry_time - datetime.utcnow()
-            
-            if time_until_expiry <= timedelta(minutes=10):
-                # Generate next password if close to expiry
-                next_password = self._generate_secure_password()
-                logger.info(f"🔑 Generated next password for user: {user_id}")
-                return next_password
-            
-            return None
+            # Only generate next password after successful login
+            # This ensures security - no automatic password generation
+            next_password = self._generate_secure_password()
+            logger.info(f"🔑 Generated next password for user: {user_id} after successful login")
+            return next_password
         except Exception as e:
             logger.error(f"Failed to get next password: {e}")
             return None

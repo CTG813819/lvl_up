@@ -3,6 +3,7 @@ import 'package:pinput/pinput.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_setup_pin_screen.dart';
 import 'services/rolling_password_service.dart';
+import 'dart:async'; // Added for Timer
 
 class AppPinEntryScreen extends StatefulWidget {
   final Function(String, BuildContext) onPinEntered;
@@ -23,8 +24,12 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
   String enteredPin = '';
   String errorMessage = '';
   final pinController = TextEditingController();
-  late AnimationController _lightningAnimationController;
   late AnimationController _pulseAnimationController;
+  
+  // Timer variables
+  Timer? _passwordTimer;
+  String _timeUntilExpiry = '';
+  String _timeUntilNextPassword = '';
 
   final defaultPinTheme = PinTheme(
     width: 56,
@@ -40,10 +45,6 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
   @override
   void initState() {
     super.initState();
-    _lightningAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
     _pulseAnimationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -52,14 +53,42 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
     // Start the pulse animation
     _pulseAnimationController.repeat(reverse: true);
     _checkPinSetup();
+    _startPasswordTimer();
   }
 
   @override
   void dispose() {
     pinController.dispose();
-    _lightningAnimationController.dispose();
     _pulseAnimationController.dispose();
+    _passwordTimer?.cancel();
     super.dispose();
+  }
+
+  void _startPasswordTimer() {
+    // Update timer every second
+    _passwordTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      _updatePasswordTimers();
+    });
+  }
+
+  void _updatePasswordTimers() async {
+    try {
+      // Get password status from backend
+      final status = await RollingPasswordService.getPasswordStatus();
+      if (status['success'] == true) {
+        final timeUntilExpiry = status['status']?['time_until_expiry'];
+        
+        if (timeUntilExpiry != null) {
+          setState(() {
+            _timeUntilExpiry = timeUntilExpiry;
+            // Don't show next password timing - it should only be generated after login
+            _timeUntilNextPassword = '';
+          });
+        }
+      }
+    } catch (e) {
+      print('[APP_PIN_ENTRY] ❌ Error updating password timers: $e');
+    }
   }
 
   Future<void> _checkPinSetup() async {
@@ -70,21 +99,6 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
       if (passwordStatus['success'] == true) {
         // Backend has a password, use rolling password system
         print('[APP_PIN_ENTRY] ✅ Using rolling password system');
-
-        // Get the current password from backend
-        final currentPassword =
-            await RollingPasswordService.getCurrentPassword();
-        if (currentPassword != null) {
-          // Store the current password locally for the user to use
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('app_pin', currentPassword);
-          print('[APP_PIN_ENTRY] 🔑 Current password stored: $currentPassword');
-
-          // Show the current password to the user
-          if (mounted) {
-            _showCurrentPasswordDialog(context, currentPassword);
-          }
-        }
         return;
       }
     } catch (e) {
@@ -477,10 +491,34 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Enter the current password above to access the app.',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-                textAlign: TextAlign.center,
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.timer, color: Colors.purple, size: 20),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Password expires in: $_timeUntilExpiry',
+                      style: TextStyle(
+                        color: Colors.purple,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'If you miss the login window, use admin recovery.',
+                      style: TextStyle(color: Colors.purple, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -535,35 +573,21 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedBuilder(
-                animation: _pulseAnimationController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: 1.0 + (_pulseAnimationController.value * 0.3),
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.yellow.withOpacity(
-                          0.2 + (_pulseAnimationController.value * 0.3),
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.yellow.withOpacity(
-                            0.5 + (_pulseAnimationController.value * 0.5),
-                          ),
-                          width: 2 + (_pulseAnimationController.value * 2),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.flash_on,
-                        size: 80,
-                        color: Colors.yellow.withOpacity(
-                          0.8 + (_pulseAnimationController.value * 0.2),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.yellow.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.flash_on,
+                  size: 80,
+                  color: Colors.yellow.withOpacity(0.8),
+                ),
               ),
               const SizedBox(height: 40),
               Text(
@@ -576,7 +600,7 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Enter PIN to access the app',
+                'Enter password to access the app',
                 style: TextStyle(fontSize: 16, color: Colors.grey[400]),
               ),
               const SizedBox(height: 8),
@@ -597,18 +621,59 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                           color: Colors.purple.withOpacity(0.5),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Column(
                         children: [
-                          Icon(Icons.security, color: Colors.purple, size: 16),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Rolling Password Active',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.purple[300],
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.security,
+                                color: Colors.purple,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Rolling Password Active',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.purple[300],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                children: [
+                                  Icon(
+                                    Icons.timer,
+                                    color: Colors.red[300],
+                                    size: 16,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Expires in:',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.red[300],
+                                    ),
+                                  ),
+                                  Text(
+                                    _timeUntilExpiry.isNotEmpty
+                                        ? _timeUntilExpiry
+                                        : '--:--',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red[300],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -623,46 +688,56 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      height: 80, // Fixed height for Pinput
-                      child: Pinput(
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.yellow),
+                      ),
+                      child: TextField(
                         controller: pinController,
-                        length: 6,
-                        defaultPinTheme: defaultPinTheme,
-                        focusedPinTheme: focusedPinTheme,
-                        submittedPinTheme: submittedPinTheme,
-                        errorPinTheme:
-                            errorMessage.isNotEmpty ? errorPinTheme : null,
                         obscureText: true,
-                        keyboardType: TextInputType.number,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                          fontFamily: 'monospace',
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter password',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                        ),
                         onChanged: (value) {
                           setState(() {
                             enteredPin = value;
                             errorMessage = '';
                           });
                         },
-                        onCompleted: (value) async {
-                          if (value.length == 6) {
+                        onSubmitted: (value) async {
+                          if (value.isNotEmpty) {
                             final isValid = await _verifyPin(value);
                             if (isValid && mounted) {
                               // Don't call widget.onPinEntered here if we're showing the new password dialog
                               // The dialog will handle the navigation
                               if (!mounted) return;
-
+                              
                               // Check if we have a next password to show
-                              final prefs =
-                                  await SharedPreferences.getInstance();
+                              final prefs = await SharedPreferences.getInstance();
                               final nextPassword = prefs.getString('app_pin');
                               if (nextPassword != value) {
                                 // We have a new password, the dialog will handle navigation
                                 return;
                               }
-
+                              
                               // No new password, proceed normally
                               widget.onPinEntered(value, context);
                             } else if (mounted) {
                               setState(() {
-                                errorMessage = 'Invalid PIN';
+                                errorMessage = 'Invalid password';
                               });
                               pinController.clear();
                             }
@@ -719,19 +794,6 @@ class _AppPinEntryScreenState extends State<AppPinEntryScreen>
                       child: Text(
                         'Forgot Password?',
                         style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final currentPassword = await RollingPasswordService.getCurrentPassword();
-                        if (currentPassword != null && mounted) {
-                          _showCurrentPasswordDialog(context, currentPassword);
-                        }
-                      },
-                      child: Text(
-                        'Show Current Password',
-                        style: TextStyle(color: Colors.blue[400], fontSize: 14),
                       ),
                     ),
                   ],
