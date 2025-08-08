@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 import structlog
+from datetime import datetime
 
 from ..services.ai_adversarial_integration_service import ai_adversarial_integration_service
 from ..services.enhanced_project_horus_service import enhanced_project_horus_service
@@ -291,42 +292,81 @@ async def get_berserk_status() -> Dict[str, Any]:
 
 @router.get("/integration/status")
 async def get_integration_status() -> Dict[str, Any]:
-    """Get overall AI integration status"""
+    """Get comprehensive integration status"""
     try:
-        # Get status from all services
-        adversarial_progress = await ai_adversarial_integration_service.get_adversarial_progress_report()
+        # Get Horus weapon synthesis report
         horus_report = await enhanced_project_horus_service.get_weapon_synthesis_report()
+        
+        # Get Berserk status
         berserk_status = await project_berserk_enhanced_service.get_berserk_status_report()
-        chaos_language = await chaos_language_service.get_complete_chaos_language_documentation()
+        
+        # Get adversarial integration status
+        adversarial_status = await ai_adversarial_integration_service.get_adversarial_progress_report()
         
         return {
             "status": "success",
             "integration_status": {
-                "adversarial_training": {
-                    "total_ais": len(adversarial_progress.get("ai_progress", {})),
-                    "total_scenarios_completed": sum(
-                        ai_data.get("scenarios_completed", 0) 
-                        for ai_data in adversarial_progress.get("ai_progress", {}).values()
-                    ),
-                    "overall_success_rate": adversarial_progress.get("aggregate_stats", {}).get("overall_success_rate", 0.0)
-                },
-                "project_horus": {
+                "horus": {
+                    "status": "active",
                     "total_weapons": horus_report.get("total_weapons", 0),
-                    "average_complexity": horus_report.get("average_complexity", 0.0),
-                    "chaos_language_version": chaos_language.get("language_core", {}).get("version", "unknown")
+                    "synthesis_progress": horus_report.get("synthesis_progress", 0.0),
+                    "learning_sessions": horus_report.get("learning_sessions", 0)
                 },
-                "project_berserk": {
+                "berserk": {
+                    "status": "active", 
                     "total_weapons": berserk_status.get("total_weapons", 0),
-                    "active_deployments": berserk_status.get("active_deployments", 0),
-                    "systems_compromised": berserk_status.get("deployment_statistics", {}).get("systems_compromised", 0)
+                    "evolution_stage": berserk_status.get("evolution_stage", 0),
+                    "learning_progress": berserk_status.get("learning_progress", 0.0)
                 },
-                "frontend_dependency": "removed",
-                "backend_integration": "complete"
-            }
+                "adversarial": {
+                    "status": "active",
+                    "ai_types_trained": len(adversarial_status.get("ai_progress", {})),
+                    "total_scenarios": adversarial_status.get("total_scenarios", 0),
+                    "success_rate": adversarial_status.get("success_rate", 0.0)
+                }
+            },
+            "timestamp": datetime.utcnow().isoformat()
         }
         
     except Exception as e:
         logger.error(f"Error getting integration status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/weapons")
+async def get_weapons_system_status() -> Dict[str, Any]:
+    """Get weapons system status for AI integration"""
+    try:
+        # Get Horus weapon synthesis report
+        horus_report = await enhanced_project_horus_service.get_weapon_synthesis_report()
+        
+        # Get Berserk status
+        berserk_status = await project_berserk_enhanced_service.get_berserk_status_report()
+        
+        return {
+            "status": "success",
+            "weapons_system": {
+                "horus_weapons": {
+                    "total_weapons": horus_report.get("total_weapons", 0),
+                    "synthesis_progress": horus_report.get("synthesis_progress", 0.0),
+                    "learning_sessions": horus_report.get("learning_sessions", 0),
+                    "weapon_types": horus_report.get("weapon_types", [])
+                },
+                "berserk_weapons": {
+                    "total_weapons": berserk_status.get("total_weapons", 0),
+                    "evolution_stage": berserk_status.get("evolution_stage", 0),
+                    "learning_progress": berserk_status.get("learning_progress", 0.0),
+                    "weapon_types": berserk_status.get("weapon_types", [])
+                },
+                "total_weapons": (horus_report.get("total_weapons", 0) + 
+                                berserk_status.get("total_weapons", 0)),
+                "system_status": "active"
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting weapons system status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

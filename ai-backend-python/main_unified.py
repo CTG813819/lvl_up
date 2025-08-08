@@ -77,7 +77,6 @@ from app.routers.custodes_ai import router as custodes_ai_router
 from app.routers.quantum_chaos_router import router as quantum_chaos_router
 from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
 from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
-from app.routers.test_enhanced_router import router as test_enhanced_router
 from app.routers.rolling_password_router import router as rolling_password_router
 from app.routers.jarvis_router import router as jarvis_router
 
@@ -86,6 +85,15 @@ from app.routers.autonomous_brain_router import router as autonomous_brain_route
 
 # Import enhanced testing router
 from app.routers.enhanced_testing_router import router as enhanced_testing_router
+
+# Import AI integration router
+from app.routers.ai_integration_router import router as ai_integration_router
+
+# Import security testing router
+from app.routers.security_testing_router import router as security_testing_router
+
+# Import app assimilation router
+from app.routers.app_assimilation_router import router as app_assimilation_router
 
 # Import services
 from app.services.ai_learning_service import AILearningService
@@ -521,7 +529,6 @@ app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custode
 app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
 app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
 app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
-app.include_router(test_enhanced_router, tags=["Test Enhanced"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
 app.include_router(jarvis_router, tags=["Jarvis"])
 
@@ -530,6 +537,15 @@ app.include_router(autonomous_brain_router, prefix="/api/autonomous-brain", tags
 
 # Enhanced Testing Router
 app.include_router(enhanced_testing_router, prefix="/api/enhanced-testing", tags=["Enhanced Testing"])
+
+# AI Integration Router
+app.include_router(ai_integration_router, prefix="/api/ai-integration", tags=["AI Integration"])
+
+# Security Testing Router
+app.include_router(security_testing_router, prefix="/api/security-testing", tags=["Security Testing"])
+
+# App Assimilation Router
+app.include_router(app_assimilation_router, prefix="/api/app-assimilation", tags=["App Assimilation"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")

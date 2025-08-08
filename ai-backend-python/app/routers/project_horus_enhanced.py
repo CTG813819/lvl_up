@@ -260,20 +260,46 @@ async def evolve_quantum_chaos_from_failures():
 
 @router.get("/status")
 async def get_project_horus_status():
-    """Get comprehensive Project Horus status with quantum chaos integration"""
+    """Get Project Horus v2 status"""
     try:
+        status = await project_horus_service.get_project_horus_status()
+        
         return {
-            "status": "active",
-            "quantum_chaos_integration": project_horus_service.quantum_chaos_service is not None,
-            "stealth_assimilation_hub": project_horus_service.stealth_assimilation_hub is not None,
-            "quantum_complexity": project_horus_service.quantum_complexity,
-            "learning_progress": project_horus_service.learning_progress,
-            "assimilated_systems_count": len(project_horus_service.assimilated_systems),
-            "failed_attacks_count": len(project_horus_service.failed_attacks),
-            "chaos_repositories_count": len(project_horus_service.chaos_repositories),
-            "test_environments_count": len(project_horus_service.test_environments),
+            "status": "success",
+            "project_horus_v2": {
+                "status": "active",
+                "quantum_complexity": project_horus_service.quantum_complexity,
+                "total_evolutions": project_horus_service.total_evolutions,
+                "assimilated_systems": len(project_horus_service.assimilated_systems),
+                "failed_attacks": len(project_horus_service.failed_attacks),
+                "chaos_repositories": len(project_horus_service.chaos_repositories),
+                "test_environments": len(project_horus_service.test_environments)
+            },
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         logger.error(f"Failed to get Project Horus status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/charos-stream")
+async def get_charos_stream():
+    """Get live charos stream for Project Horus v2"""
+    try:
+        # Generate live charos stream data
+        charos_data = await project_horus_service.generate_charos_stream()
+        
+        return {
+            "status": "success",
+            "charos_stream": {
+                "stream_active": True,
+                "charos_data": charos_data,
+                "stream_type": "live",
+                "quantum_chaos_active": True,
+                "learning_integration": "active"
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get charos stream: {e}")
         raise HTTPException(status_code=500, detail=str(e)) 
