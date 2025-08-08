@@ -14,6 +14,9 @@ from app.services.rolling_password_service import rolling_password_service
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/rolling-password", tags=["Rolling Password"])
 
+# Additional router for auth endpoints that frontend expects
+auth_router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
 # Pydantic models
 class InitializePasswordRequest(BaseModel):
     initial_password: str
@@ -27,6 +30,10 @@ class PasswordStatusRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
+
+class AdminRecoveryRequest(BaseModel):
+    password: str
+    admin_phrase: str
 
 @router.post("/initialize")
 async def initialize_rolling_password(request: InitializePasswordRequest):
@@ -106,6 +113,38 @@ async def reset_rolling_password(request: ResetPasswordRequest):
     except Exception as e:
         logger.error(f"Failed to reset rolling password: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/admin-recovery")
+async def admin_recovery(request: AdminRecoveryRequest):
+    """Admin recovery endpoint - validates admin credentials and generates new rolling password"""
+    try:
+        # Validate admin credentials
+        if request.password != "813819":
+            raise HTTPException(status_code=401, detail="Invalid admin password")
+        
+        if request.admin_phrase != "there are no wolves on fenris":
+            raise HTTPException(status_code=401, detail="Invalid admin phrase")
+        
+        # Generate new rolling password
+        new_password = await rolling_password_service.admin_recovery_generate_password()
+        
+        if new_password["status"] == "success":
+            return {
+                "status": "success",
+                "message": "Admin recovery successful - new rolling password generated",
+                "new_password": new_password["new_password"],
+                "expires_at": new_password["expires_at"],
+                "admin_recovery_used": True,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=500, detail=new_password["message"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Admin recovery failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Admin recovery failed: {str(e)}")
 
 @router.get("/system-status")
 async def get_system_status() -> Dict[str, Any]:
@@ -211,3 +250,22 @@ async def get_security_integration_status() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get security integration status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get security integration status: {str(e)}")
+
+# Auth endpoints that frontend expects
+@auth_router.get("/current-password-status")
+async def get_auth_current_password_status() -> Dict[str, Any]:
+    """Get current password status for auth endpoints"""
+    try:
+        password_info = await rolling_password_service.get_current_password_info()
+        
+        return {
+            "password_active": password_info.get("has_active_password", False),
+            "expires_at": password_info.get("expiry_time"),
+            "time_until_expiry": password_info.get("time_until_expiry"),
+            "rotation_interval": f"{password_info.get('rotation_interval_hours', 1)} hours",
+            "grace_period": f"{password_info.get('grace_period_minutes', 5)} minutes",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get auth password status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get auth password status: {str(e)}")

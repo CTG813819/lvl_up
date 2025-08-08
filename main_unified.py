@@ -67,7 +67,7 @@ from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
 from app.routers.weapons import router as weapons_router
 from app.routers.security_testing_router import router as security_testing_router
-from app.routers.rolling_password_router import router as rolling_password_router
+from app.routers.rolling_password_router import router as rolling_password_router, auth_router as rolling_password_auth_router
 
 # Import new AI service routers
 from app.routers.project_horus import router as project_horus_router
@@ -79,7 +79,6 @@ from app.routers.custodes_ai import router as custodes_ai_router
 from app.routers.quantum_chaos_router import router as quantum_chaos_router
 from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
 from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
-from app.routers.rolling_password_router import router as rolling_password_router
 from app.routers.jarvis_router import router as jarvis_router
 
 # Import autonomous brain router
@@ -537,6 +536,7 @@ app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
 app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
 app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
+app.include_router(rolling_password_auth_router, tags=["Authentication"])
 app.include_router(jarvis_router, tags=["Jarvis"])
 
 # Autonomous Brain Router

@@ -162,6 +162,35 @@ class RollingPasswordService:
             return "expired"
         
         return str(time_remaining)
+    
+    async def admin_recovery_generate_password(self) -> Dict[str, Any]:
+        """Generate new rolling password via admin recovery"""
+        try:
+            # Generate new secure password
+            new_password = secrets.token_urlsafe(16)
+            self.current_password = new_password
+            self.password_expiry = datetime.utcnow() + timedelta(hours=self.rotation_interval_hours)
+            
+            # Update security analytics
+            self.security_analytics["last_24_hours"]["password_rotations"] += 1
+            self.security_analytics["last_24_hours"]["successful_logins"] += 1
+            
+            # Ensure system is initialized
+            if not self.initialized:
+                self.initialized = True
+            
+            logger.info("🔐 Admin recovery: New rolling password generated")
+            
+            return {
+                "status": "success",
+                "message": "New rolling password generated via admin recovery",
+                "new_password": new_password,
+                "expires_at": self.password_expiry.isoformat(),
+                "rotation_interval_hours": self.rotation_interval_hours
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate password via admin recovery: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # Global service instance
