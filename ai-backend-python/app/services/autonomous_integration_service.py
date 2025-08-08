@@ -34,18 +34,21 @@ class AutonomousIntegrationService:
         self.integration_history = []
         self.chaos_code_evolution = []
         self.brain_collaboration_events = []
-        
-        # Initialize integration
-        self._initialize_integration()
+        self.initialized = False
     
-    def _initialize_integration(self):
+    async def initialize(self):
         """Initialize autonomous integration"""
+        if self.initialized:
+            return
+        
         logger.info("🧠 Initializing autonomous integration service")
         
         # Start integration processes
         asyncio.create_task(self._integrate_horus_with_autonomous_brain())
         asyncio.create_task(self._integrate_berserk_with_autonomous_brain())
         asyncio.create_task(self._monitor_brain_collaboration())
+        
+        self.initialized = True
     
     async def _integrate_horus_with_autonomous_brain(self):
         """Integrate Horus with autonomous brain capabilities"""

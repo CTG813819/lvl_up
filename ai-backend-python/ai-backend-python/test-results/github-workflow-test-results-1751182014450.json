@@ -1,0 +1,121 @@
+{
+  "timestamp": "2025-06-29T07:26:53.986Z",
+  "tests": [
+    {
+      "test": "workflow_configuration",
+      "status": "PASSED",
+      "message": "GitHub workflow contains all required components",
+      "details": {
+        "components": [
+          "proposal-test",
+          "backend-test",
+          "flutter-test",
+          "security-scan",
+          "deploy-production"
+        ]
+      }
+    },
+    {
+      "test": "proposal_validation_script",
+      "status": "PASSED",
+      "message": "Proposal validation script executes successfully",
+      "details": {
+        "exitCode": 0,
+        "output": "[2025-06-29T07:26:54.071Z] [INFO] 🚀 Starting Proposal Validation\n[2025-06-29T07:26:54.072Z] [INFO] ================================\n[2025-06-29T07:26:54.072Z] [INFO] \n📋 Running: Proposal Structure\n["
+      }
+    },
+    {
+      "test": "proposal_integration_script",
+      "status": "PASSED",
+      "message": "Proposal integration script executes successfully",
+      "details": {
+        "exitCode": 0,
+        "output": "[2025-06-29T07:26:54.155Z] [INFO] 🚀 Starting Proposal Integration Testing\n[2025-06-29T07:26:54.156Z] [INFO] ========================================\n[2025-06-29T07:26:54.156Z] [INFO] \n📋 Running: Pro"
+      }
+    },
+    {
+      "test": "app_functionality_script",
+      "status": "FAILED",
+      "message": "App functionality validation script failed to execute",
+      "details": {
+        "exitCode": 1,
+        "stderr": "C:\\projects\\lvl_up\\ai-backend\\scripts\\validate-app-functionality.js:458\r\nmodule.exports = { validateAppFunctionality, validationResults }; \r\n                   ^\r\n\r\nReferenceError: validateAppFunctionality is not defined\r\n    at Object.<anonymous> (C:\\projects\\lvl_up\\ai-backend\\scripts\\validate-app-functionality.js:458:20)\r\n    at Module._compile (node:internal/modules/cjs/loader:1730:14)\r\n    at Object..js (node:internal/modules/cjs/loader:1895:10)\r\n    at Module.load (node:internal/modules/cjs/loader:1465:32)\r\n    at Function._load (node:internal/modules/cjs/loader:1282:12)\r\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\r\n    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)\r\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\r\n    at node:internal/main/run_main_module:36:49\r\n\r\nNode.js v22.17.0\r\n"
+      }
+    },
+    {
+      "test": "deployment_validation_script",
+      "status": "FAILED",
+      "message": "Deployment validation script failed to execute",
+      "details": {
+        "exitCode": 1,
+        "stderr": ""
+      }
+    },
+    {
+      "test": "flutter_build_configuration",
+      "status": "PASSED",
+      "message": "Flutter build configuration is valid",
+      "details": {
+        "dependencies": [
+          "flutter:",
+          "provider:",
+          "http:",
+          "shared_preferences:"
+        ]
+      }
+    },
+    {
+      "test": "backend_build_configuration",
+      "status": "PASSED",
+      "message": "Backend build configuration is valid",
+      "details": {
+        "scripts": [
+          "test",
+          "build",
+          "start"
+        ]
+      }
+    },
+    {
+      "test": "github_api_connectivity",
+      "status": "SKIPPED",
+      "message": "GitHub token or repo not configured",
+      "details": {
+        "hasToken": false,
+        "hasRepo": false
+      }
+    },
+    {
+      "test": "workflow_trigger_configuration",
+      "status": "PASSED",
+      "message": "Workflow trigger configuration is valid",
+      "details": {
+        "triggers": [
+          "workflow_dispatch:",
+          "push:",
+          "pull_request:"
+        ]
+      }
+    },
+    {
+      "test": "artifact_configuration",
+      "status": "PASSED",
+      "message": "Artifact configuration is valid",
+      "details": {
+        "artifacts": [
+          "app-release.apk",
+          "app-release.aab",
+          "backend-build",
+          "web-build"
+        ]
+      }
+    }
+  ],
+  "overall": "FAILED",
+  "summary": {
+    "total": 10,
+    "passed": 7,
+    "failed": 2,
+    "skipped": 1
+  }
+}

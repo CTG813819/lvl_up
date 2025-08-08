@@ -63,10 +63,13 @@ class EnhancedTestingIntegrationService:
         }
 
         # Initialize the service
-        self._initialize_enhanced_testing()
+        self.initialized = False
 
-    async def _initialize_enhanced_testing(self):
+    async def initialize(self):
         """Initialize enhanced testing capabilities"""
+        if self.initialized:
+            return
+            
         try:
             logger.info("🔧 Initializing Enhanced Testing Integration Service")
             
@@ -75,10 +78,15 @@ class EnhancedTestingIntegrationService:
             asyncio.create_task(self._background_docker_simulation_cycle())
             asyncio.create_task(self._background_testing_progression())
             
+            self.initialized = True
             logger.info("✅ Enhanced Testing Integration Service initialized")
             
         except Exception as e:
             logger.error(f"❌ Error initializing enhanced testing: {e}")
+    
+    async def _initialize_enhanced_testing(self):
+        """Initialize enhanced testing capabilities"""
+        await self.initialize()
 
     async def _background_internet_learning(self):
         """Background task for continuous internet learning"""

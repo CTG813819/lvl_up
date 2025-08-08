@@ -55,6 +55,30 @@ class ProjectBerserkEnhancedService:
         self.internet_threat_intelligence = {}
         self.docker_testing_results = {}
         
+        # Security learning integration
+        self.security_learning_data = []
+        self.defensive_mechanisms = {}
+        self.attack_countermeasures = {}
+        self.security_evolution_cycles = 0
+        
+        # NEW: Comprehensive failure learning system
+        self.failure_repository = {}
+        self.failure_analysis_data = {}
+        self.self_improvement_extensions = {}
+        self.real_time_learning_queue = []
+        self.failure_prevention_systems = {}
+        self.knowledge_base = {}
+        self.adaptive_functions = {}
+        self.live_monitoring_systems = {}
+        self.failure_patterns = {}
+        self.solution_repositories = {}
+        
+        # Initialize failure learning system
+        self._initialize_failure_learning_system()
+    
+    def _initialize_failure_learning_system(self):
+        """Initialize failure learning system attributes"""
+        pass
     async def initialize(self):
         """Initialize Enhanced Project Berserk"""
         try:
@@ -903,6 +927,7 @@ class ProjectBerserkEnhancedService:
                 category = weapon.get("category", "unknown")
                 categories[category] = categories.get(category, 0) + 1
         return categories
+
 
 
 # Global instance
