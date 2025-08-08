@@ -475,18 +475,53 @@ class ProjectHorusService:
 
     async def get_project_horus_status(self) -> Dict[str, Any]:
         """Get comprehensive Project Horus status with quantum chaos integration"""
-        return {
-            "status": "active",
-            "quantum_chaos_integration": self.quantum_chaos_service is not None,
-            "stealth_assimilation_hub": self.stealth_assimilation_hub is not None,
-            "quantum_complexity": self.quantum_complexity,
-            "learning_progress": self.learning_progress,
-            "assimilated_systems_count": len(self.assimilated_systems),
-            "failed_attacks_count": len(self.failed_attacks),
-            "chaos_repositories_count": len(self.chaos_repositories),
-            "test_environments_count": len(self.test_environments),
-            "timestamp": datetime.now().isoformat()
-        }
+        try:
+            return {
+                "status": "active",
+                "quantum_chaos_integration": self.quantum_chaos_service is not None,
+                "stealth_assimilation_hub": self.stealth_assimilation_hub is not None,
+                "quantum_complexity": self.quantum_complexity,
+                "learning_progress": self.learning_progress,
+                "assimilated_systems_count": len(self.assimilated_systems),
+                "failed_attacks_count": len(self.failed_attacks),
+                "chaos_repositories_count": len(self.chaos_repositories),
+                "test_environments_count": len(self.test_environments),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Failed to get Project Horus status: {e}")
+            return {"error": str(e)}
+
+    async def generate_charos_stream(self) -> Dict[str, Any]:
+        """Generate live charos stream data"""
+        try:
+            # Generate quantum chaos data for stream
+            chaos_data = {
+                "quantum_entanglement": random.uniform(0.8, 1.0),
+                "chaos_complexity": self.quantum_complexity,
+                "learning_integration": self.learning_progress,
+                "assimilated_systems": list(self.assimilated_systems.keys()),
+                "failed_attacks": list(self.failed_attacks.keys()),
+                "chaos_repositories": self.chaos_repositories,
+                "test_environments": list(self.test_environments.keys()),
+                "stream_timestamp": datetime.now().isoformat()
+            }
+            
+            # Add quantum chaos patterns
+            chaos_data["quantum_patterns"] = [
+                {
+                    "pattern_id": f"quantum_{i}",
+                    "complexity": random.uniform(0.5, 1.0),
+                    "entanglement_level": random.uniform(0.7, 1.0),
+                    "chaos_factor": random.uniform(0.6, 1.0)
+                }
+                for i in range(5)
+            ]
+            
+            return chaos_data
+        except Exception as e:
+            logger.error(f"Failed to generate charos stream: {e}")
+            return {"error": str(e)}
 
 # Global instance
 project_horus_service = ProjectHorusService() 
