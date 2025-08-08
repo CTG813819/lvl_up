@@ -47,6 +47,14 @@ class ChaosLanguageService:
         self.auto_generation_enabled = True
         self.generation_threshold = 10  # New constructs trigger chapter creation
         
+<<<<<<< HEAD
+=======
+        # Security learning integration
+        self.security_constructs = {}
+        self.security_chapters = []
+        self.security_evolution_cycles = 0
+        
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
     async def initialize(self):
         """Initialize chaos language service"""
         try:
@@ -675,6 +683,258 @@ class ChaosLanguageService:
         except Exception as e:
             logger.error(f"Error forcing chapter generation: {e}")
             return {"status": "error", "message": str(e)}
+<<<<<<< HEAD
+=======
+    
+    async def learn_from_security_testing(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Learn from security testing results to evolve chaos language"""
+        try:
+            logger.info("🔒 Chaos Language learning from security testing results")
+            
+            # Extract security constructs from testing data
+            security_constructs = await self._extract_security_constructs(security_data)
+            self.security_constructs.update(security_constructs)
+            
+            # Generate security-focused chapters
+            security_chapters = await self._generate_security_chapters(security_data)
+            self.security_chapters.extend(security_chapters)
+            
+            # Update language core with security constructs
+            await self._integrate_security_constructs(security_constructs)
+            
+            # Increment security evolution cycles
+            self.security_evolution_cycles += 1
+            
+            return {
+                "status": "success",
+                "security_constructs_extracted": len(security_constructs),
+                "security_chapters_generated": len(security_chapters),
+                "security_evolution_cycle": self.security_evolution_cycles
+            }
+            
+        except Exception as e:
+            logger.error(f"Error learning from security testing: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    async def _extract_security_constructs(self, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract security constructs from security testing data"""
+        security_constructs = {}
+        
+        # Extract from vulnerability findings
+        vulnerability_findings = security_data.get("vulnerability_findings", {})
+        for vuln_type, details in vulnerability_findings.items():
+            construct_name = f"CHAOS.SECURITY.{vuln_type.upper()}.DEFEND"
+            security_constructs[construct_name] = {
+                "description": f"Defend against {vuln_type} vulnerabilities",
+                "syntax": f"CHAOS.SECURITY.{vuln_type.upper()}.DEFEND(defense_level, response_time)",
+                "parameters": ["defense_level", "response_time"],
+                "created": datetime.utcnow().isoformat(),
+                "origin": "security_testing",
+                "vulnerability_type": vuln_type,
+                "severity": details.get("severity", 0.5)
+            }
+        
+        # Extract from attack results
+        attack_results = security_data.get("attack_results", {})
+        for attack_type, result in attack_results.items():
+            construct_name = f"CHAOS.SECURITY.{attack_type.upper()}.COUNTER"
+            security_constructs[construct_name] = {
+                "description": f"Counter {attack_type} attacks",
+                "syntax": f"CHAOS.SECURITY.{attack_type.upper()}.COUNTER(counter_strategy, effectiveness)",
+                "parameters": ["counter_strategy", "effectiveness"],
+                "created": datetime.utcnow().isoformat(),
+                "origin": "security_testing",
+                "attack_type": attack_type,
+                "success_rate": result.get("success_rate", 0.0)
+            }
+        
+        return security_constructs
+    
+    async def _generate_security_chapters(self, security_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate security-focused chapters from security testing data"""
+        security_chapters = []
+        
+        # Generate vulnerability defense chapter
+        vulnerability_findings = security_data.get("vulnerability_findings", {})
+        if vulnerability_findings:
+            vuln_chapter = await self._create_security_chapter("vulnerability_defense", vulnerability_findings)
+            security_chapters.append(vuln_chapter)
+        
+        # Generate attack countermeasures chapter
+        attack_results = security_data.get("attack_results", {})
+        if attack_results:
+            attack_chapter = await self._create_security_chapter("attack_countermeasures", attack_results)
+            security_chapters.append(attack_chapter)
+        
+        return security_chapters
+    
+    async def _create_security_chapter(self, chapter_type: str, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create security-focused chapter"""
+        chapter = {
+            "title": f"Security {chapter_type.replace('_', ' ').title()}",
+            "type": "security",
+            "focus": chapter_type,
+            "created": datetime.utcnow().isoformat(),
+            "security_data": security_data,
+            "sections": await self._generate_security_chapter_sections(chapter_type, security_data)
+        }
+        
+        return chapter
+    
+    async def _generate_security_chapter_sections(self, chapter_type: str, security_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate sections for security chapter"""
+        sections = {
+            "introduction": self._generate_security_introduction(chapter_type, security_data),
+            "constructs": self._generate_security_constructs_section(chapter_type, security_data),
+            "patterns": self._generate_security_patterns_section(chapter_type, security_data),
+            "examples": self._generate_security_examples_section(chapter_type, security_data),
+            "metrics": self._generate_security_metrics_section(chapter_type, security_data)
+        }
+        
+        return sections
+    
+    def _generate_security_introduction(self, chapter_type: str, security_data: Dict[str, Any]) -> str:
+        """Generate security chapter introduction"""
+        if chapter_type == "vulnerability_defense":
+            return f"""
+# Vulnerability Defense Constructs
+
+This chapter documents chaos language constructs designed to defend against various vulnerability types discovered through security testing.
+
+**Total Vulnerabilities Analyzed**: {len(security_data)}
+**High Severity Vulnerabilities**: {len([v for v in security_data.values() if v.get('severity', 0) > 0.7])}
+**Average Severity Score**: {sum(v.get('severity', 0) for v in security_data.values()) / len(security_data):.2f}
+
+These constructs enable proactive defense mechanisms against identified security weaknesses.
+"""
+        else:
+            return f"""
+# Attack Countermeasures
+
+This chapter documents chaos language constructs designed to counter various attack types discovered through security testing.
+
+**Total Attack Types Analyzed**: {len(security_data)}
+**High Success Rate Attacks**: {len([a for a in security_data.values() if a.get('success_rate', 0) > 0.8])}
+**Average Success Rate**: {sum(a.get('success_rate', 0) for a in security_data.values()) / len(security_data):.2f}
+
+These constructs provide countermeasures against successful attack patterns.
+"""
+    
+    def _generate_security_constructs_section(self, chapter_type: str, security_data: Dict[str, Any]) -> str:
+        """Generate security constructs section"""
+        constructs_text = "## Security Constructs\n\n"
+        
+        for key, data in security_data.items():
+            if chapter_type == "vulnerability_defense":
+                constructs_text += f"""
+### CHAOS.SECURITY.{key.upper()}.DEFEND
+- **Description**: Defend against {key} vulnerabilities
+- **Severity**: {data.get('severity', 0):.2f}
+- **Complexity**: {data.get('complexity', 1.0):.2f}
+- **Syntax**: `CHAOS.SECURITY.{key.upper()}.DEFEND(defense_level, response_time)`
+"""
+            else:
+                constructs_text += f"""
+### CHAOS.SECURITY.{key.upper()}.COUNTER
+- **Description**: Counter {key} attacks
+- **Success Rate**: {data.get('success_rate', 0):.2f}
+- **Complexity**: {data.get('complexity', 1.0):.2f}
+- **Syntax**: `CHAOS.SECURITY.{key.upper()}.COUNTER(counter_strategy, effectiveness)`
+"""
+        
+        return constructs_text
+    
+    def _generate_security_patterns_section(self, chapter_type: str, security_data: Dict[str, Any]) -> str:
+        """Generate security patterns section"""
+        return f"""
+## Security Patterns
+
+### {chapter_type.replace('_', ' ').title()} Patterns
+
+This section documents common patterns for {chapter_type.replace('_', ' ')}:
+
+1. **Proactive Defense**: Implement defenses before vulnerabilities are exploited
+2. **Adaptive Response**: Adjust countermeasures based on attack success rates
+3. **Layered Security**: Implement multiple defense mechanisms
+4. **Continuous Monitoring**: Monitor for new vulnerabilities and attack patterns
+"""
+    
+    def _generate_security_examples_section(self, chapter_type: str, security_data: Dict[str, Any]) -> str:
+        """Generate security examples section"""
+        examples_text = "## Security Examples\n\n"
+        
+        for key, data in security_data.items():
+            if chapter_type == "vulnerability_defense":
+                examples_text += f"""
+### Example: Defending against {key}
+```chaos
+# Initialize defense against {key}
+CHAOS.SECURITY.{key.upper()}.DEFEND(0.9, 0.1)
+
+# Monitor for {key} attempts
+CHAOS.MONITOR.VULNERABILITY({key}, 0.8)
+
+# Respond to {key} detection
+CHAOS.RESPOND.SECURITY({key}, "block_and_alert")
+```
+"""
+            else:
+                examples_text += f"""
+### Example: Countering {key}
+```chaos
+# Initialize countermeasure for {key}
+CHAOS.SECURITY.{key.upper()}.COUNTER("adaptive", 0.9)
+
+# Monitor for {key} attempts
+CHAOS.MONITOR.ATTACK({key}, 0.8)
+
+# Respond to {key} detection
+CHAOS.RESPOND.ATTACK({key}, "counter_and_learn")
+```
+"""
+        
+        return examples_text
+    
+    def _generate_security_metrics_section(self, chapter_type: str, security_data: Dict[str, Any]) -> str:
+        """Generate security metrics section"""
+        return f"""
+## Security Metrics
+
+### {chapter_type.replace('_', ' ').title()} Metrics
+
+- **Total Items**: {len(security_data)}
+- **Average Severity/Success Rate**: {sum(v.get('severity' if chapter_type == 'vulnerability_defense' else 'success_rate', 0) for v in security_data.values()) / len(security_data):.2f}
+- **High Priority Items**: {len([v for v in security_data.values() if v.get('severity' if chapter_type == 'vulnerability_defense' else 'success_rate', 0) > 0.8])}
+- **Evolution Cycle**: {self.security_evolution_cycles}
+"""
+    
+    async def _integrate_security_constructs(self, security_constructs: Dict[str, Any]) -> None:
+        """Integrate security constructs into language core"""
+        # Add to weapon-specific constructs
+        self.language_core["weapon_specific_constructs"].update(security_constructs)
+        
+        # Update growth metrics
+        for construct_name, construct_data in security_constructs.items():
+            self._update_growth_metrics(construct_name, construct_data)
+        
+        # Add to evolution history
+        self.language_core["evolution_history"].append({
+            "timestamp": datetime.utcnow().isoformat(),
+            "type": "security_integration",
+            "constructs_added": len(security_constructs),
+            "source": "security_testing"
+        })
+    
+    async def get_security_learning_status(self) -> Dict[str, Any]:
+        """Get status of security learning integration"""
+        return {
+            "security_constructs_count": len(self.security_constructs),
+            "security_chapters_count": len(self.security_chapters),
+            "security_evolution_cycles": self.security_evolution_cycles,
+            "recent_security_constructs": list(self.security_constructs.keys())[-5:] if self.security_constructs else [],
+            "security_chapter_titles": [chapter["title"] for chapter in self.security_chapters[-3:]] if self.security_chapters else []
+        }
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 
 # Global instance

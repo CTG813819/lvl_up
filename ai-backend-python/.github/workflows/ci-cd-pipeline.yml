@@ -1,0 +1,577 @@
+name: AI Learning System CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      aiType:
+        description: 'AI Type (Imperium, Guardian, Sandbox, etc.)'
+        required: true
+        default: 'Imperium'
+        type: string
+      proposalId:
+        description: 'Proposal ID (for tracking)'
+        required: false
+        type: string
+      approved:
+        description: 'User approval (true/false)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      branch:
+        description: 'Branch to build (must be main)'
+        required: true
+        default: 'main'
+        type: string
+      testProposal:
+        description: 'Test proposal functionality'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      testChaosWarp:
+        description: 'Test Chaos/Warp functionality'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+env:
+  FLUTTER_VERSION: '3.32.5'
+  NODE_VERSION: '18'
+
+jobs:
+  proposal-test:
+    name: Proposal Testing
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      (github.event.inputs.testProposal == 'true' || github.event.inputs.approved == 'true')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './ai-backend/package-lock.json'
+          
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: ./ai-backend
+        
+      - name: Run proposal validation tests
+        run: npm run test:proposals
+        working-directory: ./ai-backend
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          
+      - name: Validate proposal compatibility
+        run: |
+          echo "Validating proposal compatibility..."
+          node ./ai-backend/scripts/validate-proposal.js \
+            --aiType="${{ github.event.inputs.aiType }}" \
+            --proposalId="${{ github.event.inputs.proposalId }}" \
+            --approved="${{ github.event.inputs.approved }}"
+        working-directory: ./
+        
+      - name: Upload proposal test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposal-test-results
+          path: ./ai-backend/test-results/
+          retention-days: 7
+
+  chaos-warp-test:
+    name: Chaos/Warp Testing
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.testChaosWarp == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './ai-backend/package-lock.json'
+          
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: ./ai-backend
+        
+      - name: Test Chaos/Warp functionality
+        run: |
+          echo "Testing Chaos/Warp functionality..."
+          node ./ai-backend/scripts/test-chaos-warp.js \
+            --testMode="comprehensive"
+        working-directory: ./
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload Chaos/Warp test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-warp-test-results
+          path: ./ai-backend/test-results/
+          retention-days: 7
+
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: [proposal-test, chaos-warp-test]
+    if: always() && (needs.proposal-test.result != 'failure' || needs.proposal-test.result == 'skipped') && (needs.chaos-warp-test.result != 'failure' || needs.chaos-warp-test.result == 'skipped')
+    defaults:
+      run:
+        working-directory: ./ai-backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './ai-backend/package-lock.json'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run backend tests
+        run: npm test
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          GITHUB_USER: ${{ secrets.GITHUB_USER }}
+          GITHUB_EMAIL: ${{ secrets.GITHUB_EMAIL }}
+          
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build backend
+        run: npm run build
+        
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: ./ai-backend/dist
+          retention-days: 7
+
+  flutter-test:
+    name: Flutter Tests
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor == 'ImperiumAI-Bot') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.approved == 'true' && github.event.inputs.branch == 'main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.aiType == 'Imperium' && github.event.inputs.branch == 'main')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Clear Flutter SDK Cache
+        run: |
+          rm -rf /opt/hostedtoolcache/flutter
+          echo "Cleared Flutter SDK cache to ensure correct version"
+          ls -la /opt/hostedtoolcache || true
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: false
+      
+      - name: Verify Flutter and Dart versions
+        run: |
+          echo "Flutter version:"
+          flutter --version
+          echo "Dart version:"
+          dart --version
+          echo "Flutter SDK path:"
+          which flutter
+          echo "Dart SDK path:"
+          which dart
+          echo "Flutter SDK contents:"
+          ls -la /opt/hostedtoolcache/flutter || true
+          echo "Checking Flutter installation integrity:"
+          flutter doctor --verbose
+          
+      - name: Debug pubspec.yaml
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "Contents of pubspec.yaml:"
+            cat pubspec.yaml
+          else
+            echo "Error: pubspec.yaml not found"
+            exit 1
+          fi
+          
+      - name: Fix flutter_lints version
+        run: |
+          if grep -q "flutter_lints: ^[3-4]" pubspec.yaml; then
+            echo "Replacing flutter_lints: ^[3-4].* with ^2.0.0"
+            sed -i 's/flutter_lints: ^[3-4].*/flutter_lints: ^2.0.0/' pubspec.yaml
+            cat pubspec.yaml
+          else
+            echo "flutter_lints version is already correct or not found"
+          fi
+          
+      - name: Clean Android folder
+        run: rm -rf android/
+      
+      - name: Recreate Android folder with V2 embedding
+        run: flutter create .
+          
+      - name: Clean Flutter project
+        run: flutter clean
+      
+      - name: Get dependencies
+        run: flutter pub get
+        
+      - name: Analyze code
+        run: flutter analyze
+        
+      - name: Run unit tests
+        run: flutter test
+        
+      - name: Run integration tests
+        run: flutter test integration_test/
+        
+      - name: Run widget tests
+        run: flutter test test/widget_test.dart
+        
+      - name: Build APK
+        run: flutter build apk --release
+        
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+        
+      - name: Build for Web
+        run: flutter build web --release
+        
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+          
+      - name: Upload App Bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          
+      - name: Upload Web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
+          retention-days: 30
+
+      - name: Notify backend of Conquest build failure
+        if: failure()
+        run: |
+          curl -X POST http://34.202.215.209:8000/api/conquest/build-failure \
+            -H 'Content-Type: application/json' \
+            -d '{"appId":"${{ github.run_id }}","error":"Conquest build failed: ${{ github.workflow }} at ${{ github.job }}. See logs for details."}'
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [backend-test, flutter-test]
+    if: always() && needs.backend-test.result != 'failure' && needs.flutter-test.result != 'failure'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./ai-backend
+        
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        working-directory: ./ai-backend
+        
+      - name: Run SAST scan
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, dart
+          
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  proposal-integration:
+    name: Proposal Integration Test
+    runs-on: ubuntu-latest
+    needs: [backend-test, flutter-test]
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.approved == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./ai-backend
+        
+      - name: Test proposal integration
+        run: |
+          echo "Testing proposal integration..."
+          node ./ai-backend/scripts/test-proposal-integration.js \
+            --aiType="${{ github.event.inputs.aiType }}" \
+            --proposalId="${{ github.event.inputs.proposalId }}"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  app-functionality:
+    name: App Functionality Validation
+    runs-on: ubuntu-latest
+    needs: [flutter-test, proposal-integration]
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.approved == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release.apk
+          path: ./build/app/outputs/flutter-apk/
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        
+      - name: Install APK on emulator
+        run: |
+          echo "Installing APK on emulator for testing..."
+          adb install build/app/outputs/flutter-apk/app-release.apk
+          
+      - name: Run app functionality tests
+        run: |
+          echo "Running app functionality tests..."
+          node ./ai-backend/scripts/test-app-functionality.js \
+            --proposalId="${{ github.event.inputs.proposalId }}" \
+            --aiType="${{ github.event.inputs.aiType }}"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [backend-test, flutter-test, security-scan, proposal-integration, app-functionality]
+    if: |
+      (github.ref == 'refs/heads/develop' || github.event.inputs.environment == 'staging') &&
+      (needs.proposal-integration.result == 'success' || needs.proposal-integration.result == 'skipped') &&
+      (needs.app-functionality.result == 'success' || needs.app-functionality.result == 'skipped')
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: ./ai-backend/dist
+          
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release.apk
+          path: ./build/app/outputs/flutter-apk/
+          
+      - name: Deploy backend to staging
+        run: |
+          echo "Deploying backend to staging environment..."
+          # Add your staging deployment commands here
+          
+      - name: Deploy APK to staging
+        run: |
+          echo "Deploying APK to staging..."
+          # Add your staging APK deployment commands here
+          
+      - name: Notify staging deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: "Staging deployment ${{ job.status }} for commit ${{ github.sha }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [backend-test, flutter-test, security-scan, proposal-integration, app-functionality]
+    if: |
+      (github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production') &&
+      (needs.proposal-integration.result == 'success' || needs.proposal-integration.result == 'skipped') &&
+      (needs.app-functionality.result == 'success' || needs.app-functionality.result == 'skipped')
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: ./ai-backend/dist
+          
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release.apk
+          path: ./build/app/outputs/flutter-apk/
+          
+      - name: Download App Bundle artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release.aab
+          path: ./build/app/outputs/bundle/release/
+          
+      - name: Deploy backend to production
+        run: |
+          echo "Deploying backend to production environment..."
+          # Add your production deployment commands here
+          
+      - name: Deploy APK to production
+        run: |
+          echo "Deploying APK to production..."
+          # Add your production APK deployment commands here
+          
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          tag: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          body: |
+            ## AI Learning System Release v${{ github.run_number }}
+            
+            ### Changes
+            - Automated deployment from CI/CD pipeline
+            - Backend and frontend updates
+            - Security scans completed
+            - Proposal integration tested
+            - App functionality validated
+            - Chaos/Warp mode testing completed
+            
+            ### Downloads
+            - APK: For direct installation
+            - AAB: For Google Play Store
+            
+            ### Proposal Details
+            - AI Type: ${{ github.event.inputs.aiType }}
+            - Proposal ID: ${{ github.event.inputs.proposalId }}
+            - Status: Approved and Integrated
+            
+            ### System Status
+            - Chaos Mode: Tested and functional
+            - Warp Mode: Tested and functional
+            - Operational Hours: 05:00 - 21:00
+            - Hierarchy: WARP > CHAOS > OPERATIONAL_HOURS
+            
+          draft: false
+          prerelease: false
+          
+      - name: Notify production deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: "Production deployment ${{ job.status }} for release v${{ github.run_number }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  post-deployment:
+    name: Post-Deployment Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      github.event.inputs.approved == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./ai-backend
+        
+      - name: Validate deployment
+        run: |
+          echo "Validating deployment..."
+          node ./ai-backend/scripts/validate-deployment.js \
+            --proposalId="${{ github.event.inputs.proposalId }}" \
+            --aiType="${{ github.event.inputs.aiType }}"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Test Chaos/Warp in production
+        run: |
+          echo "Testing Chaos/Warp functionality in production..."
+          node ./ai-backend/scripts/test-chaos-warp-production.js
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

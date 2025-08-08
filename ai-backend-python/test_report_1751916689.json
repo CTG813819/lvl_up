@@ -1,0 +1,1461 @@
+{
+  "test_suite": "Imperium AI Endpoints Comprehensive Test",
+  "version": "2.0.0",
+  "timestamp": "2025-07-07T19:31:29.987657",
+  "duration": 11.348134,
+  "summary": {
+    "total_tests": 54,
+    "passed": 50,
+    "failed": 4,
+    "errors": 0,
+    "skipped": 0,
+    "success_rate": 92.5925925925926,
+    "avg_response_time": 0.209655969231217
+  },
+  "results": [
+    {
+      "endpoint": "/initialize",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.005524635314941406,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Imperium Learning Controller initialized successfully",
+        "timestamp": "2025-07-07T19:31:18.643749",
+        "version": "2.0.0",
+        "supported_agent_types": [
+          "imperium",
+          "guardian",
+          "sandbox",
+          "conquest"
+        ],
+        "supported_priorities": [
+          "high",
+          "medium",
+          "low"
+        ]
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/status",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 3.6624579429626465,
+      "error_message": null,
+      "response_data": {
+        "status": "operational",
+        "total_agents": 4,
+        "active_agents": 4,
+        "total_learning_cycles": 1,
+        "average_learning_score": 5.0,
+        "last_cycle_start": "2025-07-07T19:31:22.302719",
+        "learning_scheduler_running": true,
+        "api_version": "2.0.0",
+        "websocket_clients": {
+          "learning_analytics": 0,
+          "internet_learning": 0
+        },
+        "supported_features": [
+          "agent_registration",
+          "learning_cycles",
+          "internet_learning",
+          "real_time_analytics",
+          "persistence",
+          "trusted_sources"
+        ],
+        "last_updated": "2025-07-07T19:31:22.306190"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0033597946166992188,
+      "error_message": null,
+      "response_data": {
+        "agents": {
+          "imperium": {
+            "agent_id": "imperium",
+            "agent_type": "Imperium",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 1.0,
+            "total_learning_cycles": 1,
+            "last_learning_cycle": "2025-07-07T19:31:22.303265",
+            "last_success": "2025-07-07T19:31:22.303274",
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "success",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.642942",
+            "updated_at": "2025-07-07T19:31:22.303117"
+          },
+          "guardian": {
+            "agent_id": "guardian",
+            "agent_type": "Guardian",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643048",
+            "updated_at": "2025-07-07T19:31:22.304060"
+          },
+          "sandbox": {
+            "agent_id": "sandbox",
+            "agent_type": "Sandbox",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643129",
+            "updated_at": "2025-07-07T19:31:22.303297"
+          },
+          "conquest": {
+            "agent_id": "conquest",
+            "agent_type": "Conquest",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643212",
+            "updated_at": "2025-07-07T19:31:22.304890"
+          }
+        },
+        "summary": {
+          "total_agents": 4,
+          "active_agents": 4,
+          "average_learning_score": 5.0,
+          "agent_types": [
+            "Sandbox",
+            "Imperium",
+            "Conquest",
+            "Guardian"
+          ]
+        },
+        "timestamp": "2025-07-07T19:31:22.309820"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/dashboard",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.009809255599975586,
+      "error_message": null,
+      "response_data": {
+        "system_status": {
+          "status": "operational",
+          "total_agents": 4,
+          "active_agents": 4,
+          "total_learning_cycles": 1,
+          "average_learning_score": 5.0,
+          "last_cycle_start": "2025-07-07T19:31:22.302719",
+          "learning_scheduler_running": true
+        },
+        "agent_metrics": {
+          "imperium": {
+            "agent_id": "imperium",
+            "agent_type": "Imperium",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 1.0,
+            "total_learning_cycles": 1,
+            "last_learning_cycle": "2025-07-07T19:31:22.303265",
+            "last_success": "2025-07-07T19:31:22.303274",
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "success",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.642942",
+            "updated_at": "2025-07-07T19:31:22.303117"
+          },
+          "guardian": {
+            "agent_id": "guardian",
+            "agent_type": "Guardian",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643048",
+            "updated_at": "2025-07-07T19:31:22.304060"
+          },
+          "sandbox": {
+            "agent_id": "sandbox",
+            "agent_type": "Sandbox",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643129",
+            "updated_at": "2025-07-07T19:31:22.303297"
+          },
+          "conquest": {
+            "agent_id": "conquest",
+            "agent_type": "Conquest",
+            "learning_score": 5.0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "total_learning_cycles": 0,
+            "last_learning_cycle": null,
+            "last_success": null,
+            "last_failure": null,
+            "learning_patterns": [],
+            "improvement_suggestions": [],
+            "status": "learning",
+            "is_active": true,
+            "created_at": "2025-07-07T19:31:18.643212",
+            "updated_at": "2025-07-07T19:31:22.304890"
+          }
+        },
+        "recent_cycles": [
+          {
+            "cycle_id": "cycle_1751916682",
+            "start_time": "2025-07-07T19:31:22.302719",
+            "end_time": null,
+            "participating_agents": [
+              "imperium",
+              "sandbox",
+              "guardian",
+              "conquest"
+            ],
+            "total_learning_value": 0.0,
+            "success_count": 0,
+            "failure_count": 0,
+            "insights_generated": [],
+            "status": "learning",
+            "metadata": {}
+          }
+        ],
+        "dashboard_metrics": {
+          "total_learning_score": 20.0,
+          "active_agents": 4,
+          "total_agents": 4,
+          "recent_cycles_count": 1
+        },
+        "timestamp": "2025-07-07T19:31:22.319610"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 5.680125951766968,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_imperium_agent_1751916682 registered successfully",
+        "agent_id": "test_imperium_agent_1751916682",
+        "agent_type": "imperium",
+        "priority": "high",
+        "capabilities": [
+          "learning",
+          "analysis",
+          "optimization"
+        ],
+        "metadata": {
+          "test_agent": true,
+          "created_by": "test_suite"
+        },
+        "registration_timestamp": "2025-07-07T19:31:28.000220",
+        "protocol_version": "2.0.0"
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/test_imperium_agent_1751916682",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.003305673599243164,
+      "error_message": null,
+      "response_data": {
+        "agent": {
+          "agent_id": "test_imperium_agent_1751916682",
+          "agent_type": "imperium",
+          "learning_score": 0.0,
+          "success_rate": 0.0,
+          "failure_rate": 0.0,
+          "total_learning_cycles": 0,
+          "last_learning_cycle": null,
+          "last_success": null,
+          "last_failure": null,
+          "learning_patterns": [],
+          "improvement_suggestions": [],
+          "status": "idle",
+          "is_active": true,
+          "created_at": "2025-07-07T19:31:28.000074",
+          "updated_at": "2025-07-07T19:31:28.000077"
+        },
+        "analysis": {
+          "performance_trend": "needs_improvement",
+          "recommendations": [],
+          "last_activity": "2025-07-07T19:31:28.000077",
+          "learning_efficiency": 0.0
+        },
+        "timestamp": "2025-07-07T19:31:28.003575"
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/test_imperium_agent_1751916682/pause",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.003211498260498047,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_imperium_agent_1751916682 paused successfully",
+        "agent_id": "test_imperium_agent_1751916682",
+        "pause_timestamp": "2025-07-07T19:31:28.006676",
+        "resume_available": true
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/test_imperium_agent_1751916682/resume",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0028121471405029297,
+      "error_message": null,
+      "response_data": {
+        "status": "active",
+        "message": "Agent test_imperium_agent_1751916682 resumed successfully",
+        "agent_id": "test_imperium_agent_1751916682",
+        "resume_timestamp": "2025-07-07T19:31:28.009175"
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/test_imperium_agent_1751916682/topics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0026895999908447266,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Topic 'Advanced imperium Learning' added for agent test_imperium_agent_1751916682",
+        "topics": [
+          "AI learning",
+          "Advanced imperium Learning"
+        ],
+        "timestamp": "2025-07-07T19:31:28.012350"
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/test_imperium_agent_1751916682",
+      "method": "DELETE",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002287149429321289,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_imperium_agent_1751916682 unregistered successfully",
+        "agent_id": "test_imperium_agent_1751916682",
+        "unregistration_timestamp": "2025-07-07T19:31:28.014966",
+        "preserved_data": [
+          "learning_history",
+          "performance_metrics",
+          "learning_patterns",
+          "improvement_suggestions"
+        ]
+      },
+      "agent_type": "imperium"
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002427816390991211,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_guardian_agent_1751916688 registered successfully",
+        "agent_id": "test_guardian_agent_1751916688",
+        "agent_type": "guardian",
+        "priority": "high",
+        "capabilities": [
+          "learning",
+          "analysis",
+          "optimization"
+        ],
+        "metadata": {
+          "test_agent": true,
+          "created_by": "test_suite"
+        },
+        "registration_timestamp": "2025-07-07T19:31:28.017093",
+        "protocol_version": "2.0.0"
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/test_guardian_agent_1751916688",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0017571449279785156,
+      "error_message": null,
+      "response_data": {
+        "agent": {
+          "agent_id": "test_guardian_agent_1751916688",
+          "agent_type": "guardian",
+          "learning_score": 0.0,
+          "success_rate": 0.0,
+          "failure_rate": 0.0,
+          "total_learning_cycles": 0,
+          "last_learning_cycle": null,
+          "last_success": null,
+          "last_failure": null,
+          "learning_patterns": [],
+          "improvement_suggestions": [],
+          "status": "idle",
+          "is_active": true,
+          "created_at": "2025-07-07T19:31:28.016815",
+          "updated_at": "2025-07-07T19:31:28.016819"
+        },
+        "analysis": {
+          "performance_trend": "needs_improvement",
+          "recommendations": [],
+          "last_activity": "2025-07-07T19:31:28.016819",
+          "learning_efficiency": 0.0
+        },
+        "timestamp": "2025-07-07T19:31:28.019225"
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/test_guardian_agent_1751916688/pause",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0021042823791503906,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_guardian_agent_1751916688 paused successfully",
+        "agent_id": "test_guardian_agent_1751916688",
+        "pause_timestamp": "2025-07-07T19:31:28.021284",
+        "resume_available": true
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/test_guardian_agent_1751916688/resume",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.001909017562866211,
+      "error_message": null,
+      "response_data": {
+        "status": "active",
+        "message": "Agent test_guardian_agent_1751916688 resumed successfully",
+        "agent_id": "test_guardian_agent_1751916688",
+        "resume_timestamp": "2025-07-07T19:31:28.023374"
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/test_guardian_agent_1751916688/topics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002003908157348633,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Topic 'Advanced guardian Learning' added for agent test_guardian_agent_1751916688",
+        "topics": [
+          "AI learning",
+          "Advanced guardian Learning"
+        ],
+        "timestamp": "2025-07-07T19:31:28.025316"
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/test_guardian_agent_1751916688",
+      "method": "DELETE",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0019385814666748047,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_guardian_agent_1751916688 unregistered successfully",
+        "agent_id": "test_guardian_agent_1751916688",
+        "unregistration_timestamp": "2025-07-07T19:31:28.027383",
+        "preserved_data": [
+          "learning_history",
+          "performance_metrics",
+          "learning_patterns",
+          "improvement_suggestions"
+        ]
+      },
+      "agent_type": "guardian"
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0024535655975341797,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_sandbox_agent_1751916688 registered successfully",
+        "agent_id": "test_sandbox_agent_1751916688",
+        "agent_type": "sandbox",
+        "priority": "high",
+        "capabilities": [
+          "learning",
+          "analysis",
+          "optimization"
+        ],
+        "metadata": {
+          "test_agent": true,
+          "created_by": "test_suite"
+        },
+        "registration_timestamp": "2025-07-07T19:31:28.029464",
+        "protocol_version": "2.0.0"
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/test_sandbox_agent_1751916688",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0018150806427001953,
+      "error_message": null,
+      "response_data": {
+        "agent": {
+          "agent_id": "test_sandbox_agent_1751916688",
+          "agent_type": "sandbox",
+          "learning_score": 0.0,
+          "success_rate": 0.0,
+          "failure_rate": 0.0,
+          "total_learning_cycles": 0,
+          "last_learning_cycle": null,
+          "last_success": null,
+          "last_failure": null,
+          "learning_patterns": [],
+          "improvement_suggestions": [],
+          "status": "idle",
+          "is_active": true,
+          "created_at": "2025-07-07T19:31:28.029242",
+          "updated_at": "2025-07-07T19:31:28.029247"
+        },
+        "analysis": {
+          "performance_trend": "needs_improvement",
+          "recommendations": [],
+          "last_activity": "2025-07-07T19:31:28.029247",
+          "learning_efficiency": 0.0
+        },
+        "timestamp": "2025-07-07T19:31:28.031723"
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/test_sandbox_agent_1751916688/pause",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0020558834075927734,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_sandbox_agent_1751916688 paused successfully",
+        "agent_id": "test_sandbox_agent_1751916688",
+        "pause_timestamp": "2025-07-07T19:31:28.033795",
+        "resume_available": true
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/test_sandbox_agent_1751916688/resume",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0018765926361083984,
+      "error_message": null,
+      "response_data": {
+        "status": "active",
+        "message": "Agent test_sandbox_agent_1751916688 resumed successfully",
+        "agent_id": "test_sandbox_agent_1751916688",
+        "resume_timestamp": "2025-07-07T19:31:28.035778"
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/test_sandbox_agent_1751916688/topics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0020606517791748047,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Topic 'Advanced sandbox Learning' added for agent test_sandbox_agent_1751916688",
+        "topics": [
+          "AI learning",
+          "Advanced sandbox Learning"
+        ],
+        "timestamp": "2025-07-07T19:31:28.037808"
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/test_sandbox_agent_1751916688",
+      "method": "DELETE",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0018610954284667969,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_sandbox_agent_1751916688 unregistered successfully",
+        "agent_id": "test_sandbox_agent_1751916688",
+        "unregistration_timestamp": "2025-07-07T19:31:28.039815",
+        "preserved_data": [
+          "learning_history",
+          "performance_metrics",
+          "learning_patterns",
+          "improvement_suggestions"
+        ]
+      },
+      "agent_type": "sandbox"
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002138376235961914,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_conquest_agent_1751916688 registered successfully",
+        "agent_id": "test_conquest_agent_1751916688",
+        "agent_type": "conquest",
+        "priority": "high",
+        "capabilities": [
+          "learning",
+          "analysis",
+          "optimization"
+        ],
+        "metadata": {
+          "test_agent": true,
+          "created_by": "test_suite"
+        },
+        "registration_timestamp": "2025-07-07T19:31:28.041999",
+        "protocol_version": "2.0.0"
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/agents/test_conquest_agent_1751916688",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0016036033630371094,
+      "error_message": null,
+      "response_data": {
+        "agent": {
+          "agent_id": "test_conquest_agent_1751916688",
+          "agent_type": "conquest",
+          "learning_score": 0.0,
+          "success_rate": 0.0,
+          "failure_rate": 0.0,
+          "total_learning_cycles": 0,
+          "last_learning_cycle": null,
+          "last_success": null,
+          "last_failure": null,
+          "learning_patterns": [],
+          "improvement_suggestions": [],
+          "status": "idle",
+          "is_active": true,
+          "created_at": "2025-07-07T19:31:28.041592",
+          "updated_at": "2025-07-07T19:31:28.041596"
+        },
+        "analysis": {
+          "performance_trend": "needs_improvement",
+          "recommendations": [],
+          "last_activity": "2025-07-07T19:31:28.041596",
+          "learning_efficiency": 0.0
+        },
+        "timestamp": "2025-07-07T19:31:28.043649"
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/agents/test_conquest_agent_1751916688/pause",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0019655227661132812,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_conquest_agent_1751916688 paused successfully",
+        "agent_id": "test_conquest_agent_1751916688",
+        "pause_timestamp": "2025-07-07T19:31:28.045560",
+        "resume_available": true
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/agents/test_conquest_agent_1751916688/resume",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0016548633575439453,
+      "error_message": null,
+      "response_data": {
+        "status": "active",
+        "message": "Agent test_conquest_agent_1751916688 resumed successfully",
+        "agent_id": "test_conquest_agent_1751916688",
+        "resume_timestamp": "2025-07-07T19:31:28.047433"
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/agents/test_conquest_agent_1751916688/topics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0018732547760009766,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Topic 'Advanced conquest Learning' added for agent test_conquest_agent_1751916688",
+        "topics": [
+          "AI learning",
+          "Advanced conquest Learning"
+        ],
+        "timestamp": "2025-07-07T19:31:28.049149"
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/agents/test_conquest_agent_1751916688",
+      "method": "DELETE",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0017673969268798828,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Agent test_conquest_agent_1751916688 unregistered successfully",
+        "agent_id": "test_conquest_agent_1751916688",
+        "unregistration_timestamp": "2025-07-07T19:31:28.051095",
+        "preserved_data": [
+          "learning_history",
+          "performance_metrics",
+          "learning_patterns",
+          "improvement_suggestions"
+        ]
+      },
+      "agent_type": "conquest"
+    },
+    {
+      "endpoint": "/cycles",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0015685558319091797,
+      "error_message": null,
+      "response_data": {
+        "cycles": [
+          {
+            "cycle_id": "cycle_1751916682",
+            "start_time": "2025-07-07T19:31:22.302719",
+            "end_time": "2025-07-07T19:31:27.999966",
+            "participating_agents": [
+              "imperium",
+              "sandbox",
+              "guardian",
+              "conquest"
+            ],
+            "total_learning_value": 12.5,
+            "success_count": 4,
+            "failure_count": 0,
+            "insights_generated": [
+              "Agents needing improvement: ['sandbox', 'guardian', 'conquest']",
+              "Agent sandbox needs success rate improvement",
+              "Agent guardian needs success rate improvement",
+              "Agent conquest needs success rate improvement",
+              "Experimental results analyzed",
+              "Innovation patterns identified",
+              "Testing strategies optimized",
+              "Security pattern analysis completed",
+              "Quality improvement suggestions generated",
+              "Vulnerability assessment updated",
+              "Development patterns analyzed",
+              "App building strategies optimized",
+              "User experience improvements identified"
+            ],
+            "status": "success",
+            "metadata": {}
+          }
+        ],
+        "limit": 10,
+        "timestamp": "2025-07-07T19:31:28.052703"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/cycles/trigger",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0019621849060058594,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Learning cycle triggered successfully",
+        "timestamp": "2025-07-07T19:31:28.054557"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/cycles",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002447366714477539,
+      "error_message": null,
+      "response_data": {
+        "cycles": [
+          {
+            "cycle_id": "cycle_1751916682",
+            "start_time": "2025-07-07T19:31:22.302719",
+            "end_time": "2025-07-07T19:31:27.999966",
+            "participating_agents": [
+              "imperium",
+              "sandbox",
+              "guardian",
+              "conquest"
+            ],
+            "total_learning_value": 12.5,
+            "success_count": 4,
+            "failure_count": 0,
+            "insights_generated": [
+              "Agents needing improvement: ['sandbox', 'guardian', 'conquest']",
+              "Agent sandbox needs success rate improvement",
+              "Agent guardian needs success rate improvement",
+              "Agent conquest needs success rate improvement",
+              "Experimental results analyzed",
+              "Innovation patterns identified",
+              "Testing strategies optimized",
+              "Security pattern analysis completed",
+              "Quality improvement suggestions generated",
+              "Vulnerability assessment updated",
+              "Development patterns analyzed",
+              "App building strategies optimized",
+              "User experience improvements identified"
+            ],
+            "status": "success",
+            "metadata": {}
+          },
+          {
+            "cycle_id": "cycle_1751916688",
+            "start_time": "2025-07-07T19:31:28.054820",
+            "end_time": null,
+            "participating_agents": [
+              "sandbox",
+              "guardian",
+              "imperium",
+              "conquest"
+            ],
+            "total_learning_value": 0.0,
+            "success_count": 0,
+            "failure_count": 0,
+            "insights_generated": [],
+            "status": "learning",
+            "metadata": {}
+          }
+        ],
+        "limit": 10,
+        "timestamp": "2025-07-07T19:31:28.056769"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/trigger",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.002480745315551758,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Internet-based learning triggered for all AIs",
+        "timestamp": "2025-07-07T19:31:28.059128"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/log",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0071675777435302734,
+      "error_message": null,
+      "response_data": {
+        "log": [],
+        "limit": 20,
+        "timestamp": "2025-07-07T19:31:28.066680"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/impact",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.003778219223022461,
+      "error_message": null,
+      "response_data": {
+        "impact": {
+          "imperium": {
+            "learning_score": 10.0,
+            "total_learning_cycles": 2,
+            "improvement_suggestions": [],
+            "last_updated": "2025-07-07T19:31:28.055920"
+          },
+          "guardian": {
+            "learning_score": 13.0,
+            "total_learning_cycles": 1,
+            "improvement_suggestions": [],
+            "last_updated": "2025-07-07T19:31:28.055602"
+          },
+          "sandbox": {
+            "learning_score": 12.0,
+            "total_learning_cycles": 1,
+            "improvement_suggestions": [],
+            "last_updated": "2025-07-07T19:31:28.055022"
+          },
+          "conquest": {
+            "learning_score": 12.5,
+            "total_learning_cycles": 1,
+            "improvement_suggestions": [],
+            "last_updated": "2025-07-07T19:31:28.056018"
+          }
+        },
+        "timestamp": "2025-07-07T19:31:28.070473"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/interval",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.001781463623046875,
+      "error_message": null,
+      "response_data": {
+        "interval": 1800
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/interval",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0017659664154052734,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "interval": 300
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/topics",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.001476287841796875,
+      "error_message": null,
+      "response_data": {
+        "topics": {
+          "imperium": [
+            "meta-learning AI",
+            "autonomous agent orchestration",
+            "AI self-improvement",
+            "AI governance"
+          ],
+          "guardian": [
+            "AI security best practices",
+            "AI code quality",
+            "vulnerability detection",
+            "secure coding"
+          ],
+          "sandbox": [
+            "AI experimentation",
+            "novel ML techniques",
+            "rapid prototyping AI",
+            "AI innovation"
+          ],
+          "conquest": [
+            "app development AI",
+            "AI-driven app design",
+            "mobile AI frameworks",
+            "AI UX optimization"
+          ],
+          "test_imperium_agent_1751916682": [
+            "AI learning",
+            "Advanced imperium Learning"
+          ],
+          "test_guardian_agent_1751916688": [
+            "AI learning",
+            "Advanced guardian Learning"
+          ],
+          "test_sandbox_agent_1751916688": [
+            "AI learning",
+            "Advanced sandbox Learning"
+          ],
+          "test_conquest_agent_1751916688": [
+            "AI learning",
+            "Advanced conquest Learning"
+          ]
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/topics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.003487825393676758,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "topics": {
+          "imperium": [
+            "AI",
+            "Machine Learning"
+          ],
+          "guardian": [
+            "Security",
+            "Monitoring"
+          ],
+          "sandbox": [
+            "Testing",
+            "Development"
+          ],
+          "conquest": [
+            "Optimization",
+            "Performance"
+          ]
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/trusted-sources",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0014309883117675781,
+      "error_message": null,
+      "response_data": {
+        "trusted_sources": [
+          "https://stackoverflow.com",
+          "https://ai.stackexchange.com",
+          "https://datascience.stackexchange.com",
+          "https://www.reddit.com/r/MachineLearning",
+          "https://www.reddit.com/r/artificial",
+          "https://github.com",
+          "https://huggingface.co/models",
+          "https://paperswithcode.com",
+          "https://arxiv.org",
+          "https://www.semanticscholar.org",
+          "https://medium.com",
+          "https://dev.to",
+          "https://ai.googleblog.com",
+          "https://openai.com/blog",
+          "https://docs.python.org",
+          "https://pytorch.org",
+          "https://www.tensorflow.org",
+          "https://scikit-learn.org",
+          "https://fastapi.tiangolo.com",
+          "https://example.com/test"
+        ],
+        "count": 20
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/trusted-sources",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0018420219421386719,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Added trusted source: https://test-ai-source.example.com"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/trusted-sources",
+      "method": "DELETE",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0017457008361816406,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "message": "Removed trusted source: https://test-ai-source.example.com"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/agent-metrics",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0017893314361572266,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "data": {
+          "error": "Database not initialized. Call init_database() first."
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/agent-metrics",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0015950202941894531,
+      "error_message": null,
+      "response_data": {
+        "status": "failed",
+        "data": {
+          "agent_id": "test_agent"
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/learning-cycles",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0016322135925292969,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "data": []
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/learning-analytics",
+      "method": "GET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0016808509826660156,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "data": {
+          "error": "Database not initialized. Call init_database() first."
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/log-learning-event",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0019524097442626953,
+      "error_message": null,
+      "response_data": {
+        "status": "failed",
+        "data": {
+          "event_type": "test_event"
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/persistence/internet-learning-result",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0016198158264160156,
+      "error_message": null,
+      "response_data": {
+        "status": "failed",
+        "data": {
+          "agent_id": "test_agent",
+          "topic": "Test Topic"
+        }
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "FAIL",
+      "status_code": 400,
+      "response_time": 0.0014719963073730469,
+      "error_message": "{\"detail\":\"agent_id and agent_type are required\"}",
+      "response_data": {
+        "detail": "agent_id and agent_type are required"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents/register",
+      "method": "POST",
+      "status": "FAIL",
+      "status_code": 400,
+      "response_time": 0.0017647743225097656,
+      "error_message": "{\"detail\":\"Invalid agent_type. Must be one of: ['imperium', 'guardian', 'sandbox', 'conquest']\"}",
+      "response_data": {
+        "detail": "Invalid agent_type. Must be one of: ['imperium', 'guardian', 'sandbox', 'conquest']"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents/non_existent_agent",
+      "method": "GET",
+      "status": "FAIL",
+      "status_code": 404,
+      "response_time": 0.0014307498931884766,
+      "error_message": "{\"detail\":\"Agent non_existent_agent not found\"}",
+      "response_data": {
+        "detail": "Agent non_existent_agent not found"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/agents/non_existent_agent/pause",
+      "method": "POST",
+      "status": "FAIL",
+      "status_code": 404,
+      "response_time": 0.0016047954559326172,
+      "error_message": "{\"detail\":\"Agent non_existent_agent not found\"}",
+      "response_data": {
+        "detail": "Agent non_existent_agent not found"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/internet-learning/agent/non_existent_agent",
+      "method": "POST",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 1.8610951900482178,
+      "error_message": null,
+      "response_data": {
+        "status": "success",
+        "result": {
+          "agent_id": "non_existent_agent",
+          "topic": "test",
+          "results": [
+            {
+              "title": "Why is processing a sorted array faster than processing an unsorted array?",
+              "url": "https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array",
+              "summary": "",
+              "score": 27461,
+              "is_answered": true
+            },
+            {
+              "title": "How do I check if an element is hidden in jQuery?",
+              "url": "https://stackoverflow.com/questions/178325/how-do-i-check-if-an-element-is-hidden-in-jquery",
+              "summary": "",
+              "score": 8740,
+              "is_answered": true
+            },
+            {
+              "title": "How to check out a remote Git branch?",
+              "url": "https://stackoverflow.com/questions/1783405/how-to-check-out-a-remote-git-branch",
+              "summary": "",
+              "score": 8847,
+              "is_answered": true
+            },
+            {
+              "title": "Why does HTML think \u201cchucknorris\u201d is a color?",
+              "url": "https://stackoverflow.com/questions/8318911/why-does-html-think-chucknorris-is-a-color",
+              "summary": "",
+              "score": 8925,
+              "is_answered": true
+            },
+            {
+              "title": "How do I test a class that has private methods, fields or inner classes?",
+              "url": "https://stackoverflow.com/questions/34571/how-do-i-test-a-class-that-has-private-methods-fields-or-inner-classes",
+              "summary": "",
+              "score": 3262,
+              "is_answered": true
+            },
+            {
+              "title": "storybookjs/storybook",
+              "url": "https://github.com/storybookjs/storybook",
+              "summary": "Storybook is the industry standard workshop for building, documenting, and testing UI components in isolation",
+              "stars": 87169,
+              "language": "TypeScript"
+            },
+            {
+              "title": "oven-sh/bun",
+              "url": "https://github.com/oven-sh/bun",
+              "summary": "Incredibly fast JavaScript runtime, bundler, test runner, and package manager \u2013 all in one",
+              "stars": 78978,
+              "language": "Zig"
+            },
+            {
+              "title": "microsoft/playwright",
+              "url": "https://github.com/microsoft/playwright",
+              "summary": "Playwright is a framework for Web Testing and Automation. It allows testing Chromium, Firefox and WebKit with a single API. ",
+              "stars": 74497,
+              "language": "TypeScript"
+            },
+            {
+              "title": "h5bp/Front-end-Developer-Interview-Questions",
+              "url": "https://github.com/h5bp/Front-end-Developer-Interview-Questions",
+              "summary": "A list of helpful front-end related questions you can use to interview potential candidates, test yourself or completely ignore.",
+              "stars": 60397,
+              "language": "Nunjucks"
+            },
+            {
+              "title": "localstack/localstack",
+              "url": "https://github.com/localstack/localstack",
+              "summary": "\ud83d\udcbb A fully functional local AWS cloud stack. Develop and test your cloud & Serverless apps offline",
+              "stars": 59505,
+              "language": "Python"
+            },
+            {
+              "title": "Latest topics in Agentic AI landscape part3",
+              "url": "https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part3-580cedfa14fb?source=rss------machine_learning-5",
+              "summary": "<div class=\"medium-feed-item\"><p class=\"medium-feed-image\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part3-580cedfa14fb?source=rss------machine_learning-5\"><img src=\"https://cdn-images-1.medium.com/max/2600/1*V0QaeQ3K1qHutIblU51MpA.jpeg\" width=\"3089\" /></a></p><p class=\"medium-feed-snippet\">Knowledge Management</p><p class=\"medium-feed-link\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part3-580cedfa14fb?source=rss------machine_learning-5\">Continue reading on Medium \u00bb</a></p></div>",
+              "published": "Mon, 07 Jul 2025 19:05:45 GMT"
+            },
+            {
+              "title": "Latest topics in Agentic AI landscape part2",
+              "url": "https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part2-462f2b8c88e0?source=rss------machine_learning-5",
+              "summary": "<div class=\"medium-feed-item\"><p class=\"medium-feed-image\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part2-462f2b8c88e0?source=rss------machine_learning-5\"><img src=\"https://cdn-images-1.medium.com/max/2600/1*stE3nfMYrkvJNYJngAu3_g.jpeg\" width=\"4592\" /></a></p><p class=\"medium-feed-snippet\">1. Multi-Agent Environments</p><p class=\"medium-feed-link\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part2-462f2b8c88e0?source=rss------machine_learning-5\">Continue reading on Medium \u00bb</a></p></div>",
+              "published": "Mon, 07 Jul 2025 19:02:48 GMT"
+            },
+            {
+              "title": "Latest topics in Agentic AI landscape part1",
+              "url": "https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part1-e3f7e215a825?source=rss------machine_learning-5",
+              "summary": "<div class=\"medium-feed-item\"><p class=\"medium-feed-image\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part1-e3f7e215a825?source=rss------machine_learning-5\"><img src=\"https://cdn-images-1.medium.com/max/2600/1*xIwuctrYPJM5uViNpDc71g.jpeg\" width=\"3648\" /></a></p><p class=\"medium-feed-snippet\">1. Goal-Conditioned MDP</p><p class=\"medium-feed-link\"><a href=\"https://medium.com/@thekingventer99/latest-topics-in-agentic-ai-landscape-part1-e3f7e215a825?source=rss------machine_learning-5\">Continue reading on Medium \u00bb</a></p></div>",
+              "published": "Mon, 07 Jul 2025 19:00:03 GMT"
+            },
+            {
+              "title": "What Is Machine Learning? A Beginner\u2019s Guide \ud83e\udd16",
+              "url": "https://dev.to/amira_bekhta_25/what-is-machine-learning-a-beginners-guide-49li",
+              "summary": "<p>Machine learning, a term we hear everywhere these days, has become one of the most transformative technologies of our time. Chances are you have at least once wondered what machine learning is and how it works.<br />\nIn this article, we will enter the world of machine learning and explore its fascinating capabilities, ready to discover some of the coolest things you can do with it?</p>\n<h2>\n  \n  \n  1- What is Machine Learning?\n</h2>\n\n<p>Machine learning (ML) is a fascinating domain that allows computers to perform tasks typically related to human intelligence, actually, ML is just a branch of artificial intelligence where systems \u201clearn\u201d from data to identify patterns, make predictions, or even generate new content, but are you still trying to figure out why is it called \"machine learning\"? Well, the process of machine learning ensures that machines do not need to be programmed for every single scenario, they just \u201clearn\u201d from big amounts of data, just like how humans learn, for example, when you open your favorite music app, the system doesn\u2019t need to be programmed every day to recommend you new songs, it just learns from data about you (like your favorite songs, artists\u2026) and then tries to find songs that you will possibly like!</p>\n\n<p>Let\u2019s try to think about it this way: when a child learns to recognize a certain object, say a ball, they aren't given a precise, step-by-step instruction manual on \"what makes a ball a ball.\" Instead, they see many different balls, hear the word \"ball\" related to them, and with repeated exposure and corrections (e.g., being corrected if they call another thing a ball), they build an internal model of what a ball looks like over time, similarly, machine learning algorithms get equipped with massive datasets ( images of balls, for instance ) along with labels indicating \"this is a ball.\" The algorithms then crunch this data, detecting features and relationships that define a \"ball\" on its own, and the next time a machine receives a picture of a ball, it will compare it to all the images it saw before, and will decide if this looks more like the ball images it saw before.</p>\n\n<p><a class=\"article-body-image-wrapper\" href=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fdvra1lrc8jre3z0iedeo.png\"><img alt=\"How computers see and classify data\" height=\"461\" src=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fdvra1lrc8jre3z0iedeo.png\" width=\"800\" /></a></p>\n\n<p>This amazing ability for computers to \"learn\" from data without explicit programming is what makes ML so revolutionary, it means we can build systems that adapt, improve, and discover insights in ways that were previously impossible, whether it's recommending your next favorite song, powering self-driving cars, or helping doctors diagnose diseases, machine learning is rapidly transforming our world by enabling computers to not just follow instructions, but to truly learn and evolve.</p>\n<h2>\n  \n  \n  2- The process of Machine learning:\n</h2>\n\n<p>The whole process begins, quite fundamentally, with data, which is the foundation upon which the impressive field of machine learning is constructed. You can imagine the process as nurturing machines, these machines are not born with an innate understanding but are instead carefully fed huge amounts of training data. This digital nourishment comes in various forms and is prepared through diverse methodologies to optimize the learning process.</p>\n\n<p>The way that machines learn from data can be split into two types, supervised and unsupervised learning:</p>\n\n<ul>\n<li><p><strong>Supervised learning</strong>: Here, the machine is presented with data that has been thoughtfully labeled, much like a teacher providing examples with correct answers. For example, in computer vision, a machine might be shown thousands of images of dogs, each explicitly tagged \"dog.\" Through this iterative exposure, and often leveraging the power of deep learning architectures that mimic the human brain's neural networks, the machine learns to differentiate patterns and make predictions. This approach is particularly effective for tasks like image classification or speech recognition.</p></li>\n<li><p><strong>Unsupervised learning</strong>: This approach is about unlabeled data, challenging the machine to uncover inherent structures or relationships without prior guidance. Think of it as presenting a child with a number of toys and asking them to sort them into groups based on their own observations, they could sort the toys by color, shape, or material. This method is invaluable for tasks such as customer segmentation or anomaly detection, where the underlying patterns are not immediately apparent.</p></li>\n</ul>\n\n<p><a class=\"article-body-image-wrapper\" href=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fu407mpihr8i6bvt8k02u.png\"><img alt=\"Supervised VS Unsupervised learning\" height=\"233\" src=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fu407mpihr8i6bvt8k02u.png\" width=\"525\" /></a></p>\n\n<p>Once the training phase is complete, the machine's ability to apply its learned knowledge should be tested. This crucial step involves a separate, unseen dataset known as the test set. We will let the machine use what it learned on the test set, and by evaluating its performance, we can accurately judge its proficiency and identify any areas requiring further refinement. This cyclical process of data preparation, training, and testing is fundamental to developing robust and intelligent systems that can truly make sense of the world around us.</p>\n<h2>\n  \n  \n  3- The role of Machine learning:\n</h2>\n\n<p>With all we have discovered so far, we now know what machine learning is. We also know the process it goes through to ensure a good output. What if I tell you that this simple process is the core to building all the huge AI applications you see everywhere?!</p>\n\n<p>Today, ML is ubiquitous, silently powering everything from personalized recommendations on your favorite streaming services to robust spam filters in your email. It's integral to fraud detection in finance, disease diagnosis in healthcare, and optimizing logistics in transportation, making countless daily interactions smoother and more efficient.</p>\n\n<p>Looking ahead, ML's impact will only grow, extending far beyond the traditional tech industry. Imagine smarter agriculture that predicts optimal planting times, personalized education adapting to individual learning styles, or advanced materials science accelerating discoveries. Its ability to analyze vast datasets and uncover hidden patterns will drive unprecedented innovation, enhancing productivity, improving decision-making, and fundamentally reshaping nearly every facet of our lives, creating a future that is more intelligent, responsive, and connected.</p>\n\n<p>Overall, machine learning, by enabling machines to learn from data like humans do, is revolutionizing our world. This ability, from supervised learning with labeled examples to unsupervised learning uncovering hidden patterns, empowers systems to adapt and improve. As ML continues to evolve, its impact will only grow, driving innovation and reshaping nearly every aspect of our lives for a more intelligent and connected future.</p>\n\n<p><strong>Enjoyed the article? Star us on Github!\ud83c\udf1f</strong></p>\n\n<p><a class=\"ltag_cta ltag_cta--branded\" href=\"https://github.com/docuglean-ai/docuglean\" rel=\"noopener noreferrer\">\ud83c\udf1f Star us here</a>\n</p>\n\n<p><strong>Have questions/requests? Drop it them the comments! \ud83d\udd8a\ufe0f</strong></p>",
+              "published": "Mon, 07 Jul 2025 18:36:22 +0000"
+            },
+            {
+              "title": "Tinkwell: Anomaly Detector using Randomized PCA",
+              "url": "https://dev.to/adriano-repetti/tinkwell-anomaly-detector-using-randomized-pca-23hg",
+              "summary": "<p>In earlier posts, I introduced a language-agnostic, <a href=\"https://dev.to/adriano-repetti/iot-architectures-under-pressure-a-firmware-less-approach-part-2-1ej8\">firmware-less approach</a> to IoT that sidesteps many <a href=\"https://dev.to/adriano-repetti/iot-architectures-under-pressure-why-implementation-isnt-as-simple-as-it-seems-part-1-3inn\">traditional complications</a>. I've since been building a reference implementation in C# called <a href=\"https://github.com/arepetti/Tinkwell/tree/master[](url)\" rel=\"noopener noreferrer\">Tinkwell</a> (named from <em>Tinkwer</em> and <em>Well</em>). The project is still evolving, but I'm convinced it has potential beyond its original scope, with applications in a variety of scenarios.</p>\n\n<p>In this post, I'll walk through how to integrate a Python-based anomaly detection system with Tinkwell, using the most straightforward tool available: the <a href=\"https://github.com/arepetti/Tinkwell/blob/master/Documentation/CLI.md\" rel=\"noopener noreferrer\">Tinkwell Command Line Interface</a> (<code>tw</code>).</p>\n\n<p>To keep things focused, the code shown here is heavily redacted. For the full working version, head over to the <a href=\"https://github.com/arepetti/Tinkwell/tree/master/Examples/Python/PCA\" rel=\"noopener noreferrer\">GitHub repository</a>.</p>\n\n<h2>\n  \n  \n  Introduction to Principal Component Analysis (PCA)\n</h2>\n\n<p>Principal Component Analysis (PCA) is a <strong>statistical technique that transforms a set of possibly correlated variables into a smaller set of new variables</strong> called principal components, which are linearly uncorrelated. The first component grabs the most variance it can from the data, and each one after it captures as much of what's left while staying independent from the others.</p>\n\n<p>In even simpler terms: when your data has a bunch of features, PCA figures out which combinations of them explain the most variation. It then turns those into new features that summarize your data without all the extra clutter. This helps when you want to make the data easier to visualize or feed into a machine learning model without losing too much of what makes it useful.</p>\n\n<h3>\n  \n  \n  Randomized PCA\n</h3>\n\n<p>Randomized PCA is based on <strong>randomized algorithms for matrix decomposition</strong>. Instead of directly computing the full covariance matrix and solving for eigenvectors (which can be slow for big datasets), it approximates the principal components using a random projection method.</p>\n\n<p>This gives you an efficient way to estimate the top k principal components of a data matrix without needing to compute the full decomposition, especially useful when the matrix is huge or sparse.</p>\n\n<h3>\n  \n  \n  Why PCA is a Good Fit for Anomaly Detection\n</h3>\n\n<p>PCA is particularly well-suited for anomaly detection in multivariate time series data (like our measures) for several reasons:</p>\n\n<ol>\n<li> <strong>Dimensionality Reduction</strong>: Real-world systems often involve many correlated sensors or measures. PCA can reduce this high-dimensional data into a lower-dimensional subspace, making the anomaly detection task more manageable and computationally efficient.</li>\n<li> <strong>Normal Behavior Modeling</strong>: PCA effectively captures the \"normal\" operating patterns and correlations within the data. When the system behaves normally, its data points will lie close to the subspace spanned by the principal components.</li>\n<li> <strong>Reconstruction Error as Anomaly Score</strong>: Anomalies often represent deviations from these normal patterns. When an anomalous data point is projected onto the PCA subspace and then reconstructed back to the original dimension, the difference between the original and reconstructed point (the \"reconstruction error\") will be significantly larger than for normal data points. This error serves as an effective anomaly score.</li>\n<li> <strong>Unsupervised Learning</strong>: PCA is an unsupervised learning technique, meaning it does not require labeled anomaly data for training. It learns the normal behavior from the available data, which is often abundant, and then flags anything that deviates significantly from this learned normal.</li>\n</ol>\n\n<h2>\n  \n  \n  Tinkwell Configuration\n</h2>\n\n<p>This is the ensamble file we need to run this example:<br />\n</p>\n\n<div class=\"highlight js-code-highlight\">\n<pre class=\"highlight plaintext\"><code>compose service orchestrator \"Tinkwell.Orchestrator.dll\"\ncompose service store \"Tinkwell.Store.dll\"\ncompose service events \"Tinkwell.EventsGateway.dll\"\ncompose agent reducer \"Tinkwell.Reducer.dll\" { path: \"./measures.twm\" }\ncompose agent reactor \"Tinkwell.Reactor.dll\" { path: \"./measures.twm\" }\ncompose agent watchdog \"Tinkwell.Watchdog.dll\"\n</code></pre>\n\n</div>\n\n\n\n<p>This is the configuration for the measures we're going to use:<br />\n</p>\n\n<div class=\"highlight js-code-highlight\">\n<pre class=\"highlight plaintext\"><code>measure voltage {\n    type: \"ElectricPotential\"\n    unit: \"Volt\"\n    expression: \"5\"\n    minimum: 1\n    maximum: 50\n}\n\nmeasure current {\n    type: \"ElectricCurrent\"\n    unit: \"Ampere\"\n    expression: \"2\"\n    minimum: 0\n    maximum: 10\n}\n\nmeasure power {\n    type: \"Power\"\n    unit: \"Watt\"\n    expression: \"voltage * current\"\n    minimum: 0\n    maximum: 500\n\n    signal high_load {\n      when: \"power &gt; 100\"\n    }\n}\n</code></pre>\n\n</div>\n\n\n\n<h2>\n  \n  \n  The Python Code\n</h2>\n\n<p>This example consists of three main scripts:</p>\n\n<ul>\n<li>\n<code>anomaly_detector.py</code>: it detects anomalies in the input data and save a CSV file with the inputs and its findings. It uses <code>tw measures subscribe</code> to listen for changes and process the new values.</li>\n<li>\n<code>feed_synthetic_data.py</code>: generates synthetic data to test the anomaly detector. It uses <code>tw measures write</code> to update the Store.</li>\n<li>\n<code>plot_measures.py</code>: plots the results saved in the CSV file exported by <code>anomaly_detector.py</code>.</li>\n</ul>\n\n<p>It is not shown in this example but you could feed back the results from the anomalies detection into Tinkwell using <code>tw events publish</code>.</p>\n\n<p>There are many parameters to configure, please read the <a href=\"https://github.com/arepetti/Tinkwell/blob/master/Examples/Python/PCA/README.md\" rel=\"noopener noreferrer\">README.md</a> file carefully.</p>\n\n<p>The anomaly detection process in this script leverages the reconstruction error property of PCA:</p>\n\n<ol>\n<li> <strong>Data Normalization</strong>: Each incoming measure value is first normalized using its pre-determined minimum and maximum values. This ensures that all measures contribute equally to the PCA, regardless of their original scale.</li>\n<li> <strong>PCA Model Training</strong>:\n\n<ul>\n<li>The script collects a <code>PCA_BUFFER_SIZE</code> number of normalized data samples. Each sample is a vector representing the current values of all subscribed measures.</li>\n<li>A Randomized PCA model is then trained on this buffer of \"normal\" data.</li>\n<li>After training, the model can project new data points onto its principal components and reconstruct them.</li>\n</ul>\n</li>\n<li> <strong>Reconstruction Error Calculation</strong>: For each data sample in the training buffer, its reconstruction error is calculated. This error is the Euclidean distance (or L2 norm) between the original data point and its reconstructed version after being projected onto the PCA subspace and then inverse-transformed.</li>\n<li> <strong>Anomaly Threshold Determination</strong>: A statistical threshold for anomaly detection is established from the distribution of these reconstruction errors. Specifically, the <code>ANOMALY_THRESHOLD_PERCENTILE</code> (e.g., 99th percentile) of the reconstruction errors from the training data is chosen as the threshold. This means that <code>ANOMALY_THRESHOLD_PERCENTILE</code>% of the \"normal\" training data will have a reconstruction error below this threshold.</li>\n<li> <strong>Real-time Anomaly Detection</strong>:\n\n<ul>\n<li>As new measure data arrives, it is normalized and formed into a new sample vector.</li>\n<li>This new sample is then passed through the trained PCA model to calculate its reconstruction error.</li>\n<li>If the calculated reconstruction error for the new sample exceeds the pre-determined anomaly threshold, the sample is flagged as an anomaly.</li>\n<li>When an anomaly is detected, the script prints detailed information, including the raw and normalized values, the reconstruction error, and the anomaly threshold, to help in understanding the nature of the deviation.</li>\n</ul>\n</li>\n</ol>\n\n<p>The code for the PCA detector is fairly small:<br />\n</p>\n\n<div class=\"highlight js-code-highlight\">\n<pre class=\"highlight python\"><code><span class=\"kn\">import</span> <span class=\"n\">numpy</span> <span class=\"k\">as</span> <span class=\"n\">np</span>\n<span class=\"kn\">from</span> <span class=\"n\">sklearn.decomposition</span> <span class=\"kn\">import</span> <span class=\"n\">PCA</span>\n\n<span class=\"k\">class</span> <span class=\"nc\">PcaAnomalyDetector</span><span class=\"p\">:</span>\n    <span class=\"k\">def</span> <span class=\"nf\">__init__</span><span class=\"p\">(</span><span class=\"n\">self</span><span class=\"p\">,</span> <span class=\"n\">n_components</span><span class=\"p\">,</span> <span class=\"n\">anomaly_threshold_percentile</span><span class=\"p\">):</span>\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">n_components</span> <span class=\"o\">=</span> <span class=\"n\">n_components</span>\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold_percentile</span> <span class=\"o\">=</span> <span class=\"n\">anomaly_threshold_percentile</span>\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span> <span class=\"o\">=</span> <span class=\"bp\">None</span>\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span> <span class=\"o\">=</span> <span class=\"bp\">None</span>\n\n    <span class=\"k\">def</span> <span class=\"nf\">train</span><span class=\"p\">(</span><span class=\"n\">self</span><span class=\"p\">,</span> <span class=\"n\">data_buffer</span><span class=\"p\">):</span>\n        <span class=\"k\">if</span> <span class=\"ow\">not</span> <span class=\"n\">data_buffer</span><span class=\"p\">:</span>\n            <span class=\"k\">raise</span> <span class=\"nc\">ValueError</span><span class=\"p\">(</span><span class=\"sh\">\"</span><span class=\"s\">Data buffer cannot be empty for training.</span><span class=\"sh\">\"</span><span class=\"p\">)</span>\n\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span> <span class=\"o\">=</span> <span class=\"nc\">PCA</span><span class=\"p\">(</span><span class=\"n\">n_components</span><span class=\"o\">=</span><span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">n_components</span><span class=\"p\">,</span> <span class=\"n\">svd_solver</span><span class=\"o\">=</span><span class=\"sh\">'</span><span class=\"s\">randomized</span><span class=\"sh\">'</span><span class=\"p\">)</span>\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span><span class=\"p\">.</span><span class=\"nf\">fit</span><span class=\"p\">(</span><span class=\"n\">np</span><span class=\"p\">.</span><span class=\"nf\">array</span><span class=\"p\">(</span><span class=\"n\">data_buffer</span><span class=\"p\">))</span>\n\n        <span class=\"n\">reconstructed_data</span> <span class=\"o\">=</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span><span class=\"p\">.</span><span class=\"nf\">inverse_transform</span><span class=\"p\">(</span><span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span><span class=\"p\">.</span><span class=\"nf\">transform</span><span class=\"p\">(</span><span class=\"n\">np</span><span class=\"p\">.</span><span class=\"nf\">array</span><span class=\"p\">(</span><span class=\"n\">data_buffer</span><span class=\"p\">)))</span>\n        <span class=\"n\">reconstruction_errors</span> <span class=\"o\">=</span> <span class=\"n\">np</span><span class=\"p\">.</span><span class=\"n\">linalg</span><span class=\"p\">.</span><span class=\"nf\">norm</span><span class=\"p\">(</span><span class=\"n\">np</span><span class=\"p\">.</span><span class=\"nf\">array</span><span class=\"p\">(</span><span class=\"n\">data_buffer</span><span class=\"p\">)</span> <span class=\"o\">-</span> <span class=\"n\">reconstructed_data</span><span class=\"p\">,</span> <span class=\"n\">axis</span><span class=\"o\">=</span><span class=\"mi\">1</span><span class=\"p\">)</span>\n\n        <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span> <span class=\"o\">=</span> <span class=\"n\">np</span><span class=\"p\">.</span><span class=\"nf\">percentile</span><span class=\"p\">(</span><span class=\"n\">reconstruction_errors</span><span class=\"p\">,</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold_percentile</span><span class=\"p\">)</span>\n        <span class=\"k\">return</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span>\n\n    <span class=\"k\">def</span> <span class=\"nf\">detect</span><span class=\"p\">(</span><span class=\"n\">self</span><span class=\"p\">,</span> <span class=\"n\">sample</span><span class=\"p\">):</span>\n        <span class=\"k\">if</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span> <span class=\"ow\">is</span> <span class=\"bp\">None</span> <span class=\"ow\">or</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span> <span class=\"ow\">is</span> <span class=\"bp\">None</span><span class=\"p\">:</span>\n            <span class=\"k\">raise</span> <span class=\"nc\">RuntimeError</span><span class=\"p\">(</span><span class=\"sh\">\"</span><span class=\"s\">PCA model not trained. Call train() first.</span><span class=\"sh\">\"</span><span class=\"p\">)</span>\n\n        <span class=\"n\">current_sample_np</span> <span class=\"o\">=</span> <span class=\"n\">np</span><span class=\"p\">.</span><span class=\"nf\">array</span><span class=\"p\">([</span><span class=\"n\">sample</span><span class=\"p\">])</span>\n        <span class=\"n\">transformed_sample</span> <span class=\"o\">=</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span><span class=\"p\">.</span><span class=\"nf\">transform</span><span class=\"p\">(</span><span class=\"n\">current_sample_np</span><span class=\"p\">)</span>\n        <span class=\"n\">reconstructed_sample</span> <span class=\"o\">=</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span><span class=\"p\">.</span><span class=\"nf\">inverse_transform</span><span class=\"p\">(</span><span class=\"n\">transformed_sample</span><span class=\"p\">)</span>\n        <span class=\"n\">current_reconstruction_error</span> <span class=\"o\">=</span> <span class=\"n\">np</span><span class=\"p\">.</span><span class=\"n\">linalg</span><span class=\"p\">.</span><span class=\"nf\">norm</span><span class=\"p\">(</span><span class=\"n\">current_sample_np</span> <span class=\"o\">-</span> <span class=\"n\">reconstructed_sample</span><span class=\"p\">)</span>\n\n        <span class=\"n\">is_anomaly</span> <span class=\"o\">=</span> <span class=\"n\">current_reconstruction_error</span> <span class=\"o\">&gt;</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span>\n        <span class=\"k\">return</span> <span class=\"n\">is_anomaly</span><span class=\"p\">,</span> <span class=\"n\">current_reconstruction_error</span><span class=\"p\">,</span> <span class=\"n\">reconstructed_sample</span><span class=\"p\">[</span><span class=\"mi\">0</span><span class=\"p\">]</span>\n\n    <span class=\"k\">def</span> <span class=\"nf\">is_trained</span><span class=\"p\">(</span><span class=\"n\">self</span><span class=\"p\">):</span>\n        <span class=\"k\">return</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">pca_model</span> <span class=\"ow\">is</span> <span class=\"ow\">not</span> <span class=\"bp\">None</span> <span class=\"ow\">and</span> <span class=\"n\">self</span><span class=\"p\">.</span><span class=\"n\">anomaly_threshold</span> <span class=\"ow\">is</span> <span class=\"ow\">not</span> <span class=\"bp\">None</span>\n</code></pre>\n\n</div>\n\n\n\n<p>To run this example (after you completed the initial setup):</p>\n\n<ul>\n<li>Start Tinkwell and wait for the initialization to complete.</li>\n<li>In a new terminal run <code>python feed_synthetic_data.py</code> to start pushing our synthetic test data into the system.</li>\n<li>In a new terminal run <code>python anomaly_detector.py</code> to start analyzing the data.</li>\n<li>In a new terminal run <code>python plot_measures.py</code> to visualize the data as they change and to see where the anomalies have been detected.</li>\n</ul>\n\n<p>The end result will look more or less like this:</p>\n\n<p><a class=\"article-body-image-wrapper\" href=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fx7aqy8f3ujgzyoftii0u.png\"><img alt=\"Plotted values of a simulation\" height=\"392\" src=\"https://media2.dev.to/dynamic/image/width=800%2Cheight=%2Cfit=scale-down%2Cgravity=auto%2Cformat=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fx7aqy8f3ujgzyoftii0u.png\" width=\"800\" /></a></p>\n\n<p>Note that the first 120 samples have been used to train the model.</p>\n\n<h3>\n  \n  \n  Tuning the Parameters\n</h3>\n\n<ul>\n<li>The number of components to keep: too few and you'll miss key patterns in the data, too many and you bring back noise and irrelevant details. You could arbitrarily set this value or set it to keep components until you get, let's say, 95% of the variance (<code>sklearn</code> can do this for you!).</li>\n<li>Anomaly threshold percentile: - Tune this percentile by checking how well it separates known normal vs abnormal data. Start somewhere around 95\u201399% and adjust.</li>\n</ul>\n\n<h2>\n  \n  \n  References\n</h2>\n\n<ul>\n<li>  <strong>PCA Basics</strong>:\n\n<ul>\n<li>  Jolliffe, I. T. (2002). <em>Principal Component Analysis</em>. Springer.</li>\n</ul>\n\n\n</li>\n\n<li>  <strong>Randomized PCA</strong>:\n\n<ul>\n<li>  Halko, N., Martinsson, P. G., &amp; Tropp, J. A. (2011). Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions. <em>SIAM Review</em>, 53(2), 217-288.</li>\n</ul>\n\n\n</li>\n\n<li>  <strong>PCA for Anomaly Detection</strong>:\n\n<ul>\n<li>  Shyu, M. L., Chen, S. C., Sarinnapakorn, M., &amp; Chang, L. (2003). A novel anomaly detection scheme based on principal component classifier. <em>Proceedings of the IEEE International Conference on Data Mining (ICDM)</em>, 2003, 347-354.</li>\n<li>  Wang, S., &amp; Ma, J. (2018). Anomaly detection based on PCA and reconstruction error. <em>Journal of Physics: Conference Series</em>, 1087(6), 062029.</li>\n</ul>\n\n\n</li>\n\n</ul>",
+              "published": "Mon, 07 Jul 2025 17:27:44 +0000"
+            }
+          ],
+          "timestamp": "2025-07-07T19:31:29.960847"
+        },
+        "timestamp": "2025-07-07T19:31:29.960892"
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/ws/learning-analytics",
+      "method": "WEBSOCKET",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0,
+      "error_message": null,
+      "response_data": {
+        "type": "welcome",
+        "message": "Connected to Imperium Learning Analytics WebSocket",
+        "timestamp": "2025-07-07T19:31:29.984023",
+        "client_count": 1,
+        "features": [
+          "real_time_learning_events",
+          "agent_metrics_updates",
+          "learning_cycle_notifications",
+          "internet_learning_results"
+        ]
+      },
+      "agent_type": null
+    },
+    {
+      "endpoint": "/ws/learning-analytics",
+      "method": "WEBSOCKET_PING",
+      "status": "PASS",
+      "status_code": 200,
+      "response_time": 0.0,
+      "error_message": null,
+      "response_data": {
+        "type": "pong",
+        "timestamp": "2025-07-07T19:31:29.985915",
+        "client_count": 1
+      },
+      "agent_type": null
+    }
+  ]
+}

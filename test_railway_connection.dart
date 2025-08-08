@@ -3,34 +3,40 @@ import 'dart:convert';
 
 void main() async {
   print('🔍 Testing Railway Backend Connection (ai-backend-python)...\n');
+<<<<<<< HEAD
   
   const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
   
+=======
+
+  const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
+
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
   // Test endpoints that should be available based on app/main.py
   final endpoints = [
-    '/health',  // Basic health check
-    '/api/health',  // API health check
-    '/api/status',  // Status endpoint
-    '/api/agents/status',  // Agents status
-    '/api/database/health',  // Database health
-    '/api/oath-papers/learn',  // Oath papers
-    '/api/config',  // Config endpoint
-    '/api/info',  // Info endpoint
-    '/api/version',  // Version endpoint
+    '/health', // Basic health check
+    '/api/health', // API health check
+    '/api/status', // Status endpoint
+    '/api/agents/status', // Agents status
+    '/api/database/health', // Database health
+    '/api/oath-papers/learn', // Oath papers
+    '/api/config', // Config endpoint
+    '/api/info', // Info endpoint
+    '/api/version', // Version endpoint
   ];
-  
+
   for (final endpoint in endpoints) {
     try {
       print('Testing: $railwayUrl$endpoint');
-      
+
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 10);
-      
+
       final request = await client.getUrl(Uri.parse('$railwayUrl$endpoint'));
       final response = await request.close();
-      
+
       print('✅ Status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final body = await response.transform(utf8.decoder).join();
         try {
@@ -40,17 +46,19 @@ void main() async {
           print('📄 Response: ${body.substring(0, 100)}...');
         }
       } else if (response.statusCode == 404) {
-        print('⚠️ Endpoint not found (404) - server is reachable but endpoint missing');
+        print(
+          '⚠️ Endpoint not found (404) - server is reachable but endpoint missing',
+        );
       } else {
         print('📊 Status: ${response.statusCode}');
       }
-      
+
       print('');
     } catch (e) {
       print('❌ Error: $e\n');
     }
   }
-  
+
   print('🎯 Railway Backend Test Complete!');
   print('\n📋 Analysis:');
   print('• If all endpoints return 404: Railway deployment issue');

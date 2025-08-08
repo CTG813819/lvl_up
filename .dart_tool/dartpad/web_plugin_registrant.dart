@@ -7,6 +7,7 @@
 // ignore_for_file: type=lint
 
 import 'package:device_info_plus/src/device_info_plus_web.dart';
+import 'package:file_picker/_internal/file_picker_web.dart';
 import 'package:flutter_secure_storage_web/flutter_secure_storage_web.dart';
 import 'package:flutter_timezone/flutter_timezone_web.dart';
 import 'package:image_picker_for_web/image_picker_for_web.dart';
@@ -21,6 +22,7 @@ import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 void registerPlugins([final Registrar? pluginRegistrar]) {
   final Registrar registrar = pluginRegistrar ?? webPluginRegistrar;
   DeviceInfoPlusWebPlugin.registerWith(registrar);
+  FilePickerWeb.registerWith(registrar);
   FlutterSecureStorageWeb.registerWith(registrar);
   FlutterTimezonePlugin.registerWith(registrar);
   ImagePickerPlugin.registerWith(registrar);

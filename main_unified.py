@@ -62,10 +62,12 @@ from app.routers.system_status import router as system_status_router
 from app.routers.ai import router as ai_router
 from app.routers.agent_metrics import router as agent_metrics_router
 from app.routers.scheduling import router as scheduling_router
-from app.routers.enhanced_adversarial_testing import router as enhanced_adversarial_router
+from app.routers.ai_integration_router import router as ai_integration_router
 from app.routers.offline_chaos_router import router as offline_chaos_router
 from app.routers.project_berserk import router as project_berserk_router
 from app.routers.weapons import router as weapons_router
+from app.routers.security_testing_router import router as security_testing_router
+from app.routers.rolling_password_router import router as rolling_password_router
 
 # Import new AI service routers
 from app.routers.project_horus import router as project_horus_router
@@ -73,6 +75,7 @@ from app.routers.olympic_ai import router as olympic_ai_router
 from app.routers.collaborative_ai import router as collaborative_ai_router
 from app.routers.custodes_ai import router as custodes_ai_router
 
+<<<<<<< HEAD
 # Import new quantum chaos and stealth assimilation routers
 from app.routers.quantum_chaos_router import router as quantum_chaos_router
 from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
@@ -93,6 +96,13 @@ from app.routers.ai_integration_router import router as ai_integration_router
 from app.routers.security_testing_router import router as security_testing_router
 
 # Import app assimilation router
+=======
+# Import quantum chaos and stealth assimilation routers
+from app.routers.quantum_chaos_router import router as quantum_chaos_router
+from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
+from app.routers.rolling_password_router import router as rolling_password_router
+from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 from app.routers.app_assimilation_router import router as app_assimilation_router
 
 # Import services
@@ -122,12 +132,16 @@ from app.services.custodes_ai_service import custodes_ai_service
 # Initialize quantum chaos and stealth assimilation services
 from app.services.quantum_chaos_service import quantum_chaos_service
 from app.services.stealth_assimilation_hub import stealth_assimilation_hub
+<<<<<<< HEAD
 
 # Initialize autonomous integration service
 from app.services.autonomous_integration_service import autonomous_integration_service
 
 # Initialize enhanced testing integration service
 from app.services.enhanced_testing_integration_service import enhanced_testing_integration_service
+=======
+from app.services.rolling_password_service import RollingPasswordService
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 # Initialize other services from app/main.py
 from app.services.proposal_cycle_service import ProposalCycleService
@@ -515,9 +529,11 @@ app.include_router(system_status_router, prefix="/api/system", tags=["System"])
 app.include_router(weapons_router, prefix="/api/weapons", tags=["Weapons"])
 app.include_router(agent_metrics_router, prefix="/api/agent-metrics", tags=["Agent Metrics"])
 app.include_router(scheduling_router, prefix="/api/scheduling", tags=["Scheduling"])
-app.include_router(enhanced_adversarial_router, prefix="/api/enhanced-adversarial", tags=["Enhanced Adversarial Testing"])
+app.include_router(ai_integration_router, tags=["AI Integration"])
 app.include_router(project_berserk_router, prefix="/api/project-warmaster", tags=["Project Warmaster"])
 app.include_router(offline_chaos_router, prefix="/api/offline-chaos", tags=["Offline Chaos"])
+app.include_router(security_testing_router, tags=["Security Testing"])
+app.include_router(rolling_password_router, tags=["Rolling Password Authentication"])
 
 # New AI service routers
 app.include_router(project_horus_router)  # Already has prefix="/api/project-horus" in router definition
@@ -525,6 +541,7 @@ app.include_router(olympic_ai_router, prefix="/api/olympic-ai", tags=["Olympic A
 app.include_router(collaborative_ai_router, prefix="/api/collaborative-ai", tags=["Collaborative AI"])
 app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custodes AI"])
 
+<<<<<<< HEAD
 # Quantum Chaos and Stealth Assimilation Hub routers
 app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
 app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
@@ -545,6 +562,13 @@ app.include_router(ai_integration_router, prefix="/api/ai-integration", tags=["A
 app.include_router(security_testing_router, prefix="/api/security-testing", tags=["Security Testing"])
 
 # App Assimilation Router
+=======
+# Quantum chaos and stealth assimilation routers
+app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
+app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
+app.include_router(rolling_password_router, tags=["Rolling Password"])
+app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 app.include_router(app_assimilation_router, prefix="/api/app-assimilation", tags=["App Assimilation"])
 
 # WebSocket endpoints

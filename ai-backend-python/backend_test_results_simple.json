@@ -1,0 +1,894 @@
+[
+  {
+    "endpoint": "/health",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "ok",
+      "timestamp": "2025-07-05T22:32:29.107489",
+      "message": "AI Backend with scikit-learn is running",
+      "version": "2.0.0"
+    },
+    "timestamp": "2025-07-05T23:30:58.050423"
+  },
+  {
+    "endpoint": "/api/github/status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "not-configured",
+      "message": "GitHub integration needs configuration",
+      "timestamp": "2025-07-05T22:32:29.193146",
+      "has_token": false,
+      "has_repo": false,
+      "has_repo_url": false,
+      "has_username": false,
+      "repo": "not-set"
+    },
+    "timestamp": "2025-07-05T23:30:58.136479"
+  },
+  {
+    "endpoint": "/api/agents/status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "agents": {
+        "imperium": {
+          "status": "warning",
+          "last_run": "unknown"
+        },
+        "guardian": {
+          "status": "healthy",
+          "last_run": "unknown"
+        },
+        "sandbox": {
+          "status": "healthy",
+          "last_run": "unknown"
+        },
+        "conquest": {
+          "status": "healthy",
+          "last_run": "unknown"
+        }
+      },
+      "autonomous_cycle_running": true,
+      "timestamp": "2025-07-05T16:00:00Z"
+    },
+    "timestamp": "2025-07-05T23:31:05.122777"
+  },
+  {
+    "endpoint": "/api/learning/status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "active",
+      "message": "AI Learning system is running",
+      "timestamp": "2025-07-05T12:00:00Z",
+      "ai_types": [
+        "Imperium",
+        "Guardian",
+        "Sandbox",
+        "Conquest"
+      ],
+      "active_learning": true,
+      "last_activity": "2025-07-05T12:00:00Z",
+      "total_experiments": 46,
+      "success_rate": 0.89
+    },
+    "timestamp": "2025-07-05T23:31:05.209411"
+  },
+  {
+    "endpoint": "/api/oath-papers/",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": "[]",
+    "timestamp": "2025-07-05T23:31:05.388115"
+  },
+  {
+    "endpoint": "/api/oath-papers/ai-insights",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "insights": {
+        "insights": [],
+        "total_papers": 0,
+        "average_learning_value": 0,
+        "recommendations": []
+      },
+      "learning_progress": {
+        "total_learning_entries": 215,
+        "total_oath_papers": 0,
+        "learning_rate": 215.0,
+        "progress_percentage": 100
+      },
+      "recommendations": [
+        "Add more oath papers to improve learning coverage"
+      ],
+      "timestamp": "2025-07-05T22:32:36.833439"
+    },
+    "timestamp": "2025-07-05T23:31:05.776805"
+  },
+  {
+    "endpoint": "/api/oath-papers/learn/test-paper-id",
+    "method": "POST",
+    "status_code": 500,
+    "expected_status": 200,
+    "success": false,
+    "content": "Internal Server Error",
+    "timestamp": "2025-07-05T23:31:05.965796",
+    "error": "Expected 200, got 500"
+  },
+  {
+    "endpoint": "/api/proposals/",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": "[{'id': 'c358492b-5fc7-41bd-b065-a2d9dda9a738', 'ai_type': 'Sandbox', 'file_path': 'experiment_results', 'status': 'pending', 'improvement_type': 'feature', 'confidence': 0.6, 'created_at': '2025-07-0",
+    "timestamp": "2025-07-05T23:31:06.621391"
+  },
+  {
+    "endpoint": "/api/proposals/ai-status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "active",
+      "ai_types": {
+        "Imperium": {
+          "total_proposals": 0,
+          "learning_progress": 0,
+          "last_activity": "2025-07-05T22:32:35.624853"
+        },
+        "Sandbox": {
+          "total_proposals": 455,
+          "learning_progress": 0.0,
+          "last_activity": null
+        },
+        "Guardian": {
+          "total_proposals": 258,
+          "learning_progress": 0.0,
+          "last_activity": null
+        }
+      },
+      "recent_activity": [
+        {
+          "id": "c358492b-5fc7-41bd-b065-a2d9dda9a738",
+          "ai_type": "Sandbox",
+          "status": "pending",
+          "created_at": "2025-07-05T22:32:35.624853"
+        },
+        {
+          "id": "8b0a9afa-bd3c-4c17-8a89-f720977119fe",
+          "ai_type": "Sandbox",
+          "status": "pending",
+          "created_at": "2025-07-05T22:32:35.544507"
+        },
+        {
+          "id": "3a096198-df13-46b8-8ece-a65aa6b1a1c0",
+          "ai_type": "Sandbox",
+          "status": "pending",
+          "created_at": "2025-07-05T22:32:35.462974"
+        },
+        {
+          "id": "b625db00-b59c-4aad-8843-9c11c2a40766",
+          "ai_type": "Sandbox",
+          "status": "pending",
+          "created_at": "2025-07-05T22:32:35.378573"
+        },
+        {
+          "id": "88ff34bd-8fb4-4373-b061-22f91b860f3d",
+          "ai_type": "Sandbox",
+          "status": "pending",
+          "created_at": "2025-07-05T22:32:35.298037"
+        }
+      ],
+      "system_health": "healthy",
+      "ml_models": "active",
+      "github_integration": "not_configured"
+    },
+    "timestamp": "2025-07-05T23:31:07.093610"
+  },
+  {
+    "endpoint": "/api/learning/data",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "Imperium": {
+        "experiments": [
+          {
+            "id": "exp-1",
+            "description": "Testing code optimization",
+            "timestamp": "2025-07-05T12:00:00Z",
+            "success": true
+          }
+        ],
+        "insights": [
+          "Code optimization improves performance"
+        ]
+      },
+      "Sandbox": {
+        "experiments": [
+          {
+            "id": "exp-2",
+            "description": "Testing new features",
+            "timestamp": "2025-07-05T12:00:00Z",
+            "success": true
+          }
+        ],
+        "insights": [
+          "New features enhance user experience"
+        ]
+      },
+      "Guardian": {
+        "experiments": [
+          {
+            "id": "exp-3",
+            "description": "Security testing",
+            "timestamp": "2025-07-05T12:00:00Z",
+            "success": true
+          }
+        ],
+        "insights": [
+          "Security measures are effective"
+        ]
+      }
+    },
+    "timestamp": "2025-07-05T23:31:07.177844"
+  },
+  {
+    "endpoint": "/api/learning/metrics",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "Imperium": {
+        "totalExperiments": 15,
+        "successRate": 0.87,
+        "lastExperiment": "2025-07-05T12:00:00Z",
+        "learningProgress": 0.75
+      },
+      "Sandbox": {
+        "totalExperiments": 23,
+        "successRate": 0.91,
+        "lastExperiment": "2025-07-05T12:00:00Z",
+        "learningProgress": 0.82
+      },
+      "Guardian": {
+        "totalExperiments": 8,
+        "successRate": 0.94,
+        "lastExperiment": "2025-07-05T12:00:00Z",
+        "learningProgress": 0.68
+      }
+    },
+    "timestamp": "2025-07-05T23:31:07.262710"
+  },
+  {
+    "endpoint": "/api/learning/insights/Imperium",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "ml_insights": {
+        "total_proposals": 100,
+        "approval_rate": 0.0,
+        "average_confidence": 0.632,
+        "common_improvement_types": {
+          "feature": 68,
+          "readability": 32
+        },
+        "quality_trends": [],
+        "recommendations": [
+          "Consider improving proposal quality - approval rate is low"
+        ]
+      },
+      "stats": {
+        "total_learning_entries": 0,
+        "recent_approval_rate": 0,
+        "average_quality_score": 0,
+        "learning_state": {
+          "is_learning": false
+        }
+      },
+      "recommendations": [
+        "Approval rate is low - consider improving proposal quality",
+        "Average quality score is low - retrain ML models"
+      ]
+    },
+    "timestamp": "2025-07-05T23:31:07.550499"
+  },
+  {
+    "endpoint": "/api/learning/insights/Guardian",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "ml_insights": {
+        "total_proposals": 100,
+        "approval_rate": 0.0,
+        "average_confidence": 0.632,
+        "common_improvement_types": {
+          "feature": 68,
+          "readability": 32
+        },
+        "quality_trends": [],
+        "recommendations": [
+          "Consider improving proposal quality - approval rate is low"
+        ]
+      },
+      "stats": {
+        "total_learning_entries": 91,
+        "recent_approval_rate": 0.0,
+        "average_quality_score": 0.7999999999999999,
+        "learning_state": {
+          "is_learning": false
+        }
+      },
+      "recommendations": [
+        "Approval rate is low - consider improving proposal quality"
+      ]
+    },
+    "timestamp": "2025-07-05T23:31:07.805645"
+  },
+  {
+    "endpoint": "/api/learning/insights/Sandbox",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "ml_insights": {
+        "total_proposals": 100,
+        "approval_rate": 0.0,
+        "average_confidence": 0.632,
+        "common_improvement_types": {
+          "feature": 68,
+          "readability": 32
+        },
+        "quality_trends": [],
+        "recommendations": [
+          "Consider improving proposal quality - approval rate is low"
+        ]
+      },
+      "stats": {
+        "total_learning_entries": 100,
+        "recent_approval_rate": 0.0,
+        "average_quality_score": 0.8,
+        "learning_state": {
+          "is_learning": false
+        }
+      },
+      "recommendations": [
+        "Approval rate is low - consider improving proposal quality"
+      ]
+    },
+    "timestamp": "2025-07-05T23:31:08.059594"
+  },
+  {
+    "endpoint": "/api/learning/insights/Conquest",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "ml_insights": {
+        "total_proposals": 100,
+        "approval_rate": 0.0,
+        "average_confidence": 0.632,
+        "common_improvement_types": {
+          "feature": 68,
+          "readability": 32
+        },
+        "quality_trends": [],
+        "recommendations": [
+          "Consider improving proposal quality - approval rate is low"
+        ]
+      },
+      "stats": {
+        "total_learning_entries": 0,
+        "recent_approval_rate": 0,
+        "average_quality_score": 0,
+        "learning_state": {
+          "is_learning": false
+        }
+      },
+      "recommendations": [
+        "Approval rate is low - consider improving proposal quality",
+        "Average quality score is low - retrain ML models"
+      ]
+    },
+    "timestamp": "2025-07-05T23:31:08.311173"
+  },
+  {
+    "endpoint": "/api/growth/status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "growth_status": {
+        "system_maturity": "emerging",
+        "average_growth_score": 0.26324999999999976,
+        "total_learning_entries": 2,
+        "expansion_opportunities": 8
+      },
+      "ai_types_status": {
+        "Imperium": {
+          "growth_stage": "emerging",
+          "growth_score": 0.0,
+          "opportunities_count": 2
+        },
+        "Guardian": {
+          "growth_stage": "developing",
+          "growth_score": 0.5129999999999996,
+          "opportunities_count": 2
+        },
+        "Sandbox": {
+          "growth_stage": "developing",
+          "growth_score": 0.5399999999999994,
+          "opportunities_count": 2
+        },
+        "Conquest": {
+          "growth_stage": "emerging",
+          "growth_score": 0.0,
+          "opportunities_count": 2
+        }
+      },
+      "timestamp": "2025-07-05T16:00:00Z"
+    },
+    "timestamp": "2025-07-05T23:31:09.170802"
+  },
+  {
+    "endpoint": "/api/growth/insights",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "ai_growth_insights": {
+        "Imperium": {
+          "ai_type": "Imperium",
+          "current_performance": {
+            "avg_confidence": 0.0,
+            "total_learning": 0,
+            "avg_proposal_confidence": 0.0,
+            "approval_rate": 0,
+            "total_proposals": 0,
+            "approved_proposals": 0
+          },
+          "growth_potential": {
+            "growth_score": 0.0,
+            "growth_stage": "emerging",
+            "growth_confidence": 0.8,
+            "predicted_improvement": 0.0
+          },
+          "expansion_opportunities": [
+            {
+              "type": "code_optimization",
+              "description": "Advanced code optimization algorithms",
+              "priority": "high",
+              "estimated_impact": 0.3,
+              "implementation_complexity": "medium"
+            },
+            {
+              "type": "performance_analysis",
+              "description": "Deep performance profiling and analysis",
+              "priority": "medium",
+              "estimated_impact": 0.2,
+              "implementation_complexity": "high"
+            }
+          ],
+          "growth_recommendations": [
+            {
+              "type": "performance_improvement",
+              "title": "Improve Decision Confidence",
+              "description": "Focus on improving the confidence of AI decisions through better training data and model refinement",
+              "priority": "high",
+              "estimated_effort": "medium"
+            },
+            {
+              "type": "quality_improvement",
+              "title": "Enhance Proposal Quality",
+              "description": "Work on improving the quality and acceptance rate of AI-generated proposals",
+              "priority": "high",
+              "estimated_effort": "high"
+            },
+            {
+              "type": "foundation_building",
+              "title": "Build Strong Foundation",
+              "description": "Focus on establishing core capabilities and learning patterns",
+              "priority": "high",
+              "estimated_effort": "low"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Code Optimization",
+              "description": "Advanced code optimization algorithms",
+              "priority": "high",
+              "estimated_effort": "medium",
+              "estimated_impact": 0.3
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Performance Analysis",
+              "description": "Deep performance profiling and analysis",
+              "priority": "medium",
+              "estimated_effort": "high",
+              "estimated_impact": 0.2
+            }
+          ],
+          "analysis_timestamp": "2025-07-05T22:32:40.493123"
+        },
+        "Guardian": {
+          "ai_type": "Guardian",
+          "current_performance": {
+            "avg_confidence": 0.7999999999999986,
+            "total_learning": 91,
+            "avg_proposal_confidence": 0.6999999999999981,
+            "approval_rate": 0.0,
+            "total_proposals": 258,
+            "approved_proposals": 0
+          },
+          "growth_potential": {
+            "growth_score": 0.5129999999999996,
+            "growth_stage": "developing",
+            "growth_confidence": 0.8,
+            "predicted_improvement": 0.10259999999999991
+          },
+          "expansion_opportunities": [
+            {
+              "type": "security_scanning",
+              "description": "Advanced security vulnerability detection",
+              "priority": "high",
+              "estimated_impact": 0.4,
+              "implementation_complexity": "medium"
+            },
+            {
+              "type": "code_quality",
+              "description": "Enhanced code quality metrics and standards",
+              "priority": "medium",
+              "estimated_impact": 0.25,
+              "implementation_complexity": "low"
+            }
+          ],
+          "growth_recommendations": [
+            {
+              "type": "quality_improvement",
+              "title": "Enhance Proposal Quality",
+              "description": "Work on improving the quality and acceptance rate of AI-generated proposals",
+              "priority": "high",
+              "estimated_effort": "high"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Expand Capabilities",
+              "description": "Start implementing advanced features and expanding AI capabilities",
+              "priority": "medium",
+              "estimated_effort": "medium"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Security Scanning",
+              "description": "Advanced security vulnerability detection",
+              "priority": "high",
+              "estimated_effort": "medium",
+              "estimated_impact": 0.4
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Code Quality",
+              "description": "Enhanced code quality metrics and standards",
+              "priority": "medium",
+              "estimated_effort": "low",
+              "estimated_impact": 0.25
+            }
+          ],
+          "analysis_timestamp": "2025-07-05T22:32:40.673776"
+        },
+        "Sandbox": {
+          "ai_type": "Sandbox",
+          "current_performance": {
+            "avg_confidence": 0.7999999999999982,
+            "total_learning": 124,
+            "avg_proposal_confidence": 0.5999999999999976,
+            "approval_rate": 0.0,
+            "total_proposals": 455,
+            "approved_proposals": 0
+          },
+          "growth_potential": {
+            "growth_score": 0.5399999999999994,
+            "growth_stage": "developing",
+            "growth_confidence": 0.8,
+            "predicted_improvement": 0.10799999999999987
+          },
+          "expansion_opportunities": [
+            {
+              "type": "experiment_automation",
+              "description": "Automated experiment design and execution",
+              "priority": "high",
+              "estimated_impact": 0.35,
+              "implementation_complexity": "medium"
+            },
+            {
+              "type": "test_generation",
+              "description": "Intelligent test case generation",
+              "priority": "medium",
+              "estimated_impact": 0.2,
+              "implementation_complexity": "high"
+            }
+          ],
+          "growth_recommendations": [
+            {
+              "type": "quality_improvement",
+              "title": "Enhance Proposal Quality",
+              "description": "Work on improving the quality and acceptance rate of AI-generated proposals",
+              "priority": "high",
+              "estimated_effort": "high"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Expand Capabilities",
+              "description": "Start implementing advanced features and expanding AI capabilities",
+              "priority": "medium",
+              "estimated_effort": "medium"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Experiment Automation",
+              "description": "Automated experiment design and execution",
+              "priority": "high",
+              "estimated_effort": "medium",
+              "estimated_impact": 0.35
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Test Generation",
+              "description": "Intelligent test case generation",
+              "priority": "medium",
+              "estimated_effort": "high",
+              "estimated_impact": 0.2
+            }
+          ],
+          "analysis_timestamp": "2025-07-05T22:32:40.854821"
+        },
+        "Conquest": {
+          "ai_type": "Conquest",
+          "current_performance": {
+            "avg_confidence": 0.0,
+            "total_learning": 0,
+            "avg_proposal_confidence": 0.0,
+            "approval_rate": 0,
+            "total_proposals": 0,
+            "approved_proposals": 0
+          },
+          "growth_potential": {
+            "growth_score": 0.0,
+            "growth_stage": "emerging",
+            "growth_confidence": 0.8,
+            "predicted_improvement": 0.0
+          },
+          "expansion_opportunities": [
+            {
+              "type": "deployment_optimization",
+              "description": "Smart deployment strategies and rollback",
+              "priority": "high",
+              "estimated_impact": 0.3,
+              "implementation_complexity": "medium"
+            },
+            {
+              "type": "monitoring_enhancement",
+              "description": "Advanced monitoring and alerting",
+              "priority": "medium",
+              "estimated_impact": 0.25,
+              "implementation_complexity": "low"
+            }
+          ],
+          "growth_recommendations": [
+            {
+              "type": "performance_improvement",
+              "title": "Improve Decision Confidence",
+              "description": "Focus on improving the confidence of AI decisions through better training data and model refinement",
+              "priority": "high",
+              "estimated_effort": "medium"
+            },
+            {
+              "type": "quality_improvement",
+              "title": "Enhance Proposal Quality",
+              "description": "Work on improving the quality and acceptance rate of AI-generated proposals",
+              "priority": "high",
+              "estimated_effort": "high"
+            },
+            {
+              "type": "foundation_building",
+              "title": "Build Strong Foundation",
+              "description": "Focus on establishing core capabilities and learning patterns",
+              "priority": "high",
+              "estimated_effort": "low"
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Deployment Optimization",
+              "description": "Smart deployment strategies and rollback",
+              "priority": "high",
+              "estimated_effort": "medium",
+              "estimated_impact": 0.3
+            },
+            {
+              "type": "capability_expansion",
+              "title": "Implement Monitoring Enhancement",
+              "description": "Advanced monitoring and alerting",
+              "priority": "medium",
+              "estimated_effort": "low",
+              "estimated_impact": 0.25
+            }
+          ],
+          "analysis_timestamp": "2025-07-05T22:32:41.034918"
+        }
+      },
+      "overall_growth": {
+        "total_learning_entries": 2,
+        "average_growth_score": 0.26324999999999976,
+        "total_expansion_opportunities": 8,
+        "system_maturity": "emerging"
+      },
+      "timestamp": "2025-07-05T22:32:41.035062"
+    },
+    "timestamp": "2025-07-05T23:31:09.979784"
+  },
+  {
+    "endpoint": "/api/agents/run-all",
+    "method": "POST",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "success",
+      "agents_run": 4,
+      "total_proposals_created": 8,
+      "results": {
+        "imperium": {
+          "status": "warning",
+          "message": "No Dart files found"
+        },
+        "guardian": {
+          "status": "success",
+          "security_issues_found": 0,
+          "quality_issues_found": 52,
+          "security_proposals_created": 0,
+          "quality_proposals_created": 3,
+          "agent": "Guardian"
+        },
+        "sandbox": {
+          "status": "success",
+          "experiments_run": 5,
+          "tests_run": 2,
+          "proposals_created": 5,
+          "agent": "Sandbox"
+        },
+        "conquest": {
+          "status": "success",
+          "deployments_made": 0,
+          "changes_pushed": 1,
+          "agent": "Conquest"
+        }
+      },
+      "timestamp": "2025-07-05T22:32:47.598293"
+    },
+    "timestamp": "2025-07-05T23:31:16.541816"
+  },
+  {
+    "endpoint": "/api/conquest/status",
+    "method": "GET",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "success",
+      "conquest_ai": {
+        "is_active": true,
+        "total_deployments": 0,
+        "successful_deployments": 0,
+        "success_rate": 0,
+        "last_deployment": null,
+        "new_apps_created": 0,
+        "apps_improved": 0,
+        "capabilities": [
+          "New app repository creation",
+          "Existing app improvements",
+          "Flutter app generation",
+          "APK building",
+          "GitHub integration",
+          "Automated deployment"
+        ]
+      }
+    },
+    "timestamp": "2025-07-05T23:31:16.715723"
+  },
+  {
+    "endpoint": "/api/conquest/analyze-suggestion",
+    "method": "POST",
+    "status_code": 200,
+    "expected_status": 200,
+    "success": true,
+    "content": {
+      "status": "success",
+      "analysis": {
+        "app_name": "Test App",
+        "description": "A test application for analysis",
+        "keywords": [],
+        "app_type": "general",
+        "features": [],
+        "recommendations": {
+          "suggested_features": [],
+          "estimated_complexity": "medium",
+          "development_time": "2-4 weeks",
+          "technologies": [
+            "Flutter",
+            "Dart",
+            "Provider",
+            "SQLite"
+          ],
+          "potential_issues": [],
+          "optimization_suggestions": []
+        },
+        "market_analysis": {
+          "target_audience": "General users",
+          "competition_level": "medium",
+          "monetization_potential": "medium"
+        }
+      },
+      "message": "Analysis completed for 'Test App'"
+    },
+    "timestamp": "2025-07-05T23:31:16.801043"
+  },
+  {
+    "endpoint": "/api/notifications/",
+    "method": "GET",
+    "status_code": 404,
+    "expected_status": 404,
+    "success": true,
+    "content": {
+      "detail": "Not Found"
+    },
+    "timestamp": "2025-07-05T23:31:16.885635"
+  },
+  {
+    "endpoint": "/api/notifications/stats",
+    "method": "GET",
+    "status_code": 404,
+    "expected_status": 404,
+    "success": true,
+    "content": {
+      "detail": "Not Found"
+    },
+    "timestamp": "2025-07-05T23:31:16.969805"
+  },
+  {
+    "endpoint": "/api/notifications/create",
+    "method": "POST",
+    "status_code": 404,
+    "expected_status": 404,
+    "success": true,
+    "content": {
+      "detail": "Not Found"
+    },
+    "timestamp": "2025-07-05T23:31:17.054294"
+  }
+]

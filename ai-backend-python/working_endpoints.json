@@ -1,0 +1,10 @@
+{
+  "system_status": "http://34.202.215.209:8000/api/imperium/status",
+  "agents": "http://34.202.215.209:8000/api/imperium/agents",
+  "dashboard": "http://34.202.215.209:8000/api/imperium/dashboard",
+  "learning_cycles": "http://34.202.215.209:8000/api/imperium/cycles",
+  "agent_metrics": "http://34.202.215.209:8000/api/imperium/persistence/agent-metrics",
+  "learning_analytics": "http://34.202.215.209:8000/api/imperium/persistence/learning-analytics",
+  "trusted_sources": "http://34.202.215.209:8000/api/imperium/trusted-sources",
+  "internet_learning_topics": "http://34.202.215.209:8000/api/imperium/internet-learning/topics"
+}

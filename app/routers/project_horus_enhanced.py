@@ -260,6 +260,7 @@ async def evolve_quantum_chaos_from_failures():
 
 @router.get("/status")
 async def get_project_horus_status():
+<<<<<<< HEAD
     """Get Project Horus v2 status"""
     try:
         status = await project_horus_service.get_project_horus_status()
@@ -275,10 +276,25 @@ async def get_project_horus_status():
                 "chaos_repositories": len(project_horus_service.chaos_repositories),
                 "test_environments": len(project_horus_service.test_environments)
             },
+=======
+    """Get comprehensive Project Horus status with quantum chaos integration"""
+    try:
+        return {
+            "status": "active",
+            "quantum_chaos_integration": project_horus_service.quantum_chaos_service is not None,
+            "stealth_assimilation_hub": project_horus_service.stealth_assimilation_hub is not None,
+            "quantum_complexity": project_horus_service.quantum_complexity,
+            "learning_progress": project_horus_service.learning_progress,
+            "assimilated_systems_count": len(project_horus_service.assimilated_systems),
+            "failed_attacks_count": len(project_horus_service.failed_attacks),
+            "chaos_repositories_count": len(project_horus_service.chaos_repositories),
+            "test_environments_count": len(project_horus_service.test_environments),
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         logger.error(f"Failed to get Project Horus status: {e}")
+<<<<<<< HEAD
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -302,4 +318,6 @@ async def get_charos_stream():
         }
     except Exception as e:
         logger.error(f"Failed to get charos stream: {e}")
+=======
+>>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
         raise HTTPException(status_code=500, detail=str(e)) 

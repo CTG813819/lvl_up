@@ -29,7 +29,8 @@ def main():
     
     print(f"🚀 Starting uvicorn on port {port}...", flush=True)
     
-    # Import and run uvicorn
+    # Import and run uvicorn - using ai-backend-python/main_unified.py
+    sys.path.insert(0, './ai-backend-python')
     import uvicorn
     uvicorn.run(
         "main_unified:app",
