@@ -6,10 +6,10 @@ void main() async {
 
   // Test different port configurations
   final testUrls = [
-    'https://lvlup-production.up.railway.app:8080',
-    'https://lvlup-production.up.railway.app',
-    'http://lvlup-production.up.railway.app:8080',
-    'http://lvlup-production.up.railway.app',
+      'https://compassionate-truth-production-2fcd.up.railway.app:8080',
+  'https://compassionate-truth-production-2fcd.up.railway.app',
+  'http://compassionate-truth-production-2fcd.up.railway.app:8080',
+  'http://compassionate-truth-production-2fcd.up.railway.app',
   ];
 
   for (final url in testUrls) {

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 void main() async {
-  const railwayUrl = 'https://lvlup-production.up.railway.app';
+  const railwayUrl = 'https://compassionate-truth-production-2fcd.up.railway.app';
   
   print('🔍 Quick Railway Backend Connection Test');
   print('=' * 40);
