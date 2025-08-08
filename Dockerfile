@@ -11,10 +11,16 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install setuptools
-RUN pip install --upgrade pip setuptools wheel
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Copy requirements first for better caching
+# Copy build requirements first
+COPY requirements-build.txt .
+
+# Install build dependencies first
+RUN pip install --no-cache-dir -r requirements-build.txt
+
+# Copy main requirements
 COPY requirements.txt .
 
 # Install Python dependencies
