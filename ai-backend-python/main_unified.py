@@ -81,6 +81,12 @@ from app.routers.test_enhanced_router import router as test_enhanced_router
 from app.routers.rolling_password_router import router as rolling_password_router
 from app.routers.jarvis_router import router as jarvis_router
 
+# Import autonomous brain router
+from app.routers.autonomous_brain_router import router as autonomous_brain_router
+
+# Import enhanced testing router
+from app.routers.enhanced_testing_router import router as enhanced_testing_router
+
 # Import services
 from app.services.ai_learning_service import AILearningService
 from app.services.ml_service import MLService
@@ -108,6 +114,12 @@ from app.services.custodes_ai_service import custodes_ai_service
 # Initialize quantum chaos and stealth assimilation services
 from app.services.quantum_chaos_service import quantum_chaos_service
 from app.services.stealth_assimilation_hub import stealth_assimilation_hub
+
+# Initialize autonomous integration service
+from app.services.autonomous_integration_service import autonomous_integration_service
+
+# Initialize enhanced testing integration service
+from app.services.enhanced_testing_integration_service import enhanced_testing_integration_service
 
 # Initialize other services from app/main.py
 from app.services.proposal_cycle_service import ProposalCycleService
@@ -512,6 +524,12 @@ app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"
 app.include_router(test_enhanced_router, tags=["Test Enhanced"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
 app.include_router(jarvis_router, tags=["Jarvis"])
+
+# Autonomous Brain Router
+app.include_router(autonomous_brain_router, prefix="/api/autonomous-brain", tags=["Autonomous Brain"])
+
+# Enhanced Testing Router
+app.include_router(enhanced_testing_router, prefix="/api/enhanced-testing", tags=["Enhanced Testing"])
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")

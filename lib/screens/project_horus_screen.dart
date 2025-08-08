@@ -115,8 +115,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
             }
           }
 
-          _catalogedData[device]!['last_updated'] =
-              DateTime.now().toIso8601String();
+          _catalogedData[device]!['last_updated'] = DateTime.now()
+              .toIso8601String();
         }
       }
 
@@ -134,8 +134,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final connectivity =
-          await ProjectHorusService.instance.checkConnectivity();
+      final connectivity = await ProjectHorusService.instance
+          .checkConnectivity();
       if (mounted) {
         if (mounted) {
           setState(() {
@@ -212,8 +212,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final response =
-          await ProjectHorusService.instance.buildChaosRepository();
+      final response = await ProjectHorusService.instance
+          .buildChaosRepository();
 
       if (mounted) {
         setState(() {
@@ -263,8 +263,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final response =
-          await ProjectHorusService.instance.triggerSelfImprovement();
+      final response = await ProjectHorusService.instance
+          .triggerSelfImprovement();
 
       if (mounted) {
         setState(() {
@@ -678,8 +678,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     // Get latest chaos codes from backend service
     final latestChaosCodes = ProjectHorusService.instance.getAllChaosCodes();
     final weapons = ProjectHorusService.instance.getAllWeapons();
-    final chaosLanguage =
-        ProjectHorusService.instance.getChaosLanguageDocumentation();
+    final chaosLanguage = ProjectHorusService.instance
+        .getChaosLanguageDocumentation();
 
     final chaosCodes = <Map<String, dynamic>>[];
 
@@ -1197,73 +1197,82 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           ),
         ],
       ),
-      body:
-          _isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: Colors.cyan),
-              )
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brain Visualization
-                    const SizedBox(
-                      height: 400,
-                      child: HorusBrainVisualization(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.cyan))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Brain Visualization
+                  const SizedBox(height: 400, child: HorusBrainVisualization()),
+
+                  const SizedBox(height: 24),
+
+                  // Connectivity Status
+                  _buildConnectivityStatus(),
+
+                  const SizedBox(height: 24),
+
+                  // Control Buttons
+                  _buildControlButtons(),
+
+                  const SizedBox(height: 24),
+
+                  // Chaos Stream Widget
+                  Container(
+                    height: 500,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.cyan.withOpacity(0.3)),
                     ),
+                    child: const ChaosCodeStreamWidget(),
+                  ),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Connectivity Status
-                    _buildConnectivityStatus(),
+                  // Response Display
+                  if (_lastHorusResponse != null ||
+                      _lastBerserkResponse != null)
+                    _buildResponseDisplay(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Control Buttons
-                    _buildControlButtons(),
+                  // Saved Chaos Codes
+                  _buildSavedChaosCodes(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Chaos Stream Widget
-                    Container(
-                      height: 500,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.cyan.withOpacity(0.3)),
-                      ),
-                      child: const ChaosCodeStreamWidget(),
-                    ),
+                  // Chaos Language Documentation
+                  _buildChaosLanguageDocumentation(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Response Display
-                    if (_lastHorusResponse != null ||
-                        _lastBerserkResponse != null)
-                      _buildResponseDisplay(),
+                  // Chaos Weapons Arsenal
+                  _buildChaosWeaponsArsenal(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Saved Chaos Codes
-                    _buildSavedChaosCodes(),
+                  // Extracted Information
+                  _buildExtractedInformation(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Chaos Language Documentation
-                    _buildChaosLanguageDocumentation(),
+                  // Enhanced Testing Results
+                  _buildEnhancedTestingResults(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Chaos Weapons Arsenal
-                    _buildChaosWeaponsArsenal(),
+                  // Autonomous Weapons Section
+                  _buildAutonomousWeaponsSection(),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // Extracted Information
-                    _buildExtractedInformation(),
-                  ],
-                ),
+                  // Live System Status
+                  _buildLiveSystemStatus(),
+                ],
               ),
+            ),
     );
   }
 
@@ -1345,10 +1354,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                     Text(
                       'Live Mode',
                       style: TextStyle(
-                        color:
-                            ProjectHorusService.instance.isLiveMode
-                                ? Colors.green
-                                : Colors.grey,
+                        color: ProjectHorusService.instance.isLiveMode
+                            ? Colors.green
+                            : Colors.grey,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1375,16 +1383,14 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color:
-                  ProjectHorusService.instance.isLiveMode
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
+              color: ProjectHorusService.instance.isLiveMode
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color:
-                    ProjectHorusService.instance.isLiveMode
-                        ? Colors.green.withOpacity(0.5)
-                        : Colors.orange.withOpacity(0.5),
+                color: ProjectHorusService.instance.isLiveMode
+                    ? Colors.green.withOpacity(0.5)
+                    : Colors.orange.withOpacity(0.5),
               ),
             ),
             child: Row(
@@ -1393,10 +1399,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                   ProjectHorusService.instance.isLiveMode
                       ? Icons.wifi
                       : Icons.computer,
-                  color:
-                      ProjectHorusService.instance.isLiveMode
-                          ? Colors.green
-                          : Colors.orange,
+                  color: ProjectHorusService.instance.isLiveMode
+                      ? Colors.green
+                      : Colors.orange,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -1405,10 +1410,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                       ? '🟢 LIVE MODE - Real operations enabled'
                       : '🔴 SIMULATION MODE - Offline operations',
                   style: TextStyle(
-                    color:
-                        ProjectHorusService.instance.isLiveMode
-                            ? Colors.green
-                            : Colors.orange,
+                    color: ProjectHorusService.instance.isLiveMode
+                        ? Colors.green
+                        : Colors.orange,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1470,10 +1474,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed:
-                  _selectedDevices.isEmpty
-                      ? null
-                      : _showDeploymentOptionsDialog,
+              onPressed: _selectedDevices.isEmpty
+                  ? null
+                  : _showDeploymentOptionsDialog,
               icon: const Icon(Icons.rocket_launch, color: Colors.white),
               label: Text(
                 _selectedDevices.isEmpty
@@ -1482,10 +1485,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _selectedDevices.isEmpty
-                        ? Colors.grey[600]
-                        : Colors.red[700],
+                backgroundColor: _selectedDevices.isEmpty
+                    ? Colors.grey[600]
+                    : Colors.red[700],
                 disabledBackgroundColor: Colors.grey[600],
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -1498,8 +1500,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed:
-                  _catalogedData.isEmpty ? null : _showCatalogedDataDialog,
+              onPressed: _catalogedData.isEmpty
+                  ? null
+                  : _showCatalogedDataDialog,
               icon: const Icon(Icons.storage, color: Colors.white),
               label: Text(
                 _catalogedData.isEmpty
@@ -1508,10 +1511,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _catalogedData.isEmpty
-                        ? Colors.grey[600]
-                        : Colors.blue[700],
+                backgroundColor: _catalogedData.isEmpty
+                    ? Colors.grey[600]
+                    : Colors.blue[700],
                 disabledBackgroundColor: Colors.grey[600],
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -1618,10 +1620,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                           );
 
                           return Card(
-                            color:
-                                isSelected
-                                    ? Colors.cyan.withOpacity(0.2)
-                                    : Colors.grey[800],
+                            color: isSelected
+                                ? Colors.cyan.withOpacity(0.2)
+                                : Colors.grey[800],
                             child: ListTile(
                               leading: Icon(
                                 _getDeviceIcon(device['type']),
@@ -1712,15 +1713,14 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed:
-                      _selectedDevices.isEmpty
-                          ? null
-                          : () {
-                            Navigator.of(context).pop();
-                            _showSuccessSnackbar(
-                              '${_selectedDevices.length} device(s) selected for attack',
-                            );
-                          },
+                  onPressed: _selectedDevices.isEmpty
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          _showSuccessSnackbar(
+                            '${_selectedDevices.length} device(s) selected for attack',
+                          );
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[700],
                     disabledBackgroundColor: Colors.grey[700],
@@ -1746,12 +1746,12 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
       _showDeploymentLoadingDialog();
 
       // Step 1: Perform stealth assimilation
-      final stealthResponse =
-          await ProjectHorusService.instance.performStealthAssimilation();
+      final stealthResponse = await ProjectHorusService.instance
+          .performStealthAssimilation();
 
       // Step 2: Perform data extraction
-      final extractionResponse =
-          await ProjectHorusService.instance.performDataExtraction();
+      final extractionResponse = await ProjectHorusService.instance
+          .performDataExtraction();
 
       // Step 3: Generate backdoor chaos code
       final backdoorResponse = await ProjectHorusService.instance
@@ -1769,8 +1769,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           _lastHorusResponse = {
             'operation': 'deploy_attack',
             'status': 'success',
-            'mode':
-                ProjectHorusService.instance.isLiveMode ? 'live' : 'simulation',
+            'mode': ProjectHorusService.instance.isLiveMode
+                ? 'live'
+                : 'simulation',
             'stealth_assimilation': stealthResponse,
             'data_extraction': extractionResponse,
             'backdoor_code': backdoorResponse,
@@ -1854,10 +1855,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                 Text(
                   'Status: ${response['status'] ?? 'Unknown'}',
                   style: TextStyle(
-                    color:
-                        response['status'] == 'success'
-                            ? Colors.green
-                            : Colors.red,
+                    color: response['status'] == 'success'
+                        ? Colors.green
+                        : Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2261,10 +2261,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                 Text(
                   'Status: ${response['status'] ?? 'Unknown'}',
                   style: TextStyle(
-                    color:
-                        response['status'] == 'success'
-                            ? Colors.green
-                            : Colors.red,
+                    color: response['status'] == 'success'
+                        ? Colors.green
+                        : Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2363,8 +2362,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
         }
       }
       // Then perform the enhanced stealth assimilation
-      response =
-          await ProjectHorusService.instance.performStealthAssimilation();
+      response = await ProjectHorusService.instance
+          .performStealthAssimilation();
 
       if (mounted) {
         setState(() {
@@ -2448,8 +2447,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
       }
 
       // Now perform the actual system infiltration
-      final response =
-          await ProjectHorusService.instance.performSystemInfiltration();
+      final response = await ProjectHorusService.instance
+          .performSystemInfiltration();
 
       if (mounted) {
         setState(() {
@@ -2526,8 +2525,8 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
       }
 
       // Now perform the actual data extraction
-      final response =
-          await ProjectHorusService.instance.performDataExtraction();
+      final response = await ProjectHorusService.instance
+          .performDataExtraction();
 
       if (mounted) {
         setState(() {
@@ -2906,22 +2905,21 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children:
-                items
-                    .map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 1),
-                        child: Text(
-                          item,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
+            children: items
+                .map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ),
       ],
@@ -3279,10 +3277,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
         leading: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color:
-                code['mode'] == 'live'
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.orange.withOpacity(0.2),
+            color: code['mode'] == 'live'
+                ? Colors.green.withOpacity(0.2)
+                : Colors.orange.withOpacity(0.2),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
@@ -3489,167 +3486,156 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
     return showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                const Icon(Icons.security, color: Colors.red, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Select Weapon for $attackType',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const Icon(Icons.security, color: Colors.red, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Select Weapon for $attackType',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Choose a weapon to enhance your attack with specialized capabilities.',
+                        style: TextStyle(color: Colors.red[300], fontSize: 12),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: weapons.length,
+                  itemBuilder: (context, index) {
+                    final weapon = weapons[index];
+                    return Card(
+                      color: Colors.grey[800],
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getWeaponTypeColor(
+                              weapon['type'],
+                            ).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Text(
-                            'Choose a weapon to enhance your attack with specialized capabilities.',
+                            weapon['type']?.toString() ?? 'UNK',
                             style: TextStyle(
-                              color: Colors.red[300],
-                              fontSize: 12,
+                              color: _getWeaponTypeColor(weapon['type']),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: weapons.length,
-                      itemBuilder: (context, index) {
-                        final weapon = weapons[index];
-                        return Card(
-                          color: Colors.grey[800],
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getWeaponTypeColor(
-                                  weapon['type'],
-                                ).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                weapon['type']?.toString() ?? 'UNK',
-                                style: TextStyle(
-                                  color: _getWeaponTypeColor(weapon['type']),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              weapon['name']?.toString() ?? 'Unknown Weapon',
+                        title: Text(
+                          weapon['name']?.toString() ?? 'Unknown Weapon',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              weapon['description']?.toString() ??
+                                  weapon['capability']?.toString() ??
+                                  'No description',
                               style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                                fontSize: 12,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            const SizedBox(height: 4),
+                            Row(
                               children: [
-                                Text(
-                                  weapon['description']?.toString() ??
-                                      weapon['capability']?.toString() ??
-                                      'No description',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
+                                Expanded(
+                                  child: Text(
+                                    'Effectiveness: ${weapon['effectiveness'] ?? weapon['stealth_level'] ?? 'N/A'}%',
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 10,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Effectiveness: ${weapon['effectiveness'] ?? weapon['stealth_level'] ?? 'N/A'}%',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontSize: 10,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Complexity: ${weapon['complexity'] ?? 'medium'}',
+                                    style: const TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 10,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Complexity: ${weapon['complexity'] ?? 'medium'}',
-                                        style: const TextStyle(
-                                          color: Colors.orange,
-                                          fontSize: 10,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      ),
-                                    ),
-                                  ],
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                  ),
                                 ),
                               ],
                             ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.red,
-                              size: 16,
-                            ),
-                            onTap: () => Navigator.of(context).pop(weapon),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text(
-                  'Skip - Normal Attack',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.red),
+                          ],
+                        ),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.red,
+                          size: 16,
+                        ),
+                        onTap: () => Navigator.of(context).pop(weapon),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text(
+              'Skip - Normal Attack',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3687,150 +3673,140 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
     return showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(Icons.security, color: Colors.cyan, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Select Chaos Code for $attackType',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.security, color: Colors.cyan, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Select Chaos Code for $attackType',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Choose a chaos code to enhance your attack. Live mode will use the backend, otherwise it will be simulated.',
+                        style: TextStyle(color: Colors.blue[300], fontSize: 12),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: chaosCodes.length,
+                  itemBuilder: (context, index) {
+                    final code = chaosCodes[index];
+                    return Card(
+                      color: Colors.grey[800],
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: code['mode'] == 'live'
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Text(
-                            'Choose a chaos code to enhance your attack. Live mode will use the backend, otherwise it will be simulated.',
+                            code['mode']?.toString().toUpperCase() ?? 'SIM',
                             style: TextStyle(
-                              color: Colors.blue[300],
-                              fontSize: 12,
+                              color: code['mode'] == 'live'
+                                  ? Colors.green
+                                  : Colors.orange,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: chaosCodes.length,
-                      itemBuilder: (context, index) {
-                        final code = chaosCodes[index];
-                        return Card(
-                          color: Colors.grey[800],
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    code['mode'] == 'live'
-                                        ? Colors.green.withOpacity(0.2)
-                                        : Colors.orange.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                code['mode']?.toString().toUpperCase() ?? 'SIM',
-                                style: TextStyle(
-                                  color:
-                                      code['mode'] == 'live'
-                                          ? Colors.green
-                                          : Colors.orange,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              code['operation']
-                                      ?.toString()
-                                      .replaceAll('_', ' ')
-                                      .toUpperCase() ??
-                                  'UNKNOWN',
-                              style: const TextStyle(
-                                color: Colors.cyan,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  code['message']?.toString() ??
-                                      'No description',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Saved: ${_formatDateTime(code['saved_at'])}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.cyan,
-                              size: 16,
-                            ),
-                            onTap: () => Navigator.of(context).pop(code),
+                        title: Text(
+                          code['operation']
+                                  ?.toString()
+                                  .replaceAll('_', ' ')
+                                  .toUpperCase() ??
+                              'UNKNOWN',
+                          style: const TextStyle(
+                            color: Colors.cyan,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text(
-                  'Skip - Normal Attack',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.red),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              code['message']?.toString() ?? 'No description',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Saved: ${_formatDateTime(code['saved_at'])}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.cyan,
+                          size: 16,
+                        ),
+                        onTap: () => Navigator.of(context).pop(code),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text(
+              'Skip - Normal Attack',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3838,76 +3814,75 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
   Future<bool?> _showEnhancedSyntheticCodeDialog() async {
     return showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(Icons.code, color: Colors.red, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Enhanced Synthetic Code',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Advanced Synthetic Deployment',
-                        style: TextStyle(
-                          color: Colors.red[300],
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• Self-evolving chaos codes\n• Adaptive persistence mechanisms\n• Multi-vector deployment\n• Advanced evasion techniques',
-                        style: TextStyle(color: Colors.red[200], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Would you like to deploy enhanced synthetic code with advanced persistence and evolution capabilities?',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text(
-                  'Skip - Basic Deployment',
-                  style: TextStyle(color: Colors.grey),
-                ),
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.code, color: Colors.red, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Enhanced Synthetic Code',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Deploy Enhanced Code'),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
               ),
-            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Advanced Synthetic Deployment',
+                    style: TextStyle(
+                      color: Colors.red[300],
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• Self-evolving chaos codes\n• Adaptive persistence mechanisms\n• Multi-vector deployment\n• Advanced evasion techniques',
+                    style: TextStyle(color: Colors.red[200], fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Would you like to deploy enhanced synthetic code with advanced persistence and evolution capabilities?',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Skip - Basic Deployment',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Deploy Enhanced Code'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3915,168 +3890,153 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
   Future<void> _showDeploymentOptionsDialog() async {
     final deploymentOption = await showDialog<String>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(Icons.security, color: Colors.purple, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Choose Deployment Option',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.security, color: Colors.purple, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Choose Deployment Option',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.purple,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Select deployment strategy for ${_selectedDevices.length} target(s):',
-                            style: TextStyle(
-                              color: Colors.purple[300],
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Data Extraction Only Option
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                    ),
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.download,
-                        color: Colors.blue,
-                        size: 24,
-                      ),
-                      title: Text(
-                        'Data Extraction Only',
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.purple, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Select deployment strategy for ${_selectedDevices.length} target(s):',
                         style: TextStyle(
-                          color: Colors.blue[300],
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '• Extract data without leaving traces\n• Stealth operation\n• No persistent presence\n• Lower detection risk',
-                        style: TextStyle(color: Colors.blue[200], fontSize: 12),
-                      ),
-                      onTap:
-                          () =>
-                              Navigator.of(context).pop('data_extraction_only'),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Data Extraction + Synthetic Code Deployment Option
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
-                    child: ListTile(
-                      leading: Icon(Icons.code, color: Colors.red, size: 24),
-                      title: Text(
-                        'Data Extraction + Synthetic Deployment',
-                        style: TextStyle(
-                          color: Colors.red[300],
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '• Extract data AND deploy chaos code\n• Self-growing synthetic backdoor\n• Persistent system presence\n• Continuous evolution',
-                        style: TextStyle(color: Colors.red[200], fontSize: 12),
-                      ),
-                      onTap:
-                          () => Navigator.of(
-                            context,
-                          ).pop('data_extraction_with_synthetic'),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Hybrid Option
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
-                    ),
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.auto_awesome,
-                        color: Colors.green,
-                        size: 24,
-                      ),
-                      title: Text(
-                        'Hybrid AI-Enhanced Attack',
-                        style: TextStyle(
-                          color: Colors.green[300],
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '• AI collective learning integration\n• Advanced weapon selection\n• Adaptive deployment strategy\n• Maximum effectiveness',
-                        style: TextStyle(
-                          color: Colors.green[200],
+                          color: Colors.purple[300],
                           fontSize: 12,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      onTap:
-                          () => Navigator.of(context).pop('hybrid_ai_enhanced'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Data Extraction Only Option
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  leading: Icon(Icons.download, color: Colors.blue, size: 24),
+                  title: Text(
+                    'Data Extraction Only',
+                    style: TextStyle(
+                      color: Colors.blue[300],
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(null),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                      ),
-                    ],
+                  subtitle: Text(
+                    '• Extract data without leaving traces\n• Stealth operation\n• No persistent presence\n• Lower detection risk',
+                    style: TextStyle(color: Colors.blue[200], fontSize: 12),
+                  ),
+                  onTap: () =>
+                      Navigator.of(context).pop('data_extraction_only'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Data Extraction + Synthetic Code Deployment Option
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  leading: Icon(Icons.code, color: Colors.red, size: 24),
+                  title: Text(
+                    'Data Extraction + Synthetic Deployment',
+                    style: TextStyle(
+                      color: Colors.red[300],
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '• Extract data AND deploy chaos code\n• Self-growing synthetic backdoor\n• Persistent system presence\n• Continuous evolution',
+                    style: TextStyle(color: Colors.red[200], fontSize: 12),
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop('data_extraction_with_synthetic'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Hybrid Option
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.auto_awesome,
+                    color: Colors.green,
+                    size: 24,
+                  ),
+                  title: Text(
+                    'Hybrid AI-Enhanced Attack',
+                    style: TextStyle(
+                      color: Colors.green[300],
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '• AI collective learning integration\n• Advanced weapon selection\n• Adaptive deployment strategy\n• Maximum effectiveness',
+                    style: TextStyle(color: Colors.green[200], fontSize: 12),
+                  ),
+                  onTap: () => Navigator.of(context).pop('hybrid_ai_enhanced'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(null),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.orange),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
+        ),
+      ),
     );
 
     if (deploymentOption != null) {
@@ -4120,53 +4080,57 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     switch (deploymentOption) {
       case 'data_extraction_only':
         _deploymentSteps = [
-          'Initializing stealth extraction protocol...',
-          'Scanning device security layers...',
-          'Bypassing network perimeter...',
-          'Accessing system credentials...',
-          'Extracting SSH keys and passwords...',
-          'Retrieving database connections...',
-          'Collecting API keys and tokens...',
-          'Extracting encryption keys...',
-          'Cataloging sensitive data...',
-          'Cleaning access traces...',
-          'Deployment completed',
+          '🔍 Initializing stealth reconnaissance protocol...',
+          '🛡️ Analyzing device security posture...',
+          '🌐 Mapping network topology and entry points...',
+          '🔑 Identifying authentication methods...',
+          '📁 Locating sensitive data repositories...',
+          '🔐 Extracting SSH keys and certificates...',
+          '💾 Retrieving database credentials...',
+          '🔑 Collecting API keys and tokens...',
+          '🔒 Extracting encryption keys...',
+          '📊 Cataloging sensitive information...',
+          '🧹 Erasing digital footprints...',
+          '✅ Stealth extraction completed',
         ];
         break;
       case 'data_extraction_with_synthetic':
         _deploymentSteps = [
-          'Initializing synthetic deployment engine...',
-          'Analyzing target device architecture...',
-          'Generating adaptive chaos code payloads...',
-          'Deploying self-evolving synthetic backdoors...',
-          'Establishing persistent access channels...',
-          'Extracting data using synthetic tools...',
-          'Deploying weapon-based extraction modules...',
-          'Retrieving system credentials and keys...',
-          'Collecting API keys and authentication tokens...',
-          'Extracting encryption keys and certificates...',
-          'Cataloging synthetic data and metadata...',
-          'Maintaining synthetic presence and evolution...',
-          'Deployment completed',
+          '🤖 Initializing synthetic intelligence engine...',
+          '🏗️ Analyzing target device architecture...',
+          '⚡ Generating adaptive chaos code payloads...',
+          '🚪 Deploying self-evolving synthetic backdoors...',
+          '🔗 Establishing persistent access channels...',
+          '🛠️ Activating synthetic extraction tools...',
+          '⚔️ Deploying weapon-based extraction modules...',
+          '🔍 Scanning for vulnerabilities...',
+          '📡 Retrieving system credentials and keys...',
+          '🔑 Collecting API keys and authentication tokens...',
+          '🔒 Extracting encryption keys and certificates...',
+          '📊 Cataloging synthetic data and metadata...',
+          '🔄 Maintaining synthetic presence and evolution...',
+          '✅ Synthetic deployment completed',
         ];
         break;
       case 'hybrid_ai_enhanced':
         _deploymentSteps = [
-          'Initializing AI-enhanced attack framework...',
-          'Analyzing device complexity and vulnerabilities...',
-          'Generating AI strategy recommendations...',
-          'Deploying AI-enhanced weapons and tools...',
-          'Executing chaos code sequences with AI guidance...',
-          'Running weapon-based extraction with neural networks...',
-          'Extracting data with AI assistance and learning...',
-          'Processing with neural networks and pattern recognition...',
-          'Cataloging AI-processed data and insights...',
-          'Integrating AI learning and knowledge transfer...',
-          'Deployment completed',
+          '🧠 Initializing AI neural networks...',
+          '📊 Analyzing device complexity matrix...',
+          '🎯 Generating AI strategy recommendations...',
+          '⚔️ Deploying AI-enhanced weapons and tools...',
+          '🌀 Executing chaos code sequences with AI guidance...',
+          '🔮 Running predictive analysis...',
+          '🤖 Extracting data with AI assistance...',
+          '🧠 Processing with neural networks...',
+          '📈 Learning from target patterns...',
+          '🔍 Cataloging AI-processed intelligence...',
+          '🔄 Integrating AI learning systems...',
+          '🚀 Optimizing for future operations...',
+          '✅ AI-enhanced deployment completed',
         ];
         break;
       default:
-        _deploymentSteps = ['Unknown deployment...'];
+        _deploymentSteps = ['❌ Unknown deployment protocol...'];
     }
 
     if (mounted) {
@@ -4390,15 +4354,14 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
       // Get all available weapons for hybrid attack
       final allWeapons = ProjectHorusService.instance.getAllWeapons();
-      final suitableWeapons =
-          allWeapons
-              .where(
-                (weapon) =>
-                    weapon['category'] == 'hybrid' ||
-                    weapon['category'] == 'ai_enhanced' ||
-                    weapon['complexity_level'] != null,
-              )
-              .toList();
+      final suitableWeapons = allWeapons
+          .where(
+            (weapon) =>
+                weapon['category'] == 'hybrid' ||
+                weapon['category'] == 'ai_enhanced' ||
+                weapon['complexity_level'] != null,
+          )
+          .toList();
 
       if (suitableWeapons.isEmpty) {
         return {
@@ -4522,80 +4485,75 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
   Future<bool?> _showComplexTestingDialog(String attackType) async {
     return showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(Icons.psychology, color: Colors.teal, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Enhanced Testing Available',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.psychology, color: Colors.teal, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Enhanced Testing Available',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.teal.withOpacity(0.3)),
-                  ),
-                  child: Column(
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.teal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.teal.withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.teal,
-                            size: 20,
+                      Icon(Icons.info_outline, color: Colors.teal, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Complex scenario testing available for $attackType',
+                          style: TextStyle(
+                            color: Colors.teal[300],
+                            fontSize: 12,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Complex scenario testing available for $attackType',
-                              style: TextStyle(
-                                color: Colors.teal[300],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '🧪 Test against enterprise networks, cloud infrastructure, and IoT systems\n📊 AI learning from failures\n🎯 Weapon effectiveness analysis\n🔄 Automatic backend improvement',
-                        style: TextStyle(color: Colors.teal[200], fontSize: 11),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '🧪 Test against enterprise networks, cloud infrastructure, and IoT systems\n📊 AI learning from failures\n🎯 Weapon effectiveness analysis\n🔄 Automatic backend improvement',
+                    style: TextStyle(color: Colors.teal[200], fontSize: 11),
+                  ),
+                ],
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
-                  'Complex Testing',
-                  style: TextStyle(color: Colors.teal),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text(
-                  'Standard Deployment',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Complex Testing',
+              style: TextStyle(color: Colors.teal),
+            ),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Standard Deployment',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4655,97 +4613,86 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
   ) async {
     return showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Text(
-              title,
-              style: const TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: ListView.builder(
-                itemCount: weapons.length,
-                itemBuilder: (context, index) {
-                  final weapon = weapons[index];
-                  return Card(
-                    color: Colors.grey[800],
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            weapon['source'] == 'horus'
-                                ? Colors.cyan
-                                : Colors.red,
-                        child: Icon(
-                          weapon['source'] == 'horus'
-                              ? Icons.psychology
-                              : Icons.military_tech,
-                          color: Colors.white,
-                          size: 18,
-                        ),
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: weapons.length,
+            itemBuilder: (context, index) {
+              final weapon = weapons[index];
+              return Card(
+                color: Colors.grey[800],
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: weapon['source'] == 'horus'
+                        ? Colors.cyan
+                        : Colors.red,
+                    child: Icon(
+                      weapon['source'] == 'horus'
+                          ? Icons.psychology
+                          : Icons.military_tech,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  title: Text(
+                    weapon['name'] ?? 'Unknown Weapon',
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        weapon['description'] ?? '',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
-                      title: Text(
-                        weapon['name'] ?? 'Unknown Weapon',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Text(
-                            weapon['description'] ?? '',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
+                          Expanded(
+                            child: Text(
+                              'Stealth: ${(weapon['stealth_level'] * 100).toInt()}%',
+                              style: TextStyle(
+                                color: Colors.blue[300],
+                                fontSize: 10,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Stealth: ${(weapon['stealth_level'] * 100).toInt()}%',
-                                  style: TextStyle(
-                                    color: Colors.blue[300],
-                                    fontSize: 10,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Complexity: ${weapon['complexity_level']?.toStringAsFixed(1)}',
+                              style: TextStyle(
+                                color: Colors.orange[300],
+                                fontSize: 10,
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Complexity: ${weapon['complexity_level']?.toStringAsFixed(1)}',
-                                  style: TextStyle(
-                                    color: Colors.orange[300],
-                                    fontSize: 10,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
-                      onTap: () => Navigator.of(context).pop(weapon),
-                    ),
-                  );
-                },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.orange),
+                    ],
+                  ),
+                  onTap: () => Navigator.of(context).pop(weapon),
                 ),
-              ),
-            ],
+              );
+            },
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4780,90 +4727,77 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
     return showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: const Text(
-              'Select Testing Scenario',
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 300,
-              child: ListView.builder(
-                itemCount: scenarios.length,
-                itemBuilder: (context, index) {
-                  final scenario = scenarios[index];
-                  final difficultyColor = _getDifficultyColor(
-                    scenario['difficulty'] as String,
-                  );
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Select Testing Scenario',
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: scenarios.length,
+            itemBuilder: (context, index) {
+              final scenario = scenarios[index];
+              final difficultyColor = _getDifficultyColor(
+                scenario['difficulty'] as String,
+              );
 
-                  return Card(
-                    color: Colors.grey[800],
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: difficultyColor,
-                        child: Text(
-                          '${scenario['device_count']}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        scenario['name'] as String,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            scenario['description'] as String,
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: difficultyColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              (scenario['difficulty'] as String).toUpperCase(),
-                              style: TextStyle(
-                                color: difficultyColor,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () => Navigator.of(context).pop(scenario),
+              return Card(
+                color: Colors.grey[800],
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: difficultyColor,
+                    child: Text(
+                      '${scenario['device_count']}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
-                  );
-                },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.orange),
+                  ),
+                  title: Text(
+                    scenario['name'] as String,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        scenario['description'] as String,
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: difficultyColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          (scenario['difficulty'] as String).toUpperCase(),
+                          style: TextStyle(
+                            color: difficultyColor,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  onTap: () => Navigator.of(context).pop(scenario),
                 ),
-              ),
-            ],
+              );
+            },
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4893,50 +4827,49 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.teal,
-                    strokeWidth: 2,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Complex Scenario Testing',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.teal,
+                strokeWidth: 2,
+              ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Testing weapon: ${weapon['name']}',
-                  style: const TextStyle(color: Colors.cyan),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Against scenario: ${scenario['name']}',
-                  style: const TextStyle(color: Colors.orange),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Analyzing security measures...\nTesting weapon capabilities...\nEvaluating success probability...',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            const SizedBox(width: 12),
+            const Text(
+              'Complex Scenario Testing',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Testing weapon: ${weapon['name']}',
+              style: const TextStyle(color: Colors.cyan),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Against scenario: ${scenario['name']}',
+              style: const TextStyle(color: Colors.orange),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Analyzing security measures...\nTesting weapon capabilities...\nEvaluating success probability...',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -4950,134 +4883,124 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
     return showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(
-                  success ? Icons.check_circle : Icons.error,
-                  color: success ? Colors.green : Colors.red,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  success ? 'Test Successful' : 'Test Failed',
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(
+              success ? Icons.check_circle : Icons.error,
+              color: success ? Colors.green : Colors.red,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              success ? 'Test Successful' : 'Test Failed',
+              style: TextStyle(
+                color: success ? Colors.green : Colors.red,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTestResultSection(
+                'Weapon Used',
+                weapon['name'],
+                Colors.cyan,
+              ),
+              _buildTestResultSection(
+                'Scenario',
+                scenario['name'],
+                Colors.orange,
+              ),
+              _buildTestResultSection(
+                'Success Probability',
+                '${(testResult['success_probability'] * 100).toStringAsFixed(1)}%',
+                Colors.blue,
+              ),
+              _buildTestResultSection(
+                'Execution Time',
+                '${testResult['execution_time_ms']}ms',
+                Colors.purple,
+              ),
+              _buildTestResultSection(
+                'Devices Compromised',
+                '${testResult['devices_compromised']}',
+                success ? Colors.green : Colors.red,
+              ),
+
+              if (!success && testResult['failure_points'] != null) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Failure Analysis:',
                   style: TextStyle(
-                    color: success ? Colors.green : Colors.red,
-                    fontSize: 18,
+                    color: Colors.red,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTestResultSection(
-                    'Weapon Used',
-                    weapon['name'],
-                    Colors.cyan,
-                  ),
-                  _buildTestResultSection(
-                    'Scenario',
-                    scenario['name'],
-                    Colors.orange,
-                  ),
-                  _buildTestResultSection(
-                    'Success Probability',
-                    '${(testResult['success_probability'] * 100).toStringAsFixed(1)}%',
-                    Colors.blue,
-                  ),
-                  _buildTestResultSection(
-                    'Execution Time',
-                    '${testResult['execution_time_ms']}ms',
-                    Colors.purple,
-                  ),
-                  _buildTestResultSection(
-                    'Devices Compromised',
-                    '${testResult['devices_compromised']}',
-                    success ? Colors.green : Colors.red,
-                  ),
-
-                  if (!success && testResult['failure_points'] != null) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Failure Analysis:',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                const SizedBox(height: 8),
+                ...((testResult['failure_points'] as List).map(
+                  (point) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      '• $point',
+                      style: TextStyle(color: Colors.red[300], fontSize: 12),
                     ),
-                    const SizedBox(height: 8),
-                    ...((testResult['failure_points'] as List).map(
-                      (point) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text(
-                          '• $point',
-                          style: TextStyle(
-                            color: Colors.red[300],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    )),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '📚 Failure data sent to backend for AI learning and weapon improvement',
-                        style: TextStyle(color: Colors.blue, fontSize: 11),
-                      ),
-                    ),
-                  ],
-
-                  if (success && testResult['extracted_data'] != null) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Data Extracted:',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${(testResult['extracted_data'] as Map).keys.join(', ')}',
-                        style: TextStyle(
-                          color: Colors.green[300],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: Colors.white),
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '📚 Failure data sent to backend for AI learning and weapon improvement',
+                    style: TextStyle(color: Colors.blue, fontSize: 11),
+                  ),
                 ),
-              ),
+              ],
+
+              if (success && testResult['extracted_data'] != null) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Data Extracted:',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${(testResult['extracted_data'] as Map).keys.join(', ')}',
+                    style: TextStyle(color: Colors.green[300], fontSize: 12),
+                  ),
+                ),
+              ],
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -5126,96 +5049,83 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
   Future<String?> _showEnhanceAttackDialog(String attackType) async {
     return showDialog<String>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                Icon(Icons.power_settings_new, color: Colors.orange, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Enhance $attackType?',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            Icon(Icons.power_settings_new, color: Colors.orange, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Enhance $attackType?',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Choose how to enhance your attack for better results:',
+                      style: TextStyle(color: Colors.orange[300], fontSize: 12),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Choose how to enhance your attack for better results:',
-                          style: TextStyle(
-                            color: Colors.orange[300],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Chaos Code: Use advanced quantum algorithms',
-                  style: TextStyle(color: Colors.cyan[300], fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Weapon: Deploy specialized attack tools',
-                  style: TextStyle(color: Colors.red[300], fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Normal: Standard attack without enhancements',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                ),
-              ],
+                ],
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('chaos'),
-                child: const Text(
-                  'Chaos Code',
-                  style: TextStyle(color: Colors.cyan),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('weapon'),
-                child: const Text(
-                  'Weapon',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('normal'),
-                child: const Text(
-                  'Normal',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(null),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.orange),
-                ),
-              ),
-            ],
+            const SizedBox(height: 16),
+            Text(
+              'Chaos Code: Use advanced quantum algorithms',
+              style: TextStyle(color: Colors.cyan[300], fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Weapon: Deploy specialized attack tools',
+              style: TextStyle(color: Colors.red[300], fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Normal: Standard attack without enhancements',
+              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('chaos'),
+            child: const Text(
+              'Chaos Code',
+              style: TextStyle(color: Colors.cyan),
+            ),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('weapon'),
+            child: const Text('Weapon', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('normal'),
+            child: const Text('Normal', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('Cancel', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -5409,8 +5319,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                                   isCompleted
                                       ? Icons.check_circle
                                       : Icons.radio_button_unchecked,
-                                  color:
-                                      isCompleted ? Colors.green : Colors.grey,
+                                  color: isCompleted
+                                      ? Colors.green
+                                      : Colors.grey,
                                   size: 16,
                                 ),
                                 const SizedBox(width: 8),
@@ -5418,10 +5329,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                                   child: Text(
                                     step,
                                     style: TextStyle(
-                                      color:
-                                          isCompleted
-                                              ? Colors.green[300]
-                                              : Colors.grey[400],
+                                      color: isCompleted
+                                          ? Colors.green[300]
+                                          : Colors.grey[400],
                                       fontSize: 11,
                                     ),
                                   ),
@@ -5444,8 +5354,9 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
                     Text(
                       'Mode: ${_isLiveMode ? "LIVE" : "SIMULATION"}',
                       style: TextStyle(
-                        color:
-                            _isLiveMode ? Colors.red[300] : Colors.green[300],
+                        color: _isLiveMode
+                            ? Colors.red[300]
+                            : Colors.green[300],
                         fontSize: 12,
                       ),
                     ),
@@ -5552,6 +5463,7 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     Map<String, dynamic> qcRepos = {};
     Map<String, dynamic> adversarial = {};
     Map<String, dynamic> jarvis = {};
+    Map<String, dynamic> chaosDocs = {};
 
     try {
       final results = await Future.wait([
@@ -5566,6 +5478,7 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
         _get('/api/quantum-chaos/chaos-repositories'),
         _get('/api/ai-integration/adversarial-training/progress'),
         _get('/api/jarvis/status'),
+        _get('/api/ai-integration/chaos-language/documentation'),
       ]);
       integration = results[0];
       berserk = results[1];
@@ -5578,6 +5491,7 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
       qcRepos = results[8];
       adversarial = results[9];
       jarvis = results[10];
+      chaosDocs = results[11];
     } catch (_) {}
 
     String _s(Object? v) => (v == null) ? 'unknown' : v.toString();
@@ -5594,168 +5508,171 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
-            title: Row(
-              children: [
-                const Icon(Icons.analytics, color: Colors.cyan),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'AI Systems Status',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Row(
+          children: [
+            const Icon(Icons.analytics, color: Colors.cyan),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'AI Systems Status',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Overall integration snapshot
-                  _statusLine(
-                    'Adversarial scenarios',
-                    _s(adv['total_scenarios_completed']),
-                  ),
-                  _statusLine(
-                    'Adversarial success rate',
-                    _s(adv['overall_success_rate']),
-                  ),
-                  _statusLine('Horus total weapons', _s(hor['total_weapons'])),
-                  _statusLine(
-                    'Horus avg complexity',
-                    _s(hor['average_complexity']),
-                  ),
-                  _statusLine(
-                    'Chaos language version',
-                    _s(hor['chaos_language_version']),
-                  ),
-                  _statusLine(
-                    'Berserk total weapons',
-                    _s(ber['total_weapons']),
-                  ),
-                  _statusLine(
-                    'Berserk active deployments',
-                    _s(ber['active_deployments']),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Detailed sections
-                  const Text(
-                    'Project Horus',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _statusLine(
-                    'Learning progress',
-                    _s(horusStatus['learning_progress']),
-                  ),
-                  _statusLine(
-                    'Assimilated systems',
-                    _s(horusStatus['assimilated_systems_count']),
-                  ),
-                  _statusLine(
-                    'Failed attacks',
-                    _s(horusStatus['failed_attacks_count']),
-                  ),
-                  _statusLine(
-                    'Chaos repos',
-                    _s(horusStatus['chaos_repositories_count']),
-                  ),
-
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Berserk',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _statusLine(
-                    'Systems compromised',
-                    _s(ber['systems_compromised']),
-                  ),
-
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Quantum Chaos (crypto)',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _statusLine(
-                    'Quantum complexity',
-                    _s(qcStatus['quantum_complexity']),
-                  ),
-                  _statusLine(
-                    'Learning progress',
-                    _s(qcStatus['learning_progress']),
-                  ),
-                  _statusLine(
-                    'Entanglement pairs',
-                    _s(qcStatus['entanglement_pairs']),
-                  ),
-                  _statusLine('Quantum keys', _s(qcKeys['count'])),
-                  _statusLine(
-                    'Assimilated systems',
-                    _s(qcAssimilated['count']),
-                  ),
-                  _statusLine('Chaos repositories', _s(qcRepos['count'])),
-
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Attack Simulations',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  _statusLine(
-                    'Recent tests available',
-                    (systemTests.isNotEmpty).toString(),
-                  ),
-
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Raw (compact):',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 4),
-                  _mono(
-                    jsonEncode({
-                      'integration': integration.isEmpty ? null : 'ok',
-                      'berserk': berserk.isEmpty ? null : 'ok',
-                      'horus_synth': horusSynthesis.isEmpty ? null : 'ok',
-                      'horus_status': horusStatus.isEmpty ? null : 'ok',
-                      'tests': systemTests.isEmpty ? null : 'ok',
-                      'qc_status': qcStatus.isEmpty ? null : 'ok',
-                      'qc_keys': qcKeys.isEmpty ? null : 'ok',
-                      'qc_assimilated': qcAssimilated.isEmpty ? null : 'ok',
-                      'qc_repos': qcRepos.isEmpty ? null : 'ok',
-                      'adversarial': adversarial.isEmpty ? null : 'ok',
-                      'jarvis': jarvis.isEmpty ? null : 'ok',
-                    }),
-                  ),
-                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: Colors.white70),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Overall integration snapshot
+              _statusLine(
+                'Adversarial scenarios',
+                _s(adv['total_scenarios_completed']),
+              ),
+              _statusLine(
+                'Adversarial success rate',
+                _s(adv['overall_success_rate']),
+              ),
+              _statusLine('Horus total weapons', _s(hor['total_weapons'])),
+              _statusLine(
+                'Horus avg complexity',
+                _s(hor['average_complexity']),
+              ),
+              _statusLine(
+                'Chaos language version',
+                _s(hor['chaos_language_version']),
+              ),
+              _statusLine('Berserk total weapons', _s(ber['total_weapons'])),
+              _statusLine(
+                'Berserk active deployments',
+                _s(ber['active_deployments']),
+              ),
+              const SizedBox(height: 12),
+
+              // Detailed sections
+              const Text(
+                'Project Horus',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              _statusLine(
+                'Learning progress',
+                _s(horusStatus['learning_progress']),
+              ),
+              _statusLine(
+                'Assimilated systems',
+                _s(horusStatus['assimilated_systems_count']),
+              ),
+              _statusLine(
+                'Failed attacks',
+                _s(horusStatus['failed_attacks_count']),
+              ),
+              _statusLine(
+                'Chaos repos',
+                _s(horusStatus['chaos_repositories_count']),
+              ),
+
+              const SizedBox(height: 12),
+              const Text(
+                'Berserk',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _statusLine(
+                'Systems compromised',
+                _s(ber['systems_compromised']),
+              ),
+
+              const SizedBox(height: 12),
+              const Text(
+                'Quantum Chaos (crypto)',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _statusLine(
+                'Quantum complexity',
+                _s(qcStatus['quantum_complexity']),
+              ),
+              _statusLine(
+                'Learning progress',
+                _s(qcStatus['learning_progress']),
+              ),
+              _statusLine(
+                'Entanglement pairs',
+                _s(qcStatus['entanglement_pairs']),
+              ),
+              _statusLine('Quantum keys', _s(qcKeys['count'])),
+              _statusLine('Assimilated systems', _s(qcAssimilated['count'])),
+              _statusLine('Chaos repositories', _s(qcRepos['count'])),
+
+              const SizedBox(height: 12),
+              const Text(
+                'Attack Simulations',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _statusLine(
+                'Recent tests available',
+                (systemTests.isNotEmpty).toString(),
+              ),
+
+              const SizedBox(height: 8),
+              const Text(
+                'Raw (compact):',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 4),
+              _mono(
+                jsonEncode({
+                  'integration': integration.isEmpty ? null : 'ok',
+                  'berserk': berserk.isEmpty ? null : 'ok',
+                  'horus_synth': horusSynthesis.isEmpty ? null : 'ok',
+                  'horus_status': horusStatus.isEmpty ? null : 'ok',
+                  'tests': systemTests.isEmpty ? null : 'ok',
+                  'qc_status': qcStatus.isEmpty ? null : 'ok',
+                  'qc_keys': qcKeys.isEmpty ? null : 'ok',
+                  'qc_assimilated': qcAssimilated.isEmpty ? null : 'ok',
+                  'qc_repos': qcRepos.isEmpty ? null : 'ok',
+                  'adversarial': adversarial.isEmpty ? null : 'ok',
+                  'jarvis': jarvis.isEmpty ? null : 'ok',
+                  'chaos_docs': chaosDocs.isEmpty ? null : 'ok',
+                }),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: chaosDocs.isEmpty
+                ? null
+                : () => _showChaosDocsDialog(
+                    chaosDocs['chaos_language_documentation']
+                        as Map<String, dynamic>?,
+                  ),
+            child: const Text(
+              'View Chaos Docs',
+              style: TextStyle(color: Colors.cyan),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -5791,5 +5708,520 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
         ),
       ),
     );
+  }
+
+  void _showChaosDocsDialog(Map<String, dynamic>? docs) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final pretty = const JsonEncoder.withIndent(
+          '  ',
+        ).convert(docs ?? const {'message': 'No documentation available'});
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Chaos Language Documentation',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 600,
+            height: 400,
+            child: SingleChildScrollView(child: _mono(pretty)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Enhanced Testing Results Section
+  Widget _buildEnhancedTestingResults() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🧪 Enhanced Testing Results',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.cyan),
+                onPressed: _refreshEnhancedTestingResults,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          FutureBuilder<Map<String, dynamic>?>(
+            future: ProjectHorusService.instance.getEnhancedTestingStatus(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.cyan),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Error loading testing results: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final data = snapshot.data;
+              if (data == null) {
+                return const Text(
+                  'No testing data available',
+                  style: TextStyle(color: Colors.grey),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTestStatusCard(
+                    'Overall Status',
+                    data['overall_status'] ?? 'Unknown',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTestStatusCard(
+                    'Tests Passed',
+                    '${data['tests_passed'] ?? 0}',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTestStatusCard(
+                    'Tests Failed',
+                    '${data['tests_failed'] ?? 0}',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTestStatusCard(
+                    'Success Rate',
+                    '${data['success_rate'] ?? 0}%',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildTestStatusCard(
+                    'Current Difficulty',
+                    '${data['current_difficulty'] ?? 'Unknown'}',
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _runManualTestCycle,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyan,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Run Manual Test Cycle'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestStatusCard(String label, String value) {
+    Color color = Colors.green;
+    if (label.contains('Failed')) color = Colors.red;
+    if (label.contains('Rate') && value.contains('%')) {
+      final rate = int.tryParse(value.replaceAll('%', '')) ?? 0;
+      color = rate >= 80
+          ? Colors.green
+          : rate >= 60
+          ? Colors.orange
+          : Colors.red;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white)),
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Autonomous Weapons Section
+  Widget _buildAutonomousWeaponsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🤖 Autonomous Weapons',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.purple),
+                    onPressed: _generateAutonomousWeapons,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.red),
+                    onPressed: _clearStoredWeapons,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          FutureBuilder<Map<String, dynamic>?>(
+            future: ProjectHorusService.instance.getAutonomousWeapons(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.purple),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Error loading autonomous weapons: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final data = snapshot.data;
+              if (data == null || data['weapons'] == null) {
+                return Column(
+                  children: [
+                    const Text(
+                      'No autonomous weapons available',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _setupAutonomousWeapons,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Setup Autonomous Weapons'),
+                    ),
+                  ],
+                );
+              }
+
+              final weapons = data['weapons'] as List;
+              return Column(
+                children: [
+                  Text(
+                    'Generated Weapons: ${weapons.length}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 8),
+                  ...weapons.take(3).map((weapon) => _buildWeaponCard(weapon)),
+                  if (weapons.length > 3)
+                    TextButton(
+                      onPressed: _showAllAutonomousWeapons,
+                      child: const Text(
+                        'View All Weapons',
+                        style: TextStyle(color: Colors.purple),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeaponCard(Map<String, dynamic> weapon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            weapon['name'] ?? 'Unknown Weapon',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            weapon['type'] ?? 'Unknown Type',
+            style: const TextStyle(color: Colors.purple),
+            fontSize: 12,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            weapon['description'] ?? 'No description available',
+            style: const TextStyle(color: Colors.white70),
+            fontSize: 12,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Live System Status Section
+  Widget _buildLiveSystemStatus() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🌐 Live System Status',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.green),
+                onPressed: _refreshLiveSystemStatus,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          FutureBuilder<Map<String, dynamic>?>(
+            future: ProjectHorusService.instance.getLiveSystemStatus(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.green),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Error loading live system status: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final data = snapshot.data;
+              if (data == null) {
+                return const Text(
+                  'No live system data available',
+                  style: TextStyle(color: Colors.grey),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusCard(
+                    'Internet Learning',
+                    data['internet_learning_status'] ?? 'Unknown',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildStatusCard(
+                    'Docker Simulations',
+                    data['docker_simulations_status'] ?? 'Unknown',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildStatusCard(
+                    'Autonomous Brains',
+                    data['autonomous_brains_status'] ?? 'Unknown',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildStatusCard(
+                    'Chaos Code Generation',
+                    data['chaos_code_status'] ?? 'Unknown',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildStatusCard(
+                    'Weapon Testing',
+                    data['weapon_testing_status'] ?? 'Unknown',
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(String label, String value) {
+    Color color = Colors.green;
+    if (value.toLowerCase().contains('error') ||
+        value.toLowerCase().contains('failed')) {
+      color = Colors.red;
+    } else if (value.toLowerCase().contains('warning') ||
+        value.toLowerCase().contains('pending')) {
+      color = Colors.orange;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white)),
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Action Methods
+  Future<void> _refreshEnhancedTestingResults() async {
+    setState(() {});
+    _showSuccessSnackbar('Enhanced testing results refreshed');
+  }
+
+  Future<void> _runManualTestCycle() async {
+    try {
+      final result = await ProjectHorusService.instance.runManualTestCycle();
+      if (result != null) {
+        _showSuccessSnackbar('Manual test cycle completed');
+        setState(() {});
+      } else {
+        _showErrorSnackbar('Failed to run manual test cycle');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Error running test cycle: $e');
+    }
+  }
+
+  Future<void> _generateAutonomousWeapons() async {
+    try {
+      final result = await ProjectHorusService.instance
+          .generateAutonomousWeapons();
+      if (result != null) {
+        _showSuccessSnackbar('Autonomous weapons generated successfully');
+        setState(() {});
+      } else {
+        _showErrorSnackbar('Failed to generate autonomous weapons');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Error generating weapons: $e');
+    }
+  }
+
+  Future<void> _clearStoredWeapons() async {
+    try {
+      final result = await ProjectHorusService.instance.clearStoredWeapons();
+      if (result) {
+        _showSuccessSnackbar('Stored weapons cleared successfully');
+        setState(() {});
+      } else {
+        _showErrorSnackbar('Failed to clear stored weapons');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Error clearing weapons: $e');
+    }
+  }
+
+  Future<void> _setupAutonomousWeapons() async {
+    try {
+      final result = await ProjectHorusService.instance
+          .setupAutonomousWeapons();
+      if (result != null) {
+        _showSuccessSnackbar('Autonomous weapons setup completed');
+        setState(() {});
+      } else {
+        _showErrorSnackbar('Failed to setup autonomous weapons');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Error setting up weapons: $e');
+    }
+  }
+
+  void _showAllAutonomousWeapons() {
+    // TODO: Implement dialog to show all autonomous weapons
+    _showSuccessSnackbar('View all weapons feature coming soon');
+  }
+
+  Future<void> _refreshLiveSystemStatus() async {
+    setState(() {});
+    _showSuccessSnackbar('Live system status refreshed');
   }
 }
