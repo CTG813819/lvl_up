@@ -9,21 +9,13 @@ import random
 import time
 import hashlib
 import uuid
-<<<<<<< HEAD
-=======
 import pickle
 import os
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import structlog
 import numpy as np
 
-<<<<<<< HEAD
-from .project_horus_service import ProjectHorusService
-from .ai_adversarial_integration_service import ai_adversarial_integration_service
-from .autonomous_ai_brain_service import horus_autonomous_brain, berserk_autonomous_brain
-=======
 # Try to import sklearn components, fall back to None if not available
 try:
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
@@ -48,7 +40,6 @@ except ImportError:
 
 from .project_horus_service import ProjectHorusService
 from .ai_adversarial_integration_service import ai_adversarial_integration_service
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 logger = structlog.get_logger()
 
@@ -79,8 +70,6 @@ class EnhancedProjectHorusService(ProjectHorusService):
         self.chaos_language_chapters = []
         self.chaos_language_version = "1.0.0"
         
-<<<<<<< HEAD
-=======
         # ML/Scikit-learn Learning System
         self.ml_models = {
             "weapon_performance_predictor": None,
@@ -125,7 +114,6 @@ class EnhancedProjectHorusService(ProjectHorusService):
         # Initialize failure learning system attributes
         pass
     
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
     async def learn_from_ai_experiences(self, ai_types: List[str] = None) -> Dict[str, Any]:
         """Learn from other AI experiences and integrate into weapon development"""
         if not ai_types:
@@ -179,8 +167,6 @@ class EnhancedProjectHorusService(ProjectHorusService):
         # Update synthesis lab with new patterns
         await self._update_synthesis_lab(learning_results)
         
-<<<<<<< HEAD
-=======
         # Update ML models with new learning data
         await self._update_ml_models_with_learning_results(learning_results)
         
@@ -194,7 +180,6 @@ class EnhancedProjectHorusService(ProjectHorusService):
         # Create adaptive goals using ML predictions
         await self._generate_adaptive_goals_with_ml()
         
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
         return learning_results
     
     async def _extract_ai_experiences(self, ai_type: str) -> Dict[str, Any]:
@@ -372,35 +357,12 @@ class EnhancedProjectHorusService(ProjectHorusService):
                 "self_growing": True
             }
             
-<<<<<<< HEAD
             # Store in synthesis lab
             self.weapon_synthesis_lab[weapon_id] = weapon
             
             logger.info(f"Synthesized weapon {weapon_id} from {ai_type} learning")
             
             return weapon
-=======
-            # Test weapon in Docker environment before storing
-            docker_test_results = await self._test_weapon_in_docker_environment(weapon)
-            if docker_test_results['passed']:
-                weapon['docker_test_results'] = docker_test_results
-                weapon['validated'] = True
-                
-                # Check if similar weapon exists and enhance instead of duplicating
-                existing_weapon = await self._find_similar_weapon(weapon)
-                if existing_weapon:
-                    enhanced_weapon = await self._enhance_existing_weapon(existing_weapon['weapon_id'], weapon)
-                    logger.info(f"Enhanced existing weapon {existing_weapon['weapon_id']} instead of creating duplicate")
-                    return enhanced_weapon
-                else:
-                    # Store in synthesis lab
-                    self.weapon_synthesis_lab[weapon_id] = weapon
-                    logger.info(f"Synthesized and validated weapon {weapon_id} from {ai_type} learning")
-                    return weapon
-            else:
-                logger.warning(f"Weapon {weapon_id} failed Docker testing, not storing")
-                return {}
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
             
         except Exception as e:
             logger.error(f"Error creating synthetic weapon: {e}")
@@ -855,7 +817,6 @@ class EnhancedProjectHorusService(ProjectHorusService):
         ]
         return sum(complexities) / len(complexities) if complexities else 0.0
 
-<<<<<<< HEAD
     async def generate_weapons_with_autonomous_chaos_code(self) -> Dict[str, Any]:
         """Generate weapons using autonomous chaos code from the AI brains"""
         try:
@@ -1203,7 +1164,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
         except Exception as e:
             logger.error(f"Error getting autonomous chaos documentation: {e}")
             return {"error": str(e)}
-=======
+
     async def _test_weapon_in_docker_environment(self, weapon: Dict[str, Any]) -> Dict[str, Any]:
         """Test weapon against multiple Docker services with rigorous evolving goals"""
         try:
@@ -2474,7 +2435,6 @@ async def handle_generic_failure(context, error):
             "solution_coverage": (failures_with_solutions / total_failures * 100) if total_failures > 0 else 0,
             "prevention_coverage": (failures_with_prevention / total_failures * 100) if total_failures > 0 else 0
         }
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 
 # Global instance

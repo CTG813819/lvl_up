@@ -6,7 +6,6 @@ Integrates quantum chaos capabilities, system testing, and learning from failure
 import asyncio
 import random
 import time
-<<<<<<< HEAD
 import json
 import hashlib
 import secrets
@@ -21,10 +20,7 @@ import subprocess
 import tempfile
 import shutil
 import numpy as np
-=======
 import aiohttp
-from typing import Dict, Any, List, Optional
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from cryptography.fernet import Fernet
@@ -33,11 +29,8 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 import structlog
-<<<<<<< HEAD
-=======
 from pathlib import Path
 from bs4 import BeautifulSoup
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 logger = structlog.get_logger()
 
@@ -132,7 +125,6 @@ class ProjectHorusService:
             "evolved_chaos_results": evolved_test_results
         }
         
-<<<<<<< HEAD
         for system, evolved_result in evolved_test_results.items():
             try:
                 # Generate evolved quantum chaos code for this system
@@ -191,27 +183,6 @@ class ProjectHorusService:
 
     async def _test_attack_against_system(self, system: str, chaos_code: Dict[str, Any]) -> Dict[str, Any]:
         """Test quantum chaos attack against specific system"""
-=======
-        # Initialize internet learning sources
-        self.internet_sources = {
-            "github": "https://github.com",
-            "stackoverflow": "https://stackoverflow.com",
-            "medium": "https://medium.com",
-            "dev_to": "https://dev.to",
-            "tech_crunch": "https://techcrunch.com",
-            "hacker_news": "https://news.ycombinator.com",
-            "reddit_programming": "https://reddit.com/r/programming",
-            "quantum_computing": "https://quantum-computing.ibm.com/",
-            "jarvis_ai": "https://en.wikipedia.org/wiki/J.A.R.V.I.S.",
-            "quantum_mechanics": "https://en.wikipedia.org/wiki/Quantum_mechanics"
-        }
-        
-    async def generate_chaos_code(self, target_context: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Generate brand new Chaos code for assimilation and attack
-        This code is completely new and not used anywhere else
-        """
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
         try:
             # Create Docker test environment for this system
             test_env = await self._create_docker_test_environment(system)
@@ -327,25 +298,22 @@ class ProjectHorusService:
         await self._evolve_quantum_chaos_from_failure(system, error)
         
         # Update learning progress
-<<<<<<< HEAD
-        self.learning_progress = min(self.learning_progress + 0.1, 1.0)
-=======
         self.learning_progress += 0.05
-        self.chaos_complexity += 0.02
+        self.quantum_complexity += 0.02
     
     async def get_chaos_code_repository(self) -> Dict[str, Any]:
         """Get all generated chaos code"""
         return {
-            "repository": self.chaos_code_repository,
-            "total_codes": len(self.chaos_code_repository),
+            "repository": self.chaos_repositories,
+            "total_codes": len(self.chaos_repositories),
             "learning_progress": self.learning_progress,
-            "chaos_complexity": self.chaos_complexity,
+            "quantum_complexity": self.quantum_complexity,
             "knowledge_base_size": sum(len(v) for v in self.code_knowledge_base.values())
         }
     
     async def get_chaos_code_by_id(self, chaos_id: str) -> Optional[Dict[str, Any]]:
         """Get specific chaos code by ID"""
-        return self.chaos_code_repository.get(chaos_id)
+        return next((repo for repo in self.chaos_repositories if repo["chaos_code"]["id"] == chaos_id), None)
 
     async def learn_from_internet(self, topics: List[str] = None) -> Dict[str, Any]:
         """Learn from real internet sources to enhance chaos code generation"""
@@ -389,7 +357,7 @@ class ProjectHorusService:
             
             # Update learning progress
             self.learning_progress = min(1.0, self.learning_progress + total_knowledge_gained)
-            self.chaos_complexity = min(2.0, self.chaos_complexity + total_knowledge_gained * 0.1)
+            self.quantum_complexity = min(2.0, self.quantum_complexity + total_knowledge_gained * 0.1)
             
             return {
                 "status": "success",
@@ -397,7 +365,7 @@ class ProjectHorusService:
                 "learning_results": learning_results,
                 "total_knowledge_gained": total_knowledge_gained,
                 "learning_progress": self.learning_progress,
-                "chaos_complexity": self.chaos_complexity,
+                "quantum_complexity": self.quantum_complexity,
                 "message": "Internet learning completed successfully"
             }
             
@@ -562,7 +530,7 @@ class ProjectHorusService:
     async def deploy_chaos_code(self, chaos_id: str, target_system: str) -> Dict[str, Any]:
         """Deploy chaos code to target system"""
         try:
-            chaos_code = self.chaos_code_repository.get(chaos_id)
+            chaos_code = next((repo for repo in self.chaos_repositories if repo["chaos_code"]["id"] == chaos_id), None)
             if not chaos_code:
                 return {"error": "Chaos code not found"}
             
@@ -589,7 +557,6 @@ class ProjectHorusService:
         except Exception as e:
             logger.error("❌ Error deploying chaos code", error=str(e), chaos_id=chaos_id)
             return {"error": str(e)}
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
     async def _evolve_quantum_chaos_from_failure(self, system: str, error: str):
         """Evolve quantum chaos code based on failure analysis"""

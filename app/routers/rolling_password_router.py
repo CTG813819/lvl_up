@@ -1,15 +1,5 @@
 """
 Rolling Password Router
-<<<<<<< HEAD
-Provides endpoints for rolling password management
-"""
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Optional
-import structlog
-from datetime import datetime
-=======
 API endpoints for rolling password authentication system
 """
 
@@ -18,12 +8,10 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Dict, Any, Optional
 import structlog
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
 
 from app.services.rolling_password_service import rolling_password_service
 
 logger = structlog.get_logger()
-<<<<<<< HEAD
 router = APIRouter(prefix="/api/rolling-password", tags=["Rolling Password"])
 
 # Pydantic models
@@ -101,240 +89,38 @@ async def get_password_status(token: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/reset")
-async def reset_password_system(request: ResetPasswordRequest):
-    """Reset password system for a token"""
+async def reset_rolling_password(request: ResetPasswordRequest):
+    """Reset rolling password system"""
     try:
-        result = rolling_password_service.reset_password_system(request.token)
+        result = rolling_password_service.reset_rolling_password(request.token)
         
         if result["status"] == "success":
             return {
                 "status": "success",
-                "message": "Password system reset successfully",
+                "message": "Rolling password system reset",
                 "data": result
             }
         else:
             raise HTTPException(status_code=400, detail=result["message"])
             
     except Exception as e:
-        logger.error(f"Failed to reset password system: {e}")
+        logger.error(f"Failed to reset rolling password: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/stats")
-async def get_system_stats():
-    """Get rolling password system statistics"""
-    try:
-        result = rolling_password_service.get_system_stats()
-        
-        if result["status"] == "success":
-            return {
-                "status": "success",
-                "message": "System statistics retrieved",
-                "data": result
-            }
-        else:
-            raise HTTPException(status_code=400, detail=result["message"])
-            
-    except Exception as e:
-        logger.error(f"Failed to get system stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) 
-=======
-
-router = APIRouter(prefix="/api/auth", tags=["rolling-password"])
-
-
-class AuthenticationRequest(BaseModel):
-    user_id: str
-    password: str
-
-
-class AuthenticationResponse(BaseModel):
-    success: bool
-    session_token: Optional[str] = None
-    next_password: Optional[str] = None
-    message: str
-    password_expires_at: Optional[str] = None
-    time_until_expiry: Optional[str] = None
-    error: Optional[str] = None
-    attempts_remaining: Optional[int] = None
-
-
-@router.post("/initialize")
-async def initialize_rolling_password_system() -> Dict[str, Any]:
-    """Initialize the rolling password system and get current password"""
-    try:
-        logger.info("🔐 Initializing rolling password system")
-        
-        # Force initialization
-        await rolling_password_service._ensure_initialized()
-        
-        # Get current password info
-        password_info = await rolling_password_service.get_current_password_info()
-        
-        # Generate a test password for initial setup
-        if not password_info.get("has_active_password"):
-            # Force password generation
-            await rolling_password_service._generate_new_password()
-            password_info = await rolling_password_service.get_current_password_info()
-        
-        return {
-            "status": "success",
-            "message": "Rolling password system initialized",
-            "password_info": password_info,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Failed to initialize rolling password system: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to initialize system: {str(e)}")
-
-
-@router.get("/current-password")
-async def get_current_password() -> Dict[str, Any]:
-    """Get the current active password (for testing/development only)"""
-    try:
-        # Ensure system is initialized
-        await rolling_password_service._ensure_initialized()
-        
-        # Get current password info
-        password_info = await rolling_password_service.get_current_password_info()
-        
-        if password_info.get("has_active_password"):
-            # Get the plain text password for development/testing
-            current_password = await rolling_password_service.get_current_plain_password()
-            
-            return {
-                "status": "success",
-                "message": "Current password is active",
-                "current_password": current_password,
-                "expires_at": password_info.get("expiry_time"),
-                "time_until_expiry": password_info.get("time_until_expiry"),
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        else:
-            return {
-                "status": "error",
-                "message": "No active password found",
-                "timestamp": datetime.utcnow().isoformat()
-            }
-    except Exception as e:
-        logger.error(f"Failed to get current password: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get current password: {str(e)}")
-
-
-@router.post("/login", response_model=AuthenticationResponse)
-async def authenticate_user(auth_request: AuthenticationRequest, request: Request) -> AuthenticationResponse:
-    """Authenticate user with rolling password system"""
-    try:
-        logger.info(f"🔐 Authentication request for user: {auth_request.user_id}")
-        
-        # Get client IP address
-        client_ip = request.client.host if request.client else "unknown"
-        
-        # Authenticate user
-        auth_result = await rolling_password_service.authenticate_user(
-            user_id=auth_request.user_id,
-            password=auth_request.password,
-            ip_address=client_ip
-        )
-        
-        response = AuthenticationResponse(
-            success=auth_result.get("success", False),
-            message=auth_result.get("message", "Authentication processed"),
-            session_token=auth_result.get("session_token"),
-            next_password=auth_result.get("next_password"),
-            password_expires_at=auth_result.get("password_expires_at"),
-            time_until_expiry=auth_result.get("time_until_expiry"),
-            error=auth_result.get("error"),
-            attempts_remaining=auth_result.get("attempts_remaining")
-        )
-        
-        if auth_result.get("success"):
-            logger.info(f"✅ Authentication successful for user: {auth_request.user_id}")
-        else:
-            logger.warning(f"❌ Authentication failed for user: {auth_request.user_id} - {auth_result.get('error', 'Unknown error')}")
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(status_code=500, detail=f"Authentication system error: {str(e)}")
-
-
-@router.get("/password-info")
-async def get_current_password_info() -> Dict[str, Any]:
-    """Get information about current password rotation (admin endpoint)"""
-    try:
-        password_info = await rolling_password_service.get_current_password_info()
-        return {
-            "status": "success",
-            "password_info": password_info,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Failed to get password info: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get password info: {str(e)}")
-
-
-@router.get("/security-analytics")
-async def get_security_analytics() -> Dict[str, Any]:
-    """Get security analytics for the rolling password system"""
-    try:
-        analytics = await rolling_password_service.get_security_analytics()
-        return {
-            "status": "success",
-            "security_analytics": analytics,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Failed to get security analytics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get security analytics: {str(e)}")
-
-
-@router.post("/force-rotation")
-async def force_password_rotation() -> Dict[str, Any]:
-    """Force immediate password rotation (admin endpoint)"""
-    try:
-        logger.info("🔄 Admin triggered password rotation")
-        
-        rotation_result = await rolling_password_service.force_password_rotation()
-        
-        return {
-            "status": "success",
-            "rotation_result": rotation_result,
-            "timestamp": datetime.utcnow().isoformat(),
-            "message": "Password rotation completed"
-        }
-    except Exception as e:
-        logger.error(f"Failed to force password rotation: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to force password rotation: {str(e)}")
-
-
 @router.get("/system-status")
-async def get_rolling_password_system_status() -> Dict[str, Any]:
-    """Get overall status of the rolling password system"""
+async def get_system_status() -> Dict[str, Any]:
+    """Get overall system status"""
     try:
-        password_info = await rolling_password_service.get_current_password_info()
-        analytics = await rolling_password_service.get_security_analytics()
+        status = await rolling_password_service.get_system_status()
         
         return {
-            "status": "operational",
-            "system_health": "healthy",
-            "password_rotation": {
-                "active": password_info.get("has_active_password", False),
-                "time_until_next_rotation": password_info.get("time_until_expiry"),
-                "rotation_interval_hours": password_info.get("rotation_interval_hours", 1)
-            },
-            "security_metrics": {
-                "failed_attempts_24h": analytics.get("last_24_hours", {}).get("failed_attempts", 0),
-                "successful_logins_24h": analytics.get("last_24_hours", {}).get("successful_logins", 0),
-                "active_sessions": analytics.get("current_active_sessions", 0),
-                "security_status": analytics.get("security_status", "secure")
-            },
+            "status": "success",
+            "system_status": status,
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
         logger.error(f"Failed to get system status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get system status: {str(e)}")
-
 
 @router.get("/current-password-status")
 async def get_current_password_status() -> Dict[str, Any]:
@@ -353,7 +139,6 @@ async def get_current_password_status() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get password status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get password status: {str(e)}")
-
 
 @router.post("/test-authentication")
 async def test_authentication_system() -> Dict[str, Any]:
@@ -396,7 +181,6 @@ async def test_authentication_system() -> Dict[str, Any]:
         logger.error(f"Authentication system test failed: {e}")
         raise HTTPException(status_code=500, detail=f"Authentication system test failed: {str(e)}")
 
-
 # Additional endpoint for integration with security testing
 @router.get("/integration/security-status")
 async def get_security_integration_status() -> Dict[str, Any]:
@@ -427,4 +211,3 @@ async def get_security_integration_status() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get security integration status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get security integration status: {str(e)}")
->>>>>>> c98fd28782c60b4bf527a7cf8255f563dabe32e2
