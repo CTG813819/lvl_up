@@ -12,7 +12,7 @@ from datetime import datetime
 from app.services.project_horus_service import project_horus_service
 
 logger = structlog.get_logger()
-router = APIRouter(prefix="/api/project-horus-v2", tags=["Project Horus Enhanced"])
+router = APIRouter(prefix="/api/project-horus", tags=["Project Horus Enhanced"])
 
 # Pydantic models
 class QuantumChaosRequest(BaseModel):
@@ -262,16 +262,13 @@ async def evolve_quantum_chaos_from_failures():
 async def get_project_horus_status():
     """Get overall Project Horus status"""
     try:
-        return {
-            "status": "operational",
-            "quantum_complexity": project_horus_service.quantum_complexity,
-            "learning_progress": project_horus_service.learning_progress,
-            "assimilated_systems_count": len(project_horus_service.assimilated_systems),
-            "failed_attacks_count": len(project_horus_service.failed_attacks),
-            "chaos_repositories_count": len(project_horus_service.chaos_repositories),
-            "test_environments_count": len(project_horus_service.test_environments),
-            "timestamp": datetime.now().isoformat()
-        }
+        # Use the service method that handles async properly
+        status_data = await project_horus_service.get_project_horus_status()
+        
+        if "error" in status_data:
+            raise HTTPException(status_code=500, detail=status_data["error"])
+            
+        return status_data
     except Exception as e:
         logger.error(f"Failed to get Project Horus status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) 

@@ -258,10 +258,28 @@ async def get_auth_current_password_status() -> Dict[str, Any]:
     try:
         password_info = await rolling_password_service.get_current_password_info()
         
+        # Calculate remaining time in a format suitable for frontend timer
+        time_until_expiry = password_info.get("time_until_expiry")
+        if time_until_expiry and time_until_expiry != "expired":
+            try:
+                # Parse the time string and convert to seconds for frontend
+                import re
+                time_parts = re.findall(r'(\d+):(\d+):(\d+\.?\d*)', time_until_expiry)
+                if time_parts:
+                    hours, minutes, seconds = time_parts[0]
+                    total_seconds = int(hours) * 3600 + int(minutes) * 60 + int(float(seconds))
+                else:
+                    total_seconds = 3600  # Default 1 hour
+            except:
+                total_seconds = 3600
+        else:
+            total_seconds = 0
+        
         return {
             "password_active": password_info.get("has_active_password", False),
             "expires_at": password_info.get("expiry_time"),
             "time_until_expiry": password_info.get("time_until_expiry"),
+            "time_until_expiry_seconds": total_seconds,
             "rotation_interval": f"{password_info.get('rotation_interval_hours', 1)} hours",
             "grace_period": f"{password_info.get('grace_period_minutes', 5)} minutes",
             "timestamp": datetime.utcnow().isoformat()
@@ -269,3 +287,124 @@ async def get_auth_current_password_status() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get auth password status: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get auth password status: {str(e)}")
+
+@auth_router.get("/timer")
+async def get_password_timer() -> Dict[str, Any]:
+    """Get password timer information for frontend display"""
+    try:
+        password_info = await rolling_password_service.get_current_password_info()
+        
+        # Calculate timer data
+        time_until_expiry = password_info.get("time_until_expiry")
+        if time_until_expiry and time_until_expiry != "expired":
+            try:
+                import re
+                time_parts = re.findall(r'(\d+):(\d+):(\d+\.?\d*)', time_until_expiry)
+                if time_parts:
+                    hours, minutes, seconds = time_parts[0]
+                    total_seconds = int(hours) * 3600 + int(minutes) * 60 + int(float(seconds))
+                    hours_remaining = int(hours)
+                    minutes_remaining = int(minutes)
+                    seconds_remaining = int(float(seconds))
+                else:
+                    total_seconds = 3600
+                    hours_remaining = 1
+                    minutes_remaining = 0
+                    seconds_remaining = 0
+            except:
+                total_seconds = 3600
+                hours_remaining = 1
+                minutes_remaining = 0
+                seconds_remaining = 0
+        else:
+            total_seconds = 0
+            hours_remaining = 0
+            minutes_remaining = 0
+            seconds_remaining = 0
+        
+        return {
+            "active": password_info.get("has_active_password", False),
+            "total_seconds": total_seconds,
+            "hours": hours_remaining,
+            "minutes": minutes_remaining,
+            "seconds": seconds_remaining,
+            "expires_at": password_info.get("expiry_time"),
+            "formatted_time": f"{hours_remaining:02d}:{minutes_remaining:02d}:{seconds_remaining:02d}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get password timer: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get password timer: {str(e)}")
+
+# Add endpoints that Flutter app expects
+@auth_router.post("/login")
+async def login(request: Request) -> Dict[str, Any]:
+    """Login endpoint that Flutter app expects"""
+    try:
+        body = await request.json()
+        user_id = body.get("user_id")
+        password = body.get("password")
+        
+        if not password:
+            raise HTTPException(status_code=400, detail="Password required")
+        
+        # Validate password and generate new one
+        result = await rolling_password_service.validate_and_generate_new_password(password, "app_token")
+        
+        if result["status"] == "success":
+            # Generate session token
+            import secrets
+            session_token = secrets.token_urlsafe(32)
+            
+            return {
+                "success": True,
+                "session_token": session_token,
+                "next_password": result["new_password"],
+                "password_expires_at": result["expires_at"],
+                "time_until_expiry": result.get("time_until_expiry", "1:00:00")
+            }
+        else:
+            return {
+                "success": False,
+                "error": result["message"]
+            }
+    except Exception as e:
+        logger.error(f"Login failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@auth_router.get("/current-password")
+async def get_current_password() -> Dict[str, Any]:
+    """Get current password endpoint that Flutter app expects"""
+    try:
+        password_info = await rolling_password_service.get_current_password_info()
+        
+        if password_info.get("has_active_password", False):
+            return {
+                "current_password": rolling_password_service.current_password,
+                "expires_at": password_info.get("expiry_time"),
+                "time_until_expiry": password_info.get("time_until_expiry")
+            }
+        else:
+            raise HTTPException(status_code=404, detail="No active password")
+    except Exception as e:
+        logger.error(f"Failed to get current password: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current password: {str(e)}")
+
+@auth_router.post("/force-rotation")
+async def force_rotation() -> Dict[str, Any]:
+    """Force password rotation endpoint that Flutter app expects"""
+    try:
+        # Generate new password
+        new_password = await rolling_password_service.admin_recovery_generate_password()
+        
+        if new_password["status"] == "success":
+            return {
+                "success": True,
+                "new_password": new_password["new_password"],
+                "expires_at": new_password["expires_at"]
+            }
+        else:
+            raise HTTPException(status_code=500, detail=new_password["message"])
+    except Exception as e:
+        logger.error(f"Force rotation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Force rotation failed: {str(e)}")
