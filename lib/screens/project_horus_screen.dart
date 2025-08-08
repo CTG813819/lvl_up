@@ -1269,11 +1269,6 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Autonomous Weapons Section
-                    _buildAutonomousWeaponsSection(),
-
-                    const SizedBox(height: 24),
-
                     // Live System Status
                     _buildLiveSystemStatus(),
                   ],
@@ -6000,114 +5995,6 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     );
   }
 
-  // Autonomous Weapons Section
-  Widget _buildAutonomousWeaponsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '🤖 Autonomous Weapons',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.purple),
-                    onPressed: _generateAutonomousWeapons,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.red),
-                    onPressed: _clearStoredWeapons,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          FutureBuilder<Map<String, dynamic>?>(
-            future: ProjectHorusService.instance.getAutonomousWeapons(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Colors.purple),
-                );
-              }
-
-              if (snapshot.hasError) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Error loading autonomous weapons: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
-              final data = snapshot.data;
-              if (data == null || data['weapons'] == null) {
-                return Column(
-                  children: [
-                    const Text(
-                      'No autonomous weapons available',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: _setupAutonomousWeapons,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Setup Autonomous Weapons'),
-                    ),
-                  ],
-                );
-              }
-
-              final weapons = data['weapons'] as List;
-              return Column(
-                children: [
-                  Text(
-                    'Generated Weapons: ${weapons.length}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 8),
-                  ...weapons.take(3).map((weapon) => _buildWeaponCard(weapon)),
-                  if (weapons.length > 3)
-                    TextButton(
-                      onPressed: _showAllAutonomousWeapons,
-                      child: const Text(
-                        'View All Weapons',
-                        style: TextStyle(color: Colors.purple),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildWeaponCard(Map<String, dynamic> weapon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -6287,55 +6174,6 @@ class _ProjectHorusScreenState extends State<ProjectHorusScreen> {
     } catch (e) {
       _showErrorSnackbar('Error running test cycle: $e');
     }
-  }
-
-  Future<void> _generateAutonomousWeapons() async {
-    try {
-      final result =
-          await ProjectHorusService.instance.generateAutonomousWeapons();
-      if (result != null) {
-        _showSuccessSnackbar('Autonomous weapons generated successfully');
-        setState(() {});
-      } else {
-        _showErrorSnackbar('Failed to generate autonomous weapons');
-      }
-    } catch (e) {
-      _showErrorSnackbar('Error generating weapons: $e');
-    }
-  }
-
-  Future<void> _clearStoredWeapons() async {
-    try {
-      final result = await ProjectHorusService.instance.clearStoredWeapons();
-      if (result) {
-        _showSuccessSnackbar('Stored weapons cleared successfully');
-        setState(() {});
-      } else {
-        _showErrorSnackbar('Failed to clear stored weapons');
-      }
-    } catch (e) {
-      _showErrorSnackbar('Error clearing weapons: $e');
-    }
-  }
-
-  Future<void> _setupAutonomousWeapons() async {
-    try {
-      final result =
-          await ProjectHorusService.instance.setupAutonomousWeapons();
-      if (result != null) {
-        _showSuccessSnackbar('Autonomous weapons setup completed');
-        setState(() {});
-      } else {
-        _showErrorSnackbar('Failed to setup autonomous weapons');
-      }
-    } catch (e) {
-      _showErrorSnackbar('Error setting up weapons: $e');
-    }
-  }
-
-  void _showAllAutonomousWeapons() {
-    // TODO: Implement dialog to show all autonomous weapons
-    _showSuccessSnackbar('View all weapons feature coming soon');
   }
 
   Future<void> _refreshLiveSystemStatus() async {
