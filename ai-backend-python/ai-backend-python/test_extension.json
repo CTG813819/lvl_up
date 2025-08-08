@@ -1,0 +1,7 @@
+{
+  "feature_name": "TestWidget",
+  "menu_title": "Test Extension",
+  "icon_name": "Icons.star",
+  "description": "A test widget",
+  "dart_code": "class TestWidget extends StatelessWidget { @override Widget build(BuildContext context) { return Container(); } }"
+} 

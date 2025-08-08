@@ -1,0 +1,188 @@
+{
+  "timestamp": "2025-07-07T22:24:56.815483",
+  "tests": {
+    "port_8000": {
+      "port": 8000,
+      "status": "open",
+      "success": true
+    },
+    "port_4000": {
+      "port": 4000,
+      "status": "open",
+      "success": true
+    },
+    "port_8501": {
+      "port": 8501,
+      "status": "closed",
+      "success": false
+    },
+    "8000__api_imperium_persistence_learning-analytics": {
+      "url": "http://34.202.215.209:8000/api/imperium/persistence/learning-analytics",
+      "status": 200,
+      "content_type": "application/json",
+      "success": true
+    },
+    "8000__api_health": {
+      "url": "http://34.202.215.209:8000/api/health",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_imperium_growth": {
+      "url": "http://34.202.215.209:8000/api/imperium/growth",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_imperium_proposals": {
+      "url": "http://34.202.215.209:8000/api/imperium/proposals",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_imperium_monitoring": {
+      "url": "http://34.202.215.209:8000/api/imperium/monitoring",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_imperium_issues": {
+      "url": "http://34.202.215.209:8000/api/imperium/issues",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_proposals_ai-status": {
+      "url": "http://34.202.215.209:8000/api/proposals/ai-status",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_learning_data": {
+      "url": "http://34.202.215.209:8000/api/learning/data",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_oath-papers_ai-insights": {
+      "url": "http://34.202.215.209:8000/api/oath-papers/ai-insights",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_oath-papers_learn": {
+      "url": "http://34.202.215.209:8000/api/oath-papers/learn",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "8000__api_oath-papers_categories": {
+      "url": "http://34.202.215.209:8000/api/oath-papers/categories",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_imperium_persistence_learning-analytics": {
+      "url": "http://34.202.215.209:4000/api/imperium/persistence/learning-analytics",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_health": {
+      "url": "http://34.202.215.209:4000/api/health",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_imperium_growth": {
+      "url": "http://34.202.215.209:4000/api/imperium/growth",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_imperium_proposals": {
+      "url": "http://34.202.215.209:4000/api/imperium/proposals",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_imperium_monitoring": {
+      "url": "http://34.202.215.209:4000/api/imperium/monitoring",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_imperium_issues": {
+      "url": "http://34.202.215.209:4000/api/imperium/issues",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_proposals_ai-status": {
+      "url": "http://34.202.215.209:4000/api/proposals/ai-status",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_learning_data": {
+      "url": "http://34.202.215.209:4000/api/learning/data",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_oath-papers_ai-insights": {
+      "url": "http://34.202.215.209:4000/api/oath-papers/ai-insights",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_oath-papers_learn": {
+      "url": "http://34.202.215.209:4000/api/oath-papers/learn",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "4000__api_oath-papers_categories": {
+      "url": "http://34.202.215.209:4000/api/oath-papers/categories",
+      "status": 404,
+      "error": "HTTP Error: Not Found",
+      "success": false
+    },
+    "ws_34.202.215.209_8000__ws": {
+      "url": "ws://34.202.215.209:8000/ws",
+      "error": "Upgrade failed: HTTP/1.1",
+      "success": false
+    },
+    "ws_34.202.215.209_8000__ws_imperium_learning-analytics": {
+      "url": "ws://34.202.215.209:8000/ws/imperium/learning-analytics",
+      "error": "Upgrade failed: HTTP/1.1",
+      "success": false
+    },
+    "ws_34.202.215.209_8000__api_notifications_ws": {
+      "url": "ws://34.202.215.209:8000/api/notifications/ws",
+      "error": "Upgrade failed: HTTP/1.1",
+      "success": false
+    },
+    "ws_34.202.215.209_4000__ws": {
+      "url": "ws://34.202.215.209:4000/ws",
+      "error": "Upgrade failed: HTTP/1.1",
+      "success": false
+    },
+    "ws_34.202.215.209_4000__api_notifications_ws": {
+      "url": "ws://34.202.215.209:4000/api/notifications/ws",
+      "error": "Upgrade failed: HTTP/1.1",
+      "success": false
+    },
+    "dashboard": {
+      "url": "http://34.202.215.209:8501",
+      "error": "<urlopen error timed out>",
+      "success": false
+    }
+  },
+  "summary": {
+    "total_tests": 31,
+    "successful_tests": 3,
+    "failed_tests": 28,
+    "success_rate": 9.67741935483871
+  }
+}

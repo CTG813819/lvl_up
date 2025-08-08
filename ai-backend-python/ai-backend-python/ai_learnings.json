@@ -1,0 +1,12 @@
+{
+  "successful_patterns": [],
+  "failed_patterns": [],
+  "validation_stats": {
+    "total_attempts": 0,
+    "successful_validations": 0,
+    "failed_validations": 0,
+    "auto_fix_success_rate": 0.0,
+    "common_issues": {},
+    "successful_fixes": {}
+  }
+} 

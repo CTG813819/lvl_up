@@ -11,23 +11,23 @@ import uvicorn
 
 # CRITICAL: Module-level debug that WILL execute during Railway import
 import sys
-sys.stdout.write("\n" + "🔥" * 80 + "\n")
-sys.stdout.write("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
-sys.stdout.write(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
-sys.stdout.write(f"🔌 Railway explicit uvicorn command active\n")
-sys.stdout.write(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
-sys.stdout.write(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
-sys.stdout.write("🔥" * 80 + "\n\n")
+sys.stdout.write("\n" + "=" * 80 + "\n")
+sys.stdout.write("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN\n")
+sys.stdout.write(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'\n")
+sys.stdout.write(f"Railway explicit uvicorn command active\n")
+sys.stdout.write(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}\n")
+sys.stdout.write(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}\n")
+sys.stdout.write("=" * 80 + "\n\n")
 sys.stdout.flush()
 
 # BACKUP DEBUG - Multiple methods to ensure visibility
-print("\n" + "🔥" * 80, flush=True)
-print("🚀 RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
-print(f"📍 PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
-print(f"🔌 Railway explicit uvicorn command active", flush=True)
-print(f"📊 Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
-print(f"🌐 Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
-print("🔥" * 80 + "\n", flush=True)
+print("\n" + "=" * 80, flush=True)
+print("RAILWAY MODULE IMPORT - FORCING EXPLICIT UVICORN", flush=True)
+print(f"PORT env var: '{os.environ.get('PORT', 'NOT SET')}'", flush=True)
+print(f"Railway explicit uvicorn command active", flush=True)
+print(f"Railway env detection: {bool(os.environ.get('RAILWAY_ENVIRONMENT_NAME'))}", flush=True)
+print(f"Available env vars: {[k for k in os.environ.keys() if 'PORT' in k or 'RAILWAY' in k]}", flush=True)
+print("=" * 80 + "\n", flush=True)
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -73,6 +73,28 @@ from app.routers.olympic_ai import router as olympic_ai_router
 from app.routers.collaborative_ai import router as collaborative_ai_router
 from app.routers.custodes_ai import router as custodes_ai_router
 
+# Import new quantum chaos and stealth assimilation routers
+from app.routers.quantum_chaos_router import router as quantum_chaos_router
+from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
+from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
+from app.routers.rolling_password_router import router as rolling_password_router
+from app.routers.jarvis_router import router as jarvis_router
+
+# Import autonomous brain router
+from app.routers.autonomous_brain_router import router as autonomous_brain_router
+
+# Import enhanced testing router
+from app.routers.enhanced_testing_router import router as enhanced_testing_router
+
+# Import AI integration router
+from app.routers.ai_integration_router import router as ai_integration_router
+
+# Import security testing router
+from app.routers.security_testing_router import router as security_testing_router
+
+# Import app assimilation router
+from app.routers.app_assimilation_router import router as app_assimilation_router
+
 # Import services
 from app.services.ai_learning_service import AILearningService
 from app.services.ml_service import MLService
@@ -96,6 +118,16 @@ from app.services.project_horus_service import project_horus_service
 from app.services.olympic_ai_service import olympic_ai_service
 from app.services.collaborative_ai_service import collaborative_ai_service
 from app.services.custodes_ai_service import custodes_ai_service
+
+# Initialize quantum chaos and stealth assimilation services
+from app.services.quantum_chaos_service import quantum_chaos_service
+from app.services.stealth_assimilation_hub import stealth_assimilation_hub
+
+# Initialize autonomous integration service
+from app.services.autonomous_integration_service import autonomous_integration_service
+
+# Initialize enhanced testing integration service
+from app.services.enhanced_testing_integration_service import enhanced_testing_integration_service
 
 # Initialize other services from app/main.py
 from app.services.proposal_cycle_service import ProposalCycleService
@@ -493,6 +525,28 @@ app.include_router(olympic_ai_router, prefix="/api/olympic-ai", tags=["Olympic A
 app.include_router(collaborative_ai_router, prefix="/api/collaborative-ai", tags=["Collaborative AI"])
 app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custodes AI"])
 
+# Quantum Chaos and Stealth Assimilation Hub routers
+app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
+app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
+app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
+app.include_router(rolling_password_router, tags=["Rolling Password"])
+app.include_router(jarvis_router, tags=["Jarvis"])
+
+# Autonomous Brain Router
+app.include_router(autonomous_brain_router, prefix="/api/autonomous-brain", tags=["Autonomous Brain"])
+
+# Enhanced Testing Router
+app.include_router(enhanced_testing_router, prefix="/api/enhanced-testing", tags=["Enhanced Testing"])
+
+# AI Integration Router
+app.include_router(ai_integration_router, prefix="/api/ai-integration", tags=["AI Integration"])
+
+# Security Testing Router
+app.include_router(security_testing_router, prefix="/api/security-testing", tags=["Security Testing"])
+
+# App Assimilation Router
+app.include_router(app_assimilation_router, prefix="/api/app-assimilation", tags=["App Assimilation"])
+
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")
 async def ws_learning_analytics(websocket: WebSocket):
@@ -558,12 +612,12 @@ if __name__ == "__main__":
         port = 8000
     
     # GUARANTEED debug output
-    print("🔥" * 60, flush=True)
-    print("🚀 MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
-    print(f"🔌 PORT env var: '{port_env}'", flush=True)
-    print(f"📍 Using port: {port}", flush=True)
-    print(f"📊 RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
-    print("🔥" * 60, flush=True)
+    print("=" * 60, flush=True)
+    print("MAIN UNIFIED STARTING - RAILWAY DEBUG", flush=True)
+    print(f"PORT env var: '{port_env}'", flush=True)
+    print(f"Using port: {port}", flush=True)
+    print(f"RAILWAY vars: {[k for k in os.environ.keys() if 'RAILWAY' in k]}", flush=True)
+    print("=" * 60, flush=True)
     
     uvicorn.run(
         "main_unified:app",

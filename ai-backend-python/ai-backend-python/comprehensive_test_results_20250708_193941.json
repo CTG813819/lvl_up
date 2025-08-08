@@ -1,0 +1,625 @@
+{
+  "timestamp": "2025-07-08T19:39:15.023665",
+  "overall_score": 82.5,
+  "tests": {
+    "port_connectivity": {
+      "4000": {
+        "status": "open",
+        "score": 100
+      },
+      "8000": {
+        "status": "open",
+        "score": 100
+      }
+    },
+    "http_endpoints": {
+      "4000": {
+        "imperium": {
+          "/api/imperium/agents": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.189,
+            "data_size": 13229,
+            "content_type": "application/json"
+          },
+          "/api/imperium/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 469,
+            "content_type": "application/json"
+          },
+          "/api/imperium/dashboard": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.25,
+            "data_size": 16878,
+            "content_type": "application/json"
+          },
+          "/api/imperium/trusted-sources": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 624,
+            "content_type": "application/json"
+          },
+          "/api/imperium/internet-learning/topics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.166,
+            "data_size": 412,
+            "content_type": "application/json"
+          },
+          "/api/imperium/persistence/learning-analytics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.253,
+            "data_size": 897,
+            "content_type": "application/json"
+          },
+          "/api/imperium/growth": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.488,
+            "data_size": 1587,
+            "content_type": "application/json"
+          },
+          "/api/imperium/proposals": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.165,
+            "data_size": 1442,
+            "content_type": "application/json"
+          },
+          "/api/imperium/monitoring": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.166,
+            "data_size": 139,
+            "content_type": "application/json"
+          },
+          "/api/imperium/issues": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 507,
+            "content_type": "application/json"
+          },
+          "/api/imperium/health": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 275,
+            "content_type": "application/json"
+          }
+        },
+        "core": {
+          "/api/health": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.185
+          },
+          "/api/status": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.193
+          },
+          "/api/config": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.169
+          },
+          "/api/info": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.166
+          },
+          "/api/version": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.169
+          }
+        },
+        "learning": {
+          "/api/learning/data": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.167,
+            "data_size": 547,
+            "content_type": "application/json"
+          },
+          "/api/learning/metrics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.188,
+            "data_size": 353,
+            "content_type": "application/json"
+          },
+          "/api/learning/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.171,
+            "data_size": 257,
+            "content_type": "application/json"
+          },
+          "/api/learning/insights": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.28,
+            "data_size": 1910,
+            "content_type": "application/json"
+          }
+        },
+        "proposals": {
+          "/api/proposals": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.533,
+            "data_size": 2996225,
+            "content_type": "application/json"
+          },
+          "/api/proposals/ai-status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.382,
+            "data_size": 1038,
+            "content_type": "application/json"
+          },
+          "/api/proposals/status": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 400,
+            "response_time": 0.17
+          }
+        },
+        "oath_papers": {
+          "/api/oath-papers": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.35,
+            "data_size": 2577,
+            "content_type": "application/json"
+          },
+          "/api/oath-papers/ai-insights": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.414,
+            "data_size": 1160,
+            "content_type": "application/json"
+          },
+          "/api/oath-papers/learn": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.167
+          },
+          "/api/oath-papers/categories": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.517,
+            "data_size": 179,
+            "content_type": "application/json"
+          }
+        },
+        "conquest": {
+          "/api/conquest/build-failure": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 405,
+            "response_time": 0.166
+          },
+          "/api/conquest/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.444,
+            "data_size": 340,
+            "content_type": "application/json"
+          },
+          "/api/conquest/analytics": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.17
+          }
+        },
+        "overall_score": 70.0
+      },
+      "8000": {
+        "imperium": {
+          "/api/imperium/agents": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.17,
+            "data_size": 12788,
+            "content_type": "application/json"
+          },
+          "/api/imperium/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.188,
+            "data_size": 469,
+            "content_type": "application/json"
+          },
+          "/api/imperium/dashboard": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.275,
+            "data_size": 16437,
+            "content_type": "application/json"
+          },
+          "/api/imperium/trusted-sources": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.183,
+            "data_size": 624,
+            "content_type": "application/json"
+          },
+          "/api/imperium/internet-learning/topics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.184,
+            "data_size": 412,
+            "content_type": "application/json"
+          },
+          "/api/imperium/persistence/learning-analytics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.299,
+            "data_size": 897,
+            "content_type": "application/json"
+          },
+          "/api/imperium/growth": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.483,
+            "data_size": 1587,
+            "content_type": "application/json"
+          },
+          "/api/imperium/proposals": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.166,
+            "data_size": 1442,
+            "content_type": "application/json"
+          },
+          "/api/imperium/monitoring": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.169,
+            "data_size": 139,
+            "content_type": "application/json"
+          },
+          "/api/imperium/issues": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 507,
+            "content_type": "application/json"
+          },
+          "/api/imperium/health": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.17,
+            "data_size": 275,
+            "content_type": "application/json"
+          }
+        },
+        "core": {
+          "/api/health": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.17
+          },
+          "/api/status": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.169
+          },
+          "/api/config": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.171
+          },
+          "/api/info": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.168
+          },
+          "/api/version": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.17
+          }
+        },
+        "learning": {
+          "/api/learning/data": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.168,
+            "data_size": 547,
+            "content_type": "application/json"
+          },
+          "/api/learning/metrics": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.192,
+            "data_size": 353,
+            "content_type": "application/json"
+          },
+          "/api/learning/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.167,
+            "data_size": 257,
+            "content_type": "application/json"
+          },
+          "/api/learning/insights": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.005,
+            "data_size": 1910,
+            "content_type": "application/json"
+          }
+        },
+        "proposals": {
+          "/api/proposals": {
+            "status": "success",
+            "score": 100,
+            "response_time": 1.85,
+            "data_size": 2996225,
+            "content_type": "application/json"
+          },
+          "/api/proposals/ai-status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.413,
+            "data_size": 1038,
+            "content_type": "application/json"
+          },
+          "/api/proposals/status": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 400,
+            "response_time": 0.184
+          }
+        },
+        "oath_papers": {
+          "/api/oath-papers": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.353,
+            "data_size": 2577,
+            "content_type": "application/json"
+          },
+          "/api/oath-papers/ai-insights": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.375,
+            "data_size": 1160,
+            "content_type": "application/json"
+          },
+          "/api/oath-papers/learn": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.169
+          },
+          "/api/oath-papers/categories": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.326,
+            "data_size": 179,
+            "content_type": "application/json"
+          }
+        },
+        "conquest": {
+          "/api/conquest/build-failure": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 405,
+            "response_time": 0.166
+          },
+          "/api/conquest/status": {
+            "status": "success",
+            "score": 100,
+            "response_time": 0.433,
+            "data_size": 340,
+            "content_type": "application/json"
+          },
+          "/api/conquest/analytics": {
+            "status": "failed",
+            "score": 0,
+            "status_code": 404,
+            "response_time": 0.186
+          }
+        },
+        "overall_score": 70.0
+      }
+    },
+    "websocket_endpoints": {
+      "4000": {
+        "/ws": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:40:56 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "/ws/imperium/learning-analytics": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:40:56 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "/api/notifications/ws": {
+          "status": "success",
+          "score": 100,
+          "response_time": 0.168
+        },
+        "/socket.io/": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:40:57 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "overall_score": 25.0
+      },
+      "8000": {
+        "/ws": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:41:09 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "/ws/imperium/learning-analytics": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:41:09 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "/api/notifications/ws": {
+          "status": "success",
+          "score": 100,
+          "response_time": 0.166
+        },
+        "/socket.io/": {
+          "status": "failed",
+          "score": 0,
+          "error": "Handshake status 403 Forbidden -+-+- {'date': 'Tue, 08 Jul 2025 18:41:10 GMT', 'content-length': '0', 'content-type': 'text/plain', 'connection': 'close'} -+-+- b''"
+        },
+        "overall_score": 25.0
+      }
+    },
+    "ai_systems": {
+      "4000": {
+        "agents": {
+          "status": "success",
+          "score": 100,
+          "agent_count": 4,
+          "data_keys": [
+            "agents",
+            "summary",
+            "timestamp"
+          ]
+        },
+        "learning_analytics": {
+          "status": "success",
+          "score": 100,
+          "data_keys": [
+            "status",
+            "data"
+          ],
+          "data_size": 969
+        },
+        "dashboard": {
+          "status": "success",
+          "score": 100,
+          "data_keys": [
+            "system_status",
+            "agent_metrics",
+            "recent_cycles",
+            "dashboard_metrics",
+            "timestamp"
+          ],
+          "has_metrics": true
+        },
+        "overall_score": 100.0
+      },
+      "8000": {
+        "agents": {
+          "status": "success",
+          "score": 100,
+          "agent_count": 4,
+          "data_keys": [
+            "agents",
+            "summary",
+            "timestamp"
+          ]
+        },
+        "learning_analytics": {
+          "status": "success",
+          "score": 100,
+          "data_keys": [
+            "status",
+            "data"
+          ],
+          "data_size": 969
+        },
+        "dashboard": {
+          "status": "success",
+          "score": 100,
+          "data_keys": [
+            "system_status",
+            "agent_metrics",
+            "recent_cycles",
+            "dashboard_metrics",
+            "timestamp"
+          ],
+          "has_metrics": true
+        },
+        "overall_score": 100.0
+      }
+    },
+    "data_quality": {
+      "4000": {
+        "timestamp_consistency": {
+          "status": "success",
+          "score": 100,
+          "timestamp_count": 2
+        },
+        "structure_quality": {
+          "status": "success",
+          "score": 100,
+          "endpoints_tested": 3
+        },
+        "overall_score": 100.0
+      },
+      "8000": {
+        "timestamp_consistency": {
+          "status": "success",
+          "score": 100,
+          "timestamp_count": 2
+        },
+        "structure_quality": {
+          "status": "success",
+          "score": 100,
+          "endpoints_tested": 3
+        },
+        "overall_score": 100.0
+      }
+    },
+    "performance": {
+      "4000": {
+        "response_times": {
+          "status": "success",
+          "score": 100,
+          "average_time": 0.195,
+          "max_time": 0.25,
+          "min_time": 0.167,
+          "endpoints_tested": 3
+        },
+        "overall_score": 100.0
+      },
+      "8000": {
+        "response_times": {
+          "status": "success",
+          "score": 100,
+          "average_time": 0.217,
+          "max_time": 0.254,
+          "min_time": 0.193,
+          "endpoints_tested": 3
+        },
+        "overall_score": 100.0
+      }
+    }
+  },
+  "recommendations": [
+    "\ud83d\udd0c Enable WebSocket support on port 4000 - score: 25.0%",
+    "\ud83d\udd0c Enable WebSocket support on port 8000 - score: 25.0%"
+  ],
+  "errors": []
+}

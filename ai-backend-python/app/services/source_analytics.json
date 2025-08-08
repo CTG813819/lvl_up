@@ -1,0 +1,40 @@
+{
+  "source_clusters": {},
+  "quality_scores": {},
+  "discovery_patterns": {},
+  "growth_metrics": {
+    "guardian": {
+      "total_sources": 4,
+      "new_sources_this_week": 1319,
+      "growth_rate": 0.25,
+      "last_updated": "2025-08-08T14:28:35.043444"
+    }
+  },
+  "last_updated": "2025-08-08T14:28:35.043444",
+  "events": [
+    {
+      "type": "source_discovered",
+      "source": "https://github.com/dibgerge/ml-coursera-python-assignments",
+      "ai_type": "guardian",
+      "timestamp": "2025-07-31T08:35:56.745694"
+    },
+    {
+      "type": "source_discovered",
+      "source": "https://ocw.mit.edu/courses/mathematics/18-06-linear-algebra-spring-2010/index.htm",
+      "ai_type": "guardian",
+      "timestamp": "2025-07-31T08:35:56.745694"
+    },
+    {
+      "type": "source_discovered",
+      "source": "https://ocw.mit.edu/courses/mathematics/18-05-introduction-to-probability-and-statistics-spring-2014/index.htm",
+      "ai_type": "guardian",
+      "timestamp": "2025-07-31T08:35:56.746691"
+    },
+    {
+      "type": "source_discovered",
+      "source": "https://github.com/KDEGroup/LLMVulnerabilityDetection.",
+      "ai_type": "guardian",
+      "timestamp": "2025-07-31T08:53:09.235433"
+    }
+  ]
+}

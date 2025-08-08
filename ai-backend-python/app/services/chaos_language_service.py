@@ -47,6 +47,7 @@ class ChaosLanguageService:
         self.auto_generation_enabled = True
         self.generation_threshold = 10  # New constructs trigger chapter creation
         
+
     async def initialize(self):
         """Initialize chaos language service"""
         try:
@@ -675,6 +676,7 @@ class ChaosLanguageService:
         except Exception as e:
             logger.error(f"Error forcing chapter generation: {e}")
             return {"status": "error", "message": str(e)}
+
 
 
 # Global instance

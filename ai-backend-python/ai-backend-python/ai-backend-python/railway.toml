@@ -1,0 +1,17 @@
+# Railway Configuration for AI Backend - FORCE NO AUTO-DETECTION
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# FORCE explicit uvicorn with our app - NO auto-detection  
+startCommand = "uvicorn main_unified:app --host 0.0.0.0 --port $PORT --log-level debug"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[environments.production]
+PORT = "8000"
+
+[environments.staging]  
+PORT = "8000"

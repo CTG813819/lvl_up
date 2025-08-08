@@ -272,6 +272,10 @@ async def get_live_system_status() -> Dict[str, Any]:
         # Add live system information
         live_systems = await enhanced_testing_integration_service._get_live_system_representations()
         
+        # Get chaos cryptography status
+        from ..services.chaos_cryptography_service import chaos_cryptography_service
+        crypto_status = await chaos_cryptography_service.get_chaos_cryptography_status()
+        
         return {
             "success": True,
             "live_system_status": {
@@ -280,6 +284,7 @@ async def get_live_system_status() -> Dict[str, Any]:
                 "operating_systems": list(set(system["os"] for system in live_systems)),
                 "live_systems": live_systems[:5],  # Return first 5 for display
                 "testing_status": status,
+                "chaos_cryptography": crypto_status,
                 "timestamp": datetime.utcnow().isoformat()
             },
             "message": "Live system status retrieved successfully"
@@ -287,3 +292,84 @@ async def get_live_system_status() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error getting live system status: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting live system status: {str(e)}")
+
+@router.get("/chaos-cryptography-status")
+async def get_chaos_cryptography_status() -> Dict[str, Any]:
+    """Get chaos cryptography system status"""
+    try:
+        from ..services.chaos_cryptography_service import chaos_cryptography_service
+        
+        status = await chaos_cryptography_service.get_chaos_cryptography_status()
+        
+        return {
+            "success": True,
+            "chaos_cryptography_status": status,
+            "message": "Chaos cryptography status retrieved successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error getting chaos cryptography status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting chaos cryptography status: {str(e)}")
+
+@router.get("/daily-decryption-key/{date}")
+async def get_daily_decryption_key(date: str) -> Dict[str, Any]:
+    """Get daily decryption key for chaos format files"""
+    try:
+        from ..services.chaos_cryptography_service import chaos_cryptography_service
+        
+        key_result = await chaos_cryptography_service.get_daily_decryption_key(date)
+        
+        if key_result["status"] == "success":
+            return {
+                "success": True,
+                "decryption_key": key_result,
+                "message": f"Daily decryption key for {date} retrieved successfully"
+            }
+        else:
+            raise HTTPException(status_code=404, detail=key_result["message"])
+            
+    except Exception as e:
+        logger.error(f"Error getting daily decryption key: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting daily decryption key: {str(e)}")
+
+@router.get("/chaos-documentation")
+async def get_chaos_documentation() -> Dict[str, Any]:
+    """Get chaos format documentation with encryption information"""
+    try:
+        from ..services.chaos_cryptography_service import chaos_cryptography_service
+        
+        crypto_status = await chaos_cryptography_service.get_chaos_cryptography_status()
+        
+        documentation = {
+            "chaos_format_version": "2.0",
+            "encryption_system": "Self-evolving chaos cryptography",
+            "created_by": "Project Horus and Berserk autonomous AI brains",
+            "encryption_features": [
+                "Daily key rotation",
+                "Self-evolving algorithms",
+                "Threat intelligence integration",
+                "Autonomous AI learning",
+                "Chaos cipher suites",
+                "Adaptive security layers"
+            ],
+            "chaos_cryptography_status": crypto_status,
+            "decryption_instructions": {
+                "daily_key_required": True,
+                "key_rotation": "Daily at midnight UTC",
+                "algorithm_evolution": "Continuous autonomous evolution",
+                "security_level": "Chaos Maximum"
+            },
+            "frontend_integration": {
+                "key_display": "Updated daily in frontend",
+                "rolling_password_integration": True,
+                "autonomous_evolution": True
+            }
+        }
+        
+        return {
+            "success": True,
+            "chaos_documentation": documentation,
+            "message": "Chaos documentation retrieved successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error getting chaos documentation: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting chaos documentation: {str(e)}")

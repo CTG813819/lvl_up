@@ -1,268 +1,198 @@
 """
 Rolling Password Service
-Provides encrypted password management with hourly updates
+Provides rolling password authentication with automatic rotation
 """
 
-import secrets
+import asyncio
 import hashlib
-import hmac
-import base64
+import secrets
 import time
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import structlog
 
 logger = structlog.get_logger()
 
+
 class RollingPasswordService:
-    """
-    Rolling Password Service for secure password management
-    Provides hourly password updates with encryption
-    """
+    """Service for managing rolling password authentication"""
     
     def __init__(self):
-        self._master_key = Fernet.generate_key()
-        self._cipher_suite = Fernet(self._master_key)
-        self._password_tokens = {}
-        self._password_history = {}
-        self._encryption_salt = secrets.token_bytes(32)
-        
-    def _generate_secure_password(self, length: int = 16) -> str:
-        """Generate a cryptographically secure password"""
-        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-        password = ''.join(secrets.choice(alphabet) for _ in range(length))
-        return password
-    
-    def _hash_password(self, password: str, salt: bytes = None) -> Dict[str, Any]:
-        """Hash password with salt using PBKDF2"""
-        if salt is None:
-            salt = secrets.token_bytes(32)
-        
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
-        )
-        
-        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-        return {
-            'hash': key,
-            'salt': salt,
-            'iterations': 100000
+        self.current_password = None
+        self.password_expiry = None
+        self.rotation_interval_hours = 1
+        self.grace_period_minutes = 5
+        self.failed_attempts = {}
+        self.active_sessions = {}
+        self.security_analytics = {
+            "last_24_hours": {
+                "successful_logins": 0,
+                "failed_attempts": 0,
+                "password_rotations": 0
+            },
+            "current_active_sessions": 0,
+            "security_status": "secure"
         }
+        self.initialized = False
     
-    def _verify_password(self, password: str, stored_hash: bytes, salt: bytes) -> bool:
-        """Verify password against stored hash"""
+    async def initialize_rolling_password(self, initial_password: str) -> Dict[str, Any]:
+        """Initialize the rolling password system"""
         try:
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=32,
-                salt=salt,
-                iterations=100000,
-            )
+            self.current_password = initial_password
+            self.password_expiry = datetime.utcnow() + timedelta(hours=self.rotation_interval_hours)
+            self.initialized = True
             
-            key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-            return hmac.compare_digest(key, stored_hash)
-        except Exception as e:
-            logger.error(f"Password verification failed: {e}")
-            return False
-    
-    def _encrypt_data(self, data: str) -> str:
-        """Encrypt data using Fernet"""
-        return self._cipher_suite.encrypt(data.encode()).decode()
-    
-    def _decrypt_data(self, encrypted_data: str) -> str:
-        """Decrypt data using Fernet"""
-        return self._cipher_suite.decrypt(encrypted_data.encode()).decode()
-    
-    def initialize_rolling_password(self, initial_password: str) -> Dict[str, Any]:
-        """Initialize rolling password system with initial password"""
-        try:
-            # Generate token for this session
-            token = secrets.token_urlsafe(32)
-            
-            # Hash the initial password
-            hash_data = self._hash_password(initial_password)
-            
-            # Store password data
-            self._password_tokens[token] = {
-                'current_hash': hash_data['hash'],
-                'salt': hash_data['salt'],
-                'created_at': datetime.now(),
-                'expires_at': datetime.now() + timedelta(hours=1),
-                'password_count': 1
-            }
-            
-            # Encrypt sensitive data
-            encrypted_hash = self._encrypt_data(hash_data['hash'].decode())
-            
-            logger.info(f"Rolling password initialized for token: {token[:8]}...")
+            logger.info("🔐 Rolling password system initialized")
             
             return {
-                'status': 'success',
-                'token': token,
-                'expires_at': self._password_tokens[token]['expires_at'].isoformat(),
-                'message': 'Rolling password system initialized'
+                "status": "success",
+                "message": "Rolling password system initialized",
+                "expires_at": self.password_expiry.isoformat()
             }
-            
         except Exception as e:
             logger.error(f"Failed to initialize rolling password: {e}")
-            return {
-                'status': 'error',
-                'message': f'Failed to initialize rolling password: {str(e)}'
-            }
+            return {"status": "error", "message": str(e)}
     
-    def validate_and_generate_new_password(self, current_password: str, token: str) -> Dict[str, Any]:
+    async def validate_and_generate_new_password(self, current_password: str, token: str) -> Dict[str, Any]:
         """Validate current password and generate new one"""
         try:
-            if token not in self._password_tokens:
-                return {
-                    'status': 'error',
-                    'message': 'Invalid or expired token'
-                }
+            if not self.initialized:
+                return {"status": "error", "message": "System not initialized"}
             
-            token_data = self._password_tokens[token]
-            
-            # Check if token is expired
-            if datetime.now() > token_data['expires_at']:
-                del self._password_tokens[token]
-                return {
-                    'status': 'error',
-                    'message': 'Token expired'
-                }
-            
-            # Verify current password
-            if not self._verify_password(current_password, token_data['current_hash'], token_data['salt']):
-                return {
-                    'status': 'error',
-                    'message': 'Invalid current password'
-                }
+            if current_password != self.current_password:
+                return {"status": "error", "message": "Invalid password"}
             
             # Generate new password
-            new_password = self._generate_secure_password(16)
-            new_hash_data = self._hash_password(new_password)
+            new_password = secrets.token_urlsafe(16)
+            self.current_password = new_password
+            self.password_expiry = datetime.utcnow() + timedelta(hours=self.rotation_interval_hours)
             
-            # Store password in history
-            password_id = f"pwd_{token_data['password_count']}"
-            self._password_history[password_id] = {
-                'hash': token_data['current_hash'],
-                'salt': token_data['salt'],
-                'created_at': token_data['created_at'],
-                'expires_at': token_data['expires_at']
-            }
-            
-            # Update token data with new password
-            token_data['current_hash'] = new_hash_data['hash']
-            token_data['salt'] = new_hash_data['salt']
-            token_data['created_at'] = datetime.now()
-            token_data['expires_at'] = datetime.now() + timedelta(hours=1)
-            token_data['password_count'] += 1
-            
-            logger.info(f"New password generated for token: {token[:8]}...")
+            logger.info("🔄 Password rotated successfully")
             
             return {
-                'status': 'success',
-                'new_password': new_password,
-                'expires_at': token_data['expires_at'].isoformat(),
-                'password_count': token_data['password_count'],
-                'message': 'Password validated and new password generated'
+                "status": "success",
+                "message": "Password validated and new password generated",
+                "new_password": new_password,
+                "expires_at": self.password_expiry.isoformat()
             }
-            
         except Exception as e:
             logger.error(f"Failed to validate and generate new password: {e}")
-            return {
-                'status': 'error',
-                'message': f'Failed to validate and generate new password: {str(e)}'
-            }
+            return {"status": "error", "message": str(e)}
     
-    def get_password_status(self, token: str) -> Dict[str, Any]:
+    async def get_password_status(self, token: str) -> Dict[str, Any]:
         """Get current password status"""
         try:
-            if token not in self._password_tokens:
-                return {
-                    'status': 'error',
-                    'message': 'Invalid token'
-                }
-            
-            token_data = self._password_tokens[token]
-            is_expired = datetime.now() > token_data['expires_at']
+            if not self.initialized:
+                return {"status": "error", "message": "System not initialized"}
             
             return {
-                'status': 'success',
-                'is_expired': is_expired,
-                'expires_at': token_data['expires_at'].isoformat(),
-                'password_count': token_data['password_count'],
-                'time_remaining': (token_data['expires_at'] - datetime.now()).total_seconds() if not is_expired else 0
+                "status": "success",
+                "has_active_password": self.current_password is not None,
+                "expires_at": self.password_expiry.isoformat() if self.password_expiry else None,
+                "time_until_expiry": self._get_time_until_expiry()
             }
-            
         except Exception as e:
             logger.error(f"Failed to get password status: {e}")
-            return {
-                'status': 'error',
-                'message': f'Failed to get password status: {str(e)}'
-            }
+            return {"status": "error", "message": str(e)}
     
-    def reset_password_system(self, token: str) -> Dict[str, Any]:
-        """Reset password system for a token"""
+    async def reset_rolling_password(self, token: str) -> Dict[str, Any]:
+        """Reset the rolling password system"""
         try:
-            if token in self._password_tokens:
-                del self._password_tokens[token]
+            self.current_password = None
+            self.password_expiry = None
+            self.failed_attempts = {}
+            self.active_sessions = {}
+            self.initialized = False
             
-            # Clean up expired tokens
-            current_time = datetime.now()
-            expired_tokens = [
-                token for token, data in self._password_tokens.items()
-                if current_time > data['expires_at']
-            ]
-            
-            for expired_token in expired_tokens:
-                del self._password_tokens[expired_token]
-            
-            logger.info(f"Password system reset for token: {token[:8]}...")
+            logger.info("🔄 Rolling password system reset")
             
             return {
-                'status': 'success',
-                'message': 'Password system reset successfully'
+                "status": "success",
+                "message": "Rolling password system reset"
             }
-            
         except Exception as e:
-            logger.error(f"Failed to reset password system: {e}")
-            return {
-                'status': 'error',
-                'message': f'Failed to reset password system: {str(e)}'
-            }
+            logger.error(f"Failed to reset rolling password: {e}")
+            return {"status": "error", "message": str(e)}
     
-    def get_system_stats(self) -> Dict[str, Any]:
-        """Get rolling password system statistics"""
+    async def get_system_status(self) -> Dict[str, Any]:
+        """Get overall system status"""
         try:
-            current_time = datetime.now()
-            active_tokens = len([
-                token for token, data in self._password_tokens.items()
-                if current_time <= data['expires_at']
-            ])
-            
-            total_passwords = sum(
-                data['password_count'] for data in self._password_tokens.values()
-            )
-            
             return {
-                'status': 'success',
-                'active_tokens': active_tokens,
-                'total_passwords_generated': total_passwords,
-                'password_history_count': len(self._password_history),
-                'system_uptime': 'active'
+                "initialized": self.initialized,
+                "has_active_password": self.current_password is not None,
+                "active_sessions": len(self.active_sessions),
+                "failed_attempts_24h": self.security_analytics["last_24_hours"]["failed_attempts"],
+                "successful_logins_24h": self.security_analytics["last_24_hours"]["successful_logins"],
+                "security_status": self.security_analytics["security_status"]
             }
-            
         except Exception as e:
-            logger.error(f"Failed to get system stats: {e}")
+            logger.error(f"Failed to get system status: {e}")
+            return {"error": str(e)}
+    
+    async def get_current_password_info(self) -> Dict[str, Any]:
+        """Get current password information"""
+        try:
             return {
-                'status': 'error',
-                'message': f'Failed to get system stats: {str(e)}'
+                "has_active_password": self.current_password is not None,
+                "expiry_time": self.password_expiry.isoformat() if self.password_expiry else None,
+                "time_until_expiry": self._get_time_until_expiry(),
+                "rotation_interval_hours": self.rotation_interval_hours,
+                "grace_period_minutes": self.grace_period_minutes,
+                "active_sessions": len(self.active_sessions)
             }
+        except Exception as e:
+            logger.error(f"Failed to get current password info: {e}")
+            return {"error": str(e)}
+    
+    async def get_security_analytics(self) -> Dict[str, Any]:
+        """Get security analytics"""
+        try:
+            return self.security_analytics
+        except Exception as e:
+            logger.error(f"Failed to get security analytics: {e}")
+            return {"error": str(e)}
+    
+    def _get_time_until_expiry(self) -> Optional[str]:
+        """Get time until password expires"""
+        if not self.password_expiry:
+            return None
+        
+        time_remaining = self.password_expiry - datetime.utcnow()
+        if time_remaining.total_seconds() <= 0:
+            return "expired"
+        
+        return str(time_remaining)
+    
+    async def admin_recovery_generate_password(self) -> Dict[str, Any]:
+        """Generate new rolling password via admin recovery"""
+        try:
+            # Generate new secure password
+            new_password = secrets.token_urlsafe(16)
+            self.current_password = new_password
+            self.password_expiry = datetime.utcnow() + timedelta(hours=self.rotation_interval_hours)
+            
+            # Update security analytics
+            self.security_analytics["last_24_hours"]["password_rotations"] += 1
+            self.security_analytics["last_24_hours"]["successful_logins"] += 1
+            
+            # Ensure system is initialized
+            if not self.initialized:
+                self.initialized = True
+            
+            logger.info("🔐 Admin recovery: New rolling password generated")
+            
+            return {
+                "status": "success",
+                "message": "New rolling password generated via admin recovery",
+                "new_password": new_password,
+                "expires_at": self.password_expiry.isoformat(),
+                "rotation_interval_hours": self.rotation_interval_hours
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate password via admin recovery: {e}")
+            return {"status": "error", "message": str(e)}
 
-# Global instance
-rolling_password_service = RollingPasswordService() 
+
+# Global service instance
+rolling_password_service = RollingPasswordService()
+

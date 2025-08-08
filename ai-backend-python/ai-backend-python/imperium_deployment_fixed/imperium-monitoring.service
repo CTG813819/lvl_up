@@ -1,0 +1,27 @@
+[Unit]
+Description=Imperium AI Monitoring System
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/ai-backend-python
+ExecStart=/usr/bin/python3 -m app.services.imperium_monitoring
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/home/ubuntu/ai-backend-python
+Environment=PYTHONUNBUFFERED=1
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=imperium-monitoring
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
