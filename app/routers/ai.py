@@ -43,4 +43,25 @@ async def set_all_scheduler_intervals(data: dict):
         await background_service.reschedule_all()
         return {"status": "success", "intervals": await get_all_scheduler_intervals()}
     except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/cycle")
+async def get_ai_cycle_status():
+    """Get AI cycle status and information"""
+    try:
+        return {
+            "status": "success",
+            "ai_cycle": {
+                "learning_cycle_active": background_service.learning_cycle_interval > 0,
+                "agent_scheduler_active": background_service.agent_scheduler_interval > 0,
+                "github_monitor_active": background_service.github_monitor_interval > 0,
+                "custody_testing_active": background_service.custody_testing_interval > 0,
+                "learning_cycle_interval": background_service.learning_cycle_interval,
+                "agent_scheduler_interval": background_service.agent_scheduler_interval,
+                "github_monitor_interval": background_service.github_monitor_interval,
+                "custody_testing_interval": background_service.custody_testing_interval
+            },
+            "message": "AI cycle status retrieved successfully"
+        }
+    except Exception as e:
         return {"status": "error", "message": str(e)} 

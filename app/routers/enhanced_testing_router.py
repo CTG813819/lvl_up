@@ -12,7 +12,7 @@ from ..services.enhanced_testing_integration_service import enhanced_testing_int
 
 logger = structlog.get_logger()
 
-router = APIRouter(prefix="/enhanced-testing", tags=["enhanced-testing"])
+router = APIRouter(tags=["Enhanced Testing"])
 
 
 @router.get("/status")
