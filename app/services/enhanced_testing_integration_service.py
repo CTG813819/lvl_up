@@ -436,6 +436,31 @@ class EnhancedTestingIntegrationService:
         
         return live_systems
 
+    async def register_external_device_blueprint(self, blueprint: Dict[str, Any]) -> Dict[str, Any]:
+        """Register a device blueprint coming from external sources (e.g., app assimilation).
+        Adds it to the blueprint registry so subsequent testing cycles include it.
+        """
+        try:
+            blueprint_id = blueprint.get("blueprint_id") or f"BP_EXT_{hash(str(blueprint)) & 0xfffffff}"
+            blueprint["blueprint_id"] = blueprint_id
+            self.device_blueprints[blueprint_id] = blueprint
+            self.blueprint_generation_count += 1
+
+            # Also seed learning cache with a simplified entry for visibility
+            os_name = blueprint.get("system", {}).get("os", "unknown")
+            self.learning_progress.setdefault("operating_systems", [])
+            if os_name not in self.learning_progress["operating_systems"]:
+                self.learning_progress["operating_systems"].append(os_name)
+
+            return {
+                "status": "registered",
+                "blueprint_id": blueprint_id,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Error registering external blueprint: {e}")
+            return {"status": "error", "message": str(e)}
+
     def _generate_device_blueprint_from_learning(self, system: Dict[str, Any]) -> Dict[str, Any]:
         """Synthesize a high-fidelity device blueprint from learning caches and system metadata.
         RORO: receive system object, return blueprint object.

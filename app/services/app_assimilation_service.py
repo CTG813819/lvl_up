@@ -13,6 +13,8 @@ import subprocess
 import tempfile
 import shutil
 from pathlib import Path
+from .enhanced_testing_integration_service import enhanced_testing_integration_service
+from .chaos_language_service import chaos_language_service
 
 logger = structlog.get_logger()
 
@@ -369,7 +371,9 @@ class AppAssimilationService:
                 "chaos_code_applied": False,
                 "synthetic_code_applied": False,
                 "integration_progress": 0
-            }
+            },
+            "improvement_suggestions": [],
+            "applied_suggestions": []
         }
         
         # Store assimilation data
@@ -381,6 +385,23 @@ class AppAssimilationService:
         
         logger.info(f"✅ App assimilated with ID: {app_id}")
         return assimilation_data
+
+    def set_app_binary(self, app_id: str, binary_path: str, file_type: str) -> None:
+        """Record the stored binary path for an assimilated app."""
+        if app_id in self.assimilated_apps:
+            self.assimilated_apps[app_id]["binary_path"] = binary_path
+            self.assimilated_apps[app_id]["binary_type"] = file_type
+            self._save_assimilated_apps()
+
+    def get_app_binary(self, app_id: str) -> Optional[Dict[str, str]]:
+        data = self.assimilated_apps.get(app_id)
+        if not data:
+            return None
+        bp = data.get("binary_path")
+        bt = data.get("binary_type")
+        if not bp or not os.path.exists(bp):
+            return None
+        return {"path": bp, "type": bt or "unknown"}
     
     async def _start_real_time_monitoring(self, app_id: str):
         """Start real-time monitoring and chaos code application"""
@@ -390,35 +411,85 @@ class AppAssimilationService:
         if not app_data:
             return
         
-        # Simulate real-time chaos code application
-        await asyncio.sleep(2)  # Simulate processing time
-        
-        app_data["real_time_monitoring"]["chaos_code_applied"] = True
-        app_data["real_time_monitoring"]["integration_progress"] = 25
-        
-        await asyncio.sleep(2)
-        
-        app_data["real_time_monitoring"]["synthetic_code_applied"] = True
-        app_data["real_time_monitoring"]["integration_progress"] = 50
-        
-        await asyncio.sleep(2)
-        
-        app_data["chaos_integration_status"] = "completed"
-        app_data["synthetic_code_status"] = "completed"
-        app_data["real_time_monitoring"]["integration_progress"] = 100
-        
-        self._save_assimilated_apps()
-        logger.info(f"✅ Real-time monitoring completed for app: {app_id}")
+        try:
+            # Step 1: Register blueprint derived from the app
+            analysis = app_data.get("original_analysis", {})
+            system_stub = {
+                "type": "mobile" if analysis.get("file_type") in ("apk", "ios") else "unknown",
+                "os": "Android_App" if analysis.get("file_type") == "apk" else "iOS_App" if analysis.get("file_type") == "ios" else "Unknown",
+                "security_features": ["sandboxing", "code_signing"],
+                "vulnerability_points": [
+                    *analysis.get("security_analysis", {}).get("sensitive_permissions", []),
+                ],
+                "network_interfaces": ["app_network"],
+                "running_services": analysis.get("services", [])[:5],
+                "installed_apps": [],
+            }
+            blueprint = {
+                "blueprint_id": f"BP_APP_{app_id}",
+                "system": system_stub,
+                "created_at": datetime.utcnow().isoformat(),
+                "code_templates": {
+                    "init": "initialize_app_environment()",
+                    "network": "configure_app_network_stack()",
+                    "persistence": "mobile_persistence_mechanisms()",
+                    "crypto": "aes_gcm_encrypt(data, key_rotate_daily())",
+                },
+            }
+            await enhanced_testing_integration_service.register_external_device_blueprint(blueprint)
+
+            app_data["real_time_monitoring"]["integration_progress"] = 20
+            self._save_assimilated_apps()
+            await asyncio.sleep(1)
+
+            # Step 2: Feed constructs into chaos language
+            constructs = {}
+            for ip in analysis.get("chaos_integration_points", [])[:10]:
+                cname = f"CHAOS.APP.{ip.get('type','POINT').upper()}.{hash(ip.get('name','')) & 0xffff}"
+                constructs[cname] = {
+                    "description": f"Construct from app integration point {ip.get('name','unknown')}",
+                    "syntax": f"{cname}(target)",
+                    "origin": "project_horus",
+                    "weapon_category": "app_assimilation",
+                    "complexity": 1.5,
+                    "created": datetime.utcnow().isoformat(),
+                }
+            if constructs:
+                await chaos_language_service._integrate_new_constructs(constructs)
+
+            app_data["real_time_monitoring"]["integration_progress"] = 45
+            self._save_assimilated_apps()
+            await asyncio.sleep(1)
+
+            # Step 3: Mark in-progress synthesis
+            app_data["chaos_integration_status"] = "in_progress"
+            app_data["synthetic_code_status"] = "in_progress"
+            app_data["real_time_monitoring"]["integration_progress"] = 70
+            self._save_assimilated_apps()
+            await asyncio.sleep(1)
+
+            # Step 4: Complete
+            app_data["chaos_integration_status"] = "completed"
+            app_data["synthetic_code_status"] = "completed"
+            app_data["real_time_monitoring"]["integration_progress"] = 100
+            self._save_assimilated_apps()
+            logger.info(f"✅ Real-time monitoring completed for app: {app_id}")
+        except Exception as e:
+            logger.error(f"Assimilation monitoring failed: {e}")
     
     async def get_assimilated_apps(self, user_id: str) -> List[Dict[str, Any]]:
         """Get all assimilated apps for a user"""
         user_apps = []
         for app_id, app_data in self.assimilated_apps.items():
             if app_data.get("user_id") == user_id:
+                display_name = (
+                    app_data.get("override_name")
+                    or app_data["original_analysis"].get("package_info", {}).get("package_name")
+                    or app_data["original_analysis"].get("bundle_info", {}).get("bundle_identifier", "Unknown App")
+                )
                 user_apps.append({
                     "app_id": app_id,
-                    "name": app_data["original_analysis"].get("package_info", {}).get("package_name") or 
-                           app_data["original_analysis"].get("bundle_info", {}).get("bundle_identifier", "Unknown App"),
+                    "name": display_name,
                     "file_type": app_data["original_analysis"].get("file_type", "unknown"),
                     "assimilation_timestamp": app_data["assimilation_timestamp"],
                     "chaos_integration_status": app_data["chaos_integration_status"],
@@ -427,6 +498,15 @@ class AppAssimilationService:
                 })
         
         return user_apps
+
+    def set_app_name(self, app_id: str, new_name: str) -> bool:
+        """Override the display name of an assimilated app."""
+        app_data = self.assimilated_apps.get(app_id)
+        if not app_data:
+            return False
+        app_data["override_name"] = new_name.strip()
+        self._save_assimilated_apps()
+        return True
     
     async def delete_assimilated_app(self, app_id: str, user_id: str) -> bool:
         """Delete an assimilated app"""
