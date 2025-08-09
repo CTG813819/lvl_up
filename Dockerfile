@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# Pin Python to 3.11 to avoid numpy build issues and pkgutil.ImpImporter incompatibilities
+FROM python:3.11-slim
 
 WORKDIR /app
 

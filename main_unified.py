@@ -216,7 +216,7 @@ async def lifespan(app: FastAPI):
         token_usage_service = await TokenUsageService.initialize()
         scheduled_notification_service = await ScheduledNotificationService.initialize()
         logger.info("✅ Additional services initialized")
-
+        
         # Initialize enhanced testing integration so Docker simulations, internet learning,
         # and progressive testing cycles run continuously and feed frontend status
         try:
