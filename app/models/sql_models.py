@@ -402,7 +402,7 @@ class ChaosCodeRecord(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     chaos_id = Column(String(200), nullable=False, unique=True, index=True)
     code_json = Column(JSON, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    code_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 

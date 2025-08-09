@@ -438,6 +438,32 @@ async def create_indexes():
                     CREATE INDEX IF NOT EXISTS idx_error_learning_error_pattern 
                     ON error_learning(error_pattern)
                 """))
+
+                # Safe migration: rename reserved column 'metadata' -> 'code_metadata' on chaos_code_records
+                try:
+                    await conn.execute(text(
+                        """
+                        DO $$
+                        BEGIN
+                            IF EXISTS (
+                                SELECT 1 FROM information_schema.columns
+                                WHERE table_name='chaos_code_records' AND column_name='metadata'
+                            ) THEN
+                                ALTER TABLE chaos_code_records RENAME COLUMN metadata TO code_metadata;
+                            END IF;
+                        END
+                        $$;
+                        """
+                    ))
+                except Exception as _e:
+                    -- non-fatal
+                    NULL;
+
+                -- Helpful indexes for chaos_code_records
+                await conn.execute(text("""
+                    CREATE INDEX IF NOT EXISTS idx_chaos_code_records_chaos_id 
+                    ON chaos_code_records(chaos_id)
+                """))
                 
                 # Create indexes for experiments table
                 await conn.execute(text("""

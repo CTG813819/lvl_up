@@ -87,6 +87,7 @@ from app.routers.autonomous_brain_router import router as autonomous_brain_route
 
 # Import enhanced testing router
 from app.routers.enhanced_testing_router import router as enhanced_testing_router
+from app.routers.chaos_toolkit_router import router as chaos_toolkit_router
 
 # Import AI integration router
 from app.routers.ai_integration_router import router as ai_integration_router
@@ -211,6 +212,14 @@ async def lifespan(app: FastAPI):
         # Initialize Custody Protocol Service (required for custody tests, Olympic events, and collaborative tests)
         custody_service = await CustodyProtocolService.initialize()
         logger.info("✅ Custody Protocol Service initialized")
+
+        # Initialize Chaos Toolkit constructs early so they are available to all AIs
+        try:
+            from app.services.chaos_toolkit_service import chaos_toolkit_service
+            toolkit_result = await chaos_toolkit_service.register_base_tools()
+            logger.info(f"✅ Chaos Toolkit registered: {toolkit_result.get('registered')} constructs")
+        except Exception as e:
+            logger.warning(f"Chaos Toolkit init failed: {e}")
         
         # Initialize additional services from app/main.py
         proposal_cycle_service = await ProposalCycleService.initialize()
@@ -557,6 +566,7 @@ app.include_router(autonomous_brain_router, prefix="/api/autonomous-brain", tags
 
 # Enhanced Testing Router
 app.include_router(enhanced_testing_router, prefix="/api/enhanced-testing", tags=["Enhanced Testing"])
+app.include_router(chaos_toolkit_router, tags=["Chaos Toolkit"])
 
 # AI Integration Router
 app.include_router(ai_integration_router, prefix="/api/ai-integration", tags=["AI Integration"])

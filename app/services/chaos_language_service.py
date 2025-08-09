@@ -201,7 +201,7 @@ class ChaosLanguageService:
         """Persist chaos code instance and metadata."""
         try:
             async with get_session() as session:
-                rec = ChaosCodeRecord(chaos_id=chaos_id, code_json=code, metadata=metadata)
+                rec = ChaosCodeRecord(chaos_id=chaos_id, code_json=code, code_metadata=metadata)
                 session.add(rec)
                 await session.commit()
         except Exception as e:

@@ -10,6 +10,7 @@ from datetime import datetime
 
 from ..services.enhanced_testing_integration_service import enhanced_testing_integration_service
 from ..services.chaos_language_service import chaos_language_service
+from ..services.chaos_toolkit_service import chaos_toolkit_service
 
 logger = structlog.get_logger()
 
@@ -366,6 +367,7 @@ async def suggest_chaos_spec(
     payload: Dict[str, Any] = None,
     spec: str | None = Form(None),
     file: UploadFile | None = File(None),
+    background_tasks: BackgroundTasks | None = None,
 ) -> Dict[str, Any]:
     """Accept a user suggestion for chaos language/code features and plan implementation.
     - verifies overlap with existing constructs
@@ -386,6 +388,9 @@ async def suggest_chaos_spec(
         weapon_constructs = set(language.get("language_core", {}).get("weapon_specific_constructs", {}).keys())
         overlaps = [c for c in list(existing | weapon_constructs) if c.lower() in spec_text.lower()]
 
+        # Detect if suggestion is a URL; mark for internet research by Horus/Berserk
+        is_url = spec_text.lower().startswith("http://") or spec_text.lower().startswith("https://")
+
         # Prepare an implementation plan for next iteration
         plan = {
             "spec": spec_text,
@@ -398,6 +403,11 @@ async def suggest_chaos_spec(
             ],
             "internet_learning_reference": "background_learning_pipeline",
             "scheduled": True,
+            "research": {
+                "type": "url" if is_url else "text",
+                "source": spec_text,
+                "assigned_to": ["horus", "berserk"],
+            },
         }
 
         # If a file is provided, read a small sample and attach metadata for analysis
@@ -413,8 +423,21 @@ async def suggest_chaos_spec(
             except Exception:
                 plan["attachment_error"] = "Failed to read uploaded file"
 
-        # Mark for next iteration by nudging growth metrics (lightweight flag stored in service)
+        # Mark last requested feature and queue research hint
         chaos_language_service.growth_metrics["last_requested_feature"] = spec_text
+        if is_url:
+            chaos_language_service.growth_metrics["last_requested_url"] = spec_text
+
+        # Schedule autonomous research and seeding of a new toolkit construct
+        try:
+            if background_tasks is not None:
+                background_tasks.add_task(_autonomous_research_and_seed, spec_text)
+            else:
+                import asyncio
+                asyncio.create_task(_autonomous_research_and_seed(spec_text))
+        except Exception:
+            # Non-fatal; continue
+            pass
 
         return {"status": "accepted", "plan": plan}
     except HTTPException:
@@ -422,6 +445,28 @@ async def suggest_chaos_spec(
     except Exception as e:
         logger.error(f"Error suggesting chaos spec: {e}")
         raise HTTPException(status_code=500, detail=f"Error suggesting chaos spec: {str(e)}")
+
+
+async def _autonomous_research_and_seed(spec_text: str) -> None:
+    """Autonomous background job: research the suggestion and seed a toolkit construct stub."""
+    try:
+        # Seed a minimal construct to be evolved next cycle
+        construct_name = f"CHAOS.TOOLKIT.SUGGESTION.{abs(hash(spec_text)) % 10_000_000}"
+        constructs = {
+            construct_name: {
+                "description": f"Seeded from suggestion: {spec_text[:140]}",
+                "syntax": f"{construct_name}(input) -> output",
+                "domain": "toolkit",
+                "origin": "project_horus",
+                "created": datetime.utcnow().isoformat(),
+                "complexity": 1.0,
+            }
+        }
+        await chaos_language_service._integrate_new_constructs(constructs)
+        # Ensure toolkit base constructs remain available
+        await chaos_toolkit_service.register_base_tools()
+    except Exception as e:
+        logger.warning(f"Autonomous seed failed: {e}")
 
 @router.get("/chaos-cryptography-status")
 async def get_chaos_cryptography_status() -> Dict[str, Any]:
