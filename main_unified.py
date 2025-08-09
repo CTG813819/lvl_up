@@ -565,7 +565,8 @@ app.include_router(ai_integration_router, prefix="/api/ai-integration", tags=["A
 app.include_router(security_testing_router, prefix="/api/security-testing", tags=["Security Testing"])
 
 # App Assimilation Router
-app.include_router(app_assimilation_router, prefix="/api/app-assimilation", tags=["App Assimilation"])
+# The router already defines its own prefix; include without adding another prefix
+app.include_router(app_assimilation_router)
 
 # WebSocket endpoints
 @app.websocket("/ws/imperium/learning-analytics")
