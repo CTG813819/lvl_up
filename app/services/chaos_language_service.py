@@ -13,6 +13,8 @@ import structlog
 from .enhanced_project_horus_service import enhanced_project_horus_service
 from .project_berserk_enhanced_service import project_berserk_enhanced_service
 from .ai_adversarial_integration_service import ai_adversarial_integration_service
+from ..core.database import get_session, create_tables
+from ..models.sql_models import ChaosLanguageDoc, ChaosCodeRecord
 
 logger = structlog.get_logger()
 
@@ -59,6 +61,9 @@ class ChaosLanguageService:
             
             # Start background growth monitoring
             asyncio.create_task(self._background_language_growth_monitor())
+
+            # Ensure tables exist
+            await create_tables()
             
             logger.info("Chaos Language Service initialized")
             
@@ -179,6 +184,28 @@ class ChaosLanguageService:
         except Exception as e:
             logger.error(f"Error collecting new constructs: {e}")
             return collection_results
+
+    async def persist_language_doc(self, language: Dict[str, Any]):
+        """Persist latest chaos language into Neon."""
+        try:
+            async with get_session() as session:
+                name = str(language.get("name") or language.get("language_id") or "Unknown")
+                version = str(language.get("version") or "")
+                doc = ChaosLanguageDoc(name=name, version=version, language_json=language)
+                session.add(doc)
+                await session.commit()
+        except Exception as e:
+            logger.error(f"Failed to persist chaos language doc: {e}")
+
+    async def persist_chaos_code(self, chaos_id: str, code: Dict[str, Any], metadata: Dict[str, Any]):
+        """Persist chaos code instance and metadata."""
+        try:
+            async with get_session() as session:
+                rec = ChaosCodeRecord(chaos_id=chaos_id, code_json=code, metadata=metadata)
+                session.add(rec)
+                await session.commit()
+        except Exception as e:
+            logger.error(f"Failed to persist chaos code: {e}")
     
     async def _collect_horus_constructs(self) -> Dict[str, Any]:
         """Collect new constructs from Project Horus"""

@@ -126,7 +126,7 @@ class QuantumChaosService:
                        chaos_id=chaos_id, 
                        quantum_complexity=self.quantum_complexity)
             
-            return {
+            result = {
                 "chaos_id": chaos_id,
                 "quantum_chaos_code": quantum_chaos_code,
                 "chaos_language": quantum_chaos_code.get("chaos_language", {}),
@@ -141,6 +141,18 @@ class QuantumChaosService:
                     "stealth_protocols": len(self.quantum_systems["stealth"]["protocols"])
                 }
             }
+
+            # Persist chaos language and code for durability
+            try:
+                from .chaos_language_service import chaos_language_service
+                await chaos_language_service.persist_chaos_code(chaos_id, quantum_chaos_code, result.get("metadata", {}))
+                lang = quantum_chaos_code.get("chaos_language")
+                if isinstance(lang, dict):
+                    await chaos_language_service.persist_language_doc(lang)
+            except Exception as pe:
+                logger.warning("Persistence of chaos code/language failed", error=str(pe))
+
+            return result
             
         except Exception as e:
             logger.error("❌ Error generating quantum chaos code", error=str(e))

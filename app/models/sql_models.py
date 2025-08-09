@@ -381,6 +381,58 @@ class AgentMetrics(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# --- Chaos Language/Code Persistence ---
+
+class ChaosLanguageDoc(Base):
+    """Persisted chaos language documentation (latest version per name)."""
+    __tablename__ = "chaos_language_docs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(200), nullable=False, index=True)
+    version = Column(String(50), nullable=True, index=True)
+    language_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ChaosCodeRecord(Base):
+    """Persisted chaos code instances with metadata."""
+    __tablename__ = "chaos_code_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    chaos_id = Column(String(200), nullable=False, unique=True, index=True)
+    code_json = Column(JSON, nullable=False)
+    metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class AssimilatedApp(Base):
+    """Persisted assimilated apps and their instrumentation state."""
+    __tablename__ = "assimilated_apps"
+
+    id = Column(String(200), primary_key=True)  # use app_id generated in service
+    user_id = Column(String(200), nullable=True, index=True)
+    platform = Column(String(50), nullable=True, index=True)  # apk/ios
+    package_name = Column(String(300), nullable=True, index=True)
+    bundle_id = Column(String(300), nullable=True, index=True)
+    version = Column(String(100), nullable=True)
+    status = Column(String(50), nullable=True, index=True)  # pending/running/success/error
+    instrumentation_progress = Column(Integer, default=0)
+    instrumentation_log = Column(Text, nullable=True)
+    chaos_instrumented = Column(Boolean, default=False, index=True)
+    signer = Column(String(50), nullable=True)
+    original_binary_path = Column(String(500), nullable=True)
+    binary_path = Column(String(500), nullable=True)
+    binary_type = Column(String(50), nullable=True)
+    original_apk_sha256 = Column(String(100), nullable=True)
+    instrumented_apk_sha256 = Column(String(100), nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+    extra = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class LearningCycle(Base):
     """Learning cycle model for Imperium master orchestration"""
     __tablename__ = "learning_cycles"

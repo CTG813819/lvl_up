@@ -15,6 +15,8 @@ import shutil
 from pathlib import Path
 from .enhanced_testing_integration_service import enhanced_testing_integration_service
 from .chaos_language_service import chaos_language_service
+from ..core.database import get_session, create_tables
+from ..models.sql_models import AssimilatedApp
 
 logger = structlog.get_logger()
 
@@ -405,6 +407,27 @@ class AppAssimilationService:
             assimilation_data["update_history"] = history
         self.assimilated_apps[app_id] = assimilation_data
         self._save_assimilated_apps()
+
+        # Persist to DB
+        try:
+            await create_tables()
+            async with get_session() as session:
+                rec = AssimilatedApp(
+                    id=app_id,
+                    user_id=user_id,
+                    platform=analysis.get("file_type"),
+                    package_name=analysis.get("package_info", {}).get("package_name"),
+                    bundle_id=analysis.get("bundle_info", {}).get("bundle_identifier"),
+                    version=analysis.get("package_info", {}).get("version_name") or analysis.get("bundle_info", {}).get("version"),
+                    status="pending",
+                    instrumentation_progress=0,
+                    chaos_instrumented=False,
+                    created_at=datetime.utcnow(),
+                )
+                session.add(rec)
+                await session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to persist assimilated app {app_id}: {e}")
         
         # Start real-time monitoring and chaos integration
         asyncio.create_task(self._start_real_time_monitoring(app_id))
@@ -487,6 +510,118 @@ class AppAssimilationService:
                         return path
                 return None
 
+            # Tool-less path switch
+            if os.getenv("CHAOS_TOOLLESS_APK", "0") in ("1", "true", "TRUE", "yes", "on"):
+                # Minimal tool-less path: unzip, patch, repack, sign via uber fallback
+                try:
+                    import zipfile
+                    tmp_dir = os.path.join(work, "unzipped")
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    with zipfile.ZipFile(binary, 'r') as zin:
+                        zin.extractall(tmp_dir)
+                    log.append("Unzipped APK (tool-less)")
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 20
+                    self._save_assimilated_apps()
+
+                    drawable_dir = os.path.join(tmp_dir, "res", "drawable-nodpi")
+                    os.makedirs(drawable_dir, exist_ok=True)
+                    chaos_png = os.path.join(drawable_dir, "chaos_splash.png")
+                    if splash_src and os.path.exists(splash_src):
+                        shutil.copyfile(splash_src, chaos_png)
+                    else:
+                        with open(chaos_png, "wb") as f:
+                            f.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00 \x00\x00\x00 \x08\x06\x00\x00\x00szz\xf4\x00\x00\x00\x0cIDATx\xdaed\x01\x01\x00\x00\x08\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00IEND\xaeB`\x82")
+                    log.append("Injected chaos splash (tool-less)")
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 40
+                    self._save_assimilated_apps()
+
+                    values_dir = os.path.join(tmp_dir, "res", "values")
+                    os.makedirs(values_dir, exist_ok=True)
+                    styles_xml = os.path.join(values_dir, "styles.xml")
+                    style_block = ("""
+<resources>
+    <style name=\"ChaosSplashTheme\" parent=\"Theme.Material.Light.NoActionBar\">\n        <item name=\"android:windowBackground\">@drawable/chaos_splash</item>\n        <item name=\"android:windowNoTitle\">true</item>\n        <item name=\"android:windowFullscreen\">true</item>\n    </style>
+</resources>
+""".strip())
+                    with open(styles_xml, "a", encoding="utf-8") as f:
+                        f.write("\n" + style_block + "\n")
+                    log.append("Patched styles (tool-less)")
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 55
+                    self._save_assimilated_apps()
+
+                    manifest_path = os.path.join(tmp_dir, "AndroidManifest.xml")
+                    if os.path.exists(manifest_path):
+                        try:
+                            with open(manifest_path, "r", encoding="utf-8", errors="ignore") as f:
+                                manifest = f.read()
+                            if "ChaosSplashTheme" not in manifest and "<application" in manifest:
+                                manifest = manifest.replace(
+                                    "<application",
+                                    "<application android:theme=\\\"@style/ChaosSplashTheme\\\"",
+                                    1,
+                                )
+                                with open(manifest_path, "w", encoding="utf-8") as f:
+                                    f.write(manifest)
+                                log.append("Patched manifest (tool-less)")
+                        except Exception:
+                            log.append("Manifest patch skipped (tool-less)")
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 70
+                    self._save_assimilated_apps()
+
+                    unsigned_apk = os.path.join(work, "unsigned.apk")
+                    with zipfile.ZipFile(unsigned_apk, 'w', zipfile.ZIP_DEFLATED) as zout:
+                        for root, _, files in os.walk(tmp_dir):
+                            for name in files:
+                                p = os.path.join(root, name)
+                                arc = os.path.relpath(p, tmp_dir)
+                                zout.write(p, arc)
+                    log.append("Repacked APK (tool-less)")
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 85
+                    self._save_assimilated_apps()
+
+                    # sign with uber-apk-signer
+                    try:
+                        uber_path = os.path.join(work, "uber-apk-signer.jar")
+                        if not os.path.exists(uber_path):
+                            import urllib.request
+                            urllib.request.urlretrieve(
+                                os.getenv(
+                                    "CHAOS_UBER_APK_SIGNER_URL",
+                                    "https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar",
+                                ),
+                                uber_path,
+                            )
+                            log.append(f"Downloaded uber-apk-signer -> {uber_path}")
+                        out_signed_dir = os.path.join(work, "uber_out")
+                        os.makedirs(out_signed_dir, exist_ok=True)
+                        p = subprocess.run(["java", "-jar", uber_path, "-a", unsigned_apk, "-o", out_signed_dir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                        log.append(p.stdout)
+                        signed_apk = os.path.join(work, "chaos_signed.apk")
+                        for f in os.listdir(out_signed_dir):
+                            if f.endswith(".apk"):
+                                shutil.copyfile(os.path.join(out_signed_dir, f), signed_apk)
+                                break
+                        self.assimilated_apps[app_id]["signer"] = "uber-apk-signer"
+                        self.assimilated_apps[app_id]["binary_path"] = signed_apk
+                        self.assimilated_apps[app_id]["chaos_instrumented"] = True
+                        self.assimilated_apps[app_id]["signed_ok"] = True
+                        try:
+                            self.assimilated_apps[app_id]["instrumented_apk_sha256"] = self._sha256(signed_apk)
+                        except Exception:
+                            pass
+                        self.assimilated_apps[app_id]["instrumentation_progress"] = 100
+                        self.assimilated_apps[app_id]["instrumentation_finished_at"] = datetime.utcnow().isoformat()
+                        self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log)[-6000:]
+                        self._save_assimilated_apps()
+                        return {"status": "success", "signed_apk": signed_apk}
+                    except Exception as e:
+                        return {"status": "error", "message": f"tool-less signing failed: {e}"}
+                finally:
+                    try:
+                        shutil.rmtree(work, ignore_errors=True)
+                    except Exception:
+                        pass
+
             apktool_bin = which(["apktool"]) or os.getenv("APKTOOL_BIN")
             if not apktool_bin:
                 apktool_jar = os.getenv("APKTOOL_JAR")
@@ -550,6 +685,18 @@ class AppAssimilationService:
             self.assimilated_apps[app_id]["instrumentation_progress"] = 5
             self.assimilated_apps[app_id]["instrumentation_started_at"] = datetime.utcnow().isoformat()
             self._save_assimilated_apps()
+            # Update DB row status
+            try:
+                async with get_session() as session:
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(AssimilatedApp)
+                        .where(AssimilatedApp.id == app_id)
+                        .values(status="running", started_at=datetime.utcnow(), instrumentation_progress=5)
+                    )
+                    await session.commit()
+            except Exception as e:
+                logger.warning(f"DB update failed at start for {app_id}: {e}")
             # 1) Decode
             if apktool_bin:
                 run([apktool_bin, "d", "-f", "-o", out_dir, binary])
@@ -681,12 +828,51 @@ class AppAssimilationService:
             self.assimilated_apps[app_id]["instrumentation_finished_at"] = datetime.utcnow().isoformat()
             self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log)[-6000:]
             self._save_assimilated_apps()
+            # persist DB final
+            try:
+                async with get_session() as session:
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(AssimilatedApp)
+                        .where(AssimilatedApp.id == app_id)
+                        .values(
+                            status="success",
+                            finished_at=datetime.utcnow(),
+                            instrumentation_progress=100,
+                            chaos_instrumented=True,
+                            signer=self.assimilated_apps[app_id].get("signer"),
+                            binary_path=signed_apk,
+                            binary_type="apk",
+                            instrumented_apk_sha256=self.assimilated_apps[app_id].get("instrumented_apk_sha256"),
+                            instrumentation_log=self.assimilated_apps[app_id].get("instrumentation_log"),
+                        )
+                    )
+                    await session.commit()
+            except Exception as e:
+                logger.warning(f"DB finalize failed for {app_id}: {e}")
             return {"status": "success", "signed_apk": signed_apk}
         except Exception as e:
             self.assimilated_apps[app_id]["chaos_instrumented"] = False
             self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log + [f"ERROR: {e}"])[-6000:]
             self.assimilated_apps[app_id]["instrumentation_finished_at"] = datetime.utcnow().isoformat()
             self._save_assimilated_apps()
+            # persist DB error
+            try:
+                async with get_session() as session:
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(AssimilatedApp)
+                        .where(AssimilatedApp.id == app_id)
+                        .values(
+                            status="error",
+                            finished_at=datetime.utcnow(),
+                            instrumentation_progress=int(self.assimilated_apps[app_id].get("instrumentation_progress", 0)),
+                            instrumentation_log=self.assimilated_apps[app_id].get("instrumentation_log"),
+                        )
+                    )
+                    await session.commit()
+            except Exception as e2:
+                logger.warning(f"DB error persist failed for {app_id}: {e2}")
             return {"status": "error", "message": str(e)}
         finally:
             # keep the signed APK in temp dir; Railway ephemeral FS is fine for single deployment

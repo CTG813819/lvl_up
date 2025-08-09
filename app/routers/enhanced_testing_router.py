@@ -3,7 +3,7 @@ Enhanced Testing Router
 Exposes enhanced testing integration capabilities for frontend display
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form
 from typing import Dict, Any, List
 import structlog
 from datetime import datetime
@@ -362,14 +362,21 @@ async def get_live_system_status() -> Dict[str, Any]:
 
 
 @router.post("/chaos-spec/suggest")
-async def suggest_chaos_spec(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def suggest_chaos_spec(
+    payload: Dict[str, Any] = None,
+    spec: str | None = Form(None),
+    file: UploadFile | None = File(None),
+) -> Dict[str, Any]:
     """Accept a user suggestion for chaos language/code features and plan implementation.
     - verifies overlap with existing constructs
     - performs internet-learning-backed analysis (simulated live fetch already runs in background)
     - returns an implementation plan and marks it for next iteration
     """
     try:
-        spec_text = str(payload.get("spec", "")).strip()
+        # Accept JSON body or form fields
+        if payload is None:
+            payload = {}
+        spec_text = str((payload.get("spec") if payload else None) or spec or "").strip()
         if not spec_text:
             raise HTTPException(status_code=400, detail="Missing 'spec' in payload")
 
@@ -392,6 +399,19 @@ async def suggest_chaos_spec(payload: Dict[str, Any]) -> Dict[str, Any]:
             "internet_learning_reference": "background_learning_pipeline",
             "scheduled": True,
         }
+
+        # If a file is provided, read a small sample and attach metadata for analysis
+        if file is not None:
+            try:
+                content = await file.read()
+                sample = content[:4096]
+                plan["attachment"] = {
+                    "filename": file.filename,
+                    "size": len(content),
+                    "sample_preview": sample.decode(errors="ignore")
+                }
+            except Exception:
+                plan["attachment_error"] = "Failed to read uploaded file"
 
         # Mark for next iteration by nudging growth metrics (lightweight flag stored in service)
         chaos_language_service.growth_metrics["last_requested_feature"] = spec_text
