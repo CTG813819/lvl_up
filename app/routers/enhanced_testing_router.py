@@ -276,6 +276,31 @@ async def get_live_system_status() -> Dict[str, Any]:
         from ..services.chaos_cryptography_service import chaos_cryptography_service
         crypto_status = await chaos_cryptography_service.get_chaos_cryptography_status()
         
+        # Derive human-readable status flags expected by frontend cards
+        testing_status = status.get("testing_status", {})
+        internet_sessions = int(testing_status.get("internet_learning_sessions", 0) or 0)
+        docker_runs = int(testing_status.get("docker_simulations_run", 0) or 0)
+        tests_passed = int(testing_status.get("tests_passed", 0) or 0)
+        tests_failed = int(testing_status.get("tests_failed", 0) or 0)
+
+        recent = status.get("recent_test_results", {})
+        docker_recent = recent.get("docker_simulations", []) or []
+        horus_recent = recent.get("horus", []) or []
+        berserk_recent = recent.get("berserk", []) or []
+
+        ilp = status.get("internet_learning_progress", {})
+        horus_k = int(ilp.get("autonomous_brain_knowledge", {}).get("horus_knowledge_count", 0) or 0)
+        berserk_k = int(ilp.get("autonomous_brain_knowledge", {}).get("berserk_knowledge_count", 0) or 0)
+
+        def as_flag(active: bool) -> str:
+            return "Active" if active else "Idle"
+
+        internet_learning_status = as_flag(internet_sessions > 0 or (horus_k + berserk_k) > 0)
+        docker_simulations_status = as_flag(docker_runs > 0 or len(docker_recent) > 0)
+        weapon_testing_status = as_flag((tests_passed + tests_failed) > 0 or len(horus_recent) + len(berserk_recent) > 0)
+        autonomous_brains_status = as_flag((horus_k + berserk_k) > 0)
+        chaos_code_status = as_flag(len(docker_recent) > 0 or weapon_testing_status == "Active")
+
         return {
             "success": True,
             "live_system_status": {
@@ -285,6 +310,11 @@ async def get_live_system_status() -> Dict[str, Any]:
                 "live_systems": live_systems[:5],  # Return first 5 for display
                 "testing_status": status,
                 "chaos_cryptography": crypto_status,
+                "internet_learning_status": internet_learning_status,
+                "docker_simulations_status": docker_simulations_status,
+                "autonomous_brains_status": autonomous_brains_status,
+                "chaos_code_status": chaos_code_status,
+                "weapon_testing_status": weapon_testing_status,
                 "timestamp": datetime.utcnow().isoformat()
             },
             "message": "Live system status retrieved successfully"

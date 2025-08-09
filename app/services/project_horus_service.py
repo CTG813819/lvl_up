@@ -365,8 +365,9 @@ class ProjectHorusService:
                         })
             
             # Update learning progress
-            self.learning_progress = min(1.0, self.learning_progress + total_knowledge_gained)
-            self.quantum_complexity = min(2.0, self.quantum_complexity + total_knowledge_gained * 0.1)
+            # Remove caps: allow unbounded growth over time
+            self.learning_progress = self.learning_progress + total_knowledge_gained
+            self.quantum_complexity = self.quantum_complexity + total_knowledge_gained * 0.1
             
             return {
                 "status": "success",
@@ -576,7 +577,8 @@ class ProjectHorusService:
         improved_chaos_code = await self._generate_improved_chaos_code(system, system_analysis)
         
         # Update quantum complexity
-        self.quantum_complexity = min(self.quantum_complexity + 0.05, 2.0)
+        # Remove cap on quantum complexity growth
+        self.quantum_complexity = self.quantum_complexity + 0.05
         
         logger.info(f"Quantum chaos evolved for system {system}, new complexity: {self.quantum_complexity}")
 
@@ -686,10 +688,10 @@ class ProjectHorusService:
         
         if success_rate > 0.8:
             # High success rate - increase complexity for more challenging targets
-            self.quantum_complexity = min(self.quantum_complexity + 0.1, 2.0)
+            self.quantum_complexity = self.quantum_complexity + 0.1
         elif success_rate < 0.3:
-            # Low success rate - decrease complexity to improve success
-            self.quantum_complexity = max(self.quantum_complexity - 0.05, 0.5)
+            # Low success rate - decrease complexity slightly (no lower bound)
+            self.quantum_complexity = self.quantum_complexity - 0.05
 
     def _store_chaos_code_result(self, result: Dict[str, Any], target_system: str):
         """Store chaos code generation result for learning"""
