@@ -146,15 +146,25 @@ async def get_project_horus_status():
     try:
         logger.info("📊 Getting Project Horus status")
         
+        # Prefer comprehensive live status if available
+        live_status = await project_horus_service.get_project_horus_status()
+        if "error" not in live_status:
+            return {
+                "status": "success",
+                "message": "Project Horus status retrieved",
+                "data": live_status,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+        # Fallback: repository-based basic status
         repository = await project_horus_service.get_chaos_code_repository()
-        
         status = {
             "service": "Project Horus",
             "status": "operational",
-            "chaos_codes_generated": repository["total_codes"],
-            "learning_progress": repository["learning_progress"],
-            "chaos_complexity": repository["chaos_complexity"],
-            "knowledge_base_size": repository["knowledge_base_size"],
+            "chaos_codes_generated": repository.get("total_codes", 0),
+            "learning_progress": repository.get("learning_progress", 0.0),
+            "chaos_complexity": repository.get("chaos_complexity", 0.0),
+            "knowledge_base_size": repository.get("knowledge_base_size", 0),
             "timestamp": datetime.utcnow().isoformat()
         }
         
