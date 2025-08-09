@@ -187,6 +187,23 @@ async def download_app_binary(app_id: str, user_id: str = "default_user"):
         raise HTTPException(status_code=500, detail=f"Failed to download app: {str(e)}")
 
 
+@router.post("/telemetry/{app_id}")
+async def app_telemetry(app_id: str, event: Dict[str, Any], user_id: str = "default_user") -> Dict[str, Any]:
+    """Receive live telemetry from instrumented apps (Chaos-code formatted events)."""
+    try:
+        svc = get_app_assimilation_service()
+        status = await svc.get_app_assimilation_status(app_id)
+        if not status or status.get("user_id") != user_id:
+            raise HTTPException(status_code=404, detail="App not found")
+        result = await svc.record_telemetry(app_id, event)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Telemetry record failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Telemetry failed: {str(e)}")
+
+
 @router.post("/improvement-suggestions/{app_id}")
 async def generate_improvement_suggestions(app_id: str, user_id: str = "default_user") -> Dict[str, Any]:
     """Generate chaos-code-driven improvement suggestions for an assimilated app."""

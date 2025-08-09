@@ -410,11 +410,15 @@ class AppAssimilationService:
         asyncio.create_task(self._start_real_time_monitoring(app_id))
         
         logger.info(f"✅ App assimilated with ID: {app_id}")
+        assimilation_data["is_update"] = existing_id is not None
         return assimilation_data
 
     def set_app_binary(self, app_id: str, binary_path: str, file_type: str) -> None:
         """Record the stored binary path for an assimilated app."""
         if app_id in self.assimilated_apps:
+            # Preserve original path on first set
+            if not self.assimilated_apps[app_id].get("original_binary_path"):
+                self.assimilated_apps[app_id]["original_binary_path"] = binary_path
             self.assimilated_apps[app_id]["binary_path"] = binary_path
             self.assimilated_apps[app_id]["binary_type"] = file_type
             # track original hash
@@ -601,6 +605,20 @@ class AppAssimilationService:
             for chunk in iter(lambda: f.read(8192), b''):
                 h.update(chunk)
         return h.hexdigest()
+
+    # ---------- Telemetry ----------
+    async def record_telemetry(self, app_id: str, event: Dict[str, Any]) -> Dict[str, Any]:
+        """Record a telemetry heartbeat or event from an instrumented app."""
+        app = self.assimilated_apps.get(app_id)
+        if not app:
+            return {"status": "error", "message": "app not found"}
+        telem = app.setdefault("telemetry", {})
+        telem["last_event"] = event.get("event", "heartbeat")
+        telem["last_payload"] = event
+        telem["last_ts"] = datetime.utcnow().isoformat()
+        telem["count"] = int(telem.get("count", 0)) + 1
+        self._save_assimilated_apps()
+        return {"status": "ok", "count": telem["count"]}
     
     async def _start_real_time_monitoring(self, app_id: str):
         """Start real-time monitoring and chaos code application"""
