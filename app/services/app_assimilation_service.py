@@ -352,7 +352,24 @@ class AppAssimilationService:
     
     async def assimilate_app(self, analysis: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         """Assimilate the analyzed app into the system"""
-        app_id = f"assimilated_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        # Deduplicate by package/bundle per user; update if same app uploaded again
+        package_name = analysis.get("package_info", {}).get("package_name")
+        bundle_id = analysis.get("bundle_info", {}).get("bundle_identifier")
+        version = analysis.get("package_info", {}).get("version_name") or analysis.get("bundle_info", {}).get("version")
+
+        existing_id = None
+        for aid, data in self.assimilated_apps.items():
+            if data.get("user_id") != user_id:
+                continue
+            a = data.get("original_analysis", {})
+            if package_name and a.get("package_info", {}).get("package_name") == package_name:
+                existing_id = aid
+                break
+            if bundle_id and a.get("bundle_info", {}).get("bundle_identifier") == bundle_id:
+                existing_id = aid
+                break
+
+        app_id = existing_id or f"assimilated_{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
         
         assimilation_data = {
             "app_id": app_id,
@@ -376,7 +393,16 @@ class AppAssimilationService:
             "applied_suggestions": []
         }
         
-        # Store assimilation data
+        # Store/update assimilation data
+        if existing_id:
+            # Update existing entry with new analysis; keep history
+            prev = self.assimilated_apps.get(existing_id, {})
+            history = prev.get("update_history", [])
+            history.append({
+                "updated_at": datetime.utcnow().isoformat(),
+                "previous_version": prev.get("original_analysis", {}).get("package_info", {}).get("version_name") or prev.get("original_analysis", {}).get("bundle_info", {}).get("version"),
+            })
+            assimilation_data["update_history"] = history
         self.assimilated_apps[app_id] = assimilation_data
         self._save_assimilated_apps()
         
