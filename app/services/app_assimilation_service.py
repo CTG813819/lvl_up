@@ -479,11 +479,68 @@ class AppAssimilationService:
                 raise RuntimeError(f"command failed: {' '.join(cmd)}")
 
         try:
+            # Preflight: resolve tool paths and keystore
+            def which(names: list[str]) -> str | None:
+                for n in names:
+                    path = shutil.which(n)
+                    if path:
+                        return path
+                return None
+
+            apktool_bin = which(["apktool"]) or os.getenv("APKTOOL_BIN")
+            if not apktool_bin:
+                apktool_jar = os.getenv("APKTOOL_JAR")
+                if apktool_jar and os.path.exists(apktool_jar):
+                    apktool_bin = None  # we'll call via java -jar
+                else:
+                    raise RuntimeError("apktool not found (install apktool or set APKTOOL_JAR)")
+
+            zipalign_bin = which(["zipalign"]) or os.getenv("ZIPALIGN_BIN")
+            if not zipalign_bin:
+                # try common Android SDK path
+                for root in [os.getenv("ANDROID_HOME"), os.getenv("ANDROID_SDK_ROOT")]:
+                    if not root:
+                        continue
+                    build_tools = os.path.join(root, "build-tools")
+                    if os.path.isdir(build_tools):
+                        for v in sorted(os.listdir(build_tools), reverse=True):
+                            cand = os.path.join(build_tools, v, "zipalign")
+                            if os.path.exists(cand):
+                                zipalign_bin = cand
+                                break
+                    if zipalign_bin:
+                        break
+            if not zipalign_bin:
+                raise RuntimeError("zipalign not found (install Android build-tools or set ZIPALIGN_BIN)")
+
+            apksigner_bin = which(["apksigner"]) or os.getenv("APKSIGNER_BIN")
+            if not apksigner_bin:
+                for root in [os.getenv("ANDROID_HOME"), os.getenv("ANDROID_SDK_ROOT")]:
+                    if not root:
+                        continue
+                    build_tools = os.path.join(root, "build-tools")
+                    if os.path.isdir(build_tools):
+                        for v in sorted(os.listdir(build_tools), reverse=True):
+                            cand = os.path.join(build_tools, v, "apksigner")
+                            if os.path.exists(cand):
+                                apksigner_bin = cand
+                                break
+                    if apksigner_bin:
+                        break
+            if not apksigner_bin:
+                raise RuntimeError("apksigner not found (install Android build-tools or set APKSIGNER_BIN)")
+
+            if not (keystore and alias and kspass):
+                raise RuntimeError("keystore envs (CHAOS_APK_KEYSTORE/ALIAS/KSPASS) not set")
+
             self.assimilated_apps[app_id]["instrumentation_progress"] = 5
             self.assimilated_apps[app_id]["instrumentation_started_at"] = datetime.utcnow().isoformat()
             self._save_assimilated_apps()
             # 1) Decode
-            run(["apktool", "d", "-f", "-o", out_dir, binary])
+            if apktool_bin:
+                run([apktool_bin, "d", "-f", "-o", out_dir, binary])
+            else:
+                run(["java", "-jar", os.getenv("APKTOOL_JAR"), "d", "-f", "-o", out_dir, binary])
             self.assimilated_apps[app_id]["instrumentation_progress"] = 15
             self.assimilated_apps[app_id]["decode_ok"] = True
             self._save_assimilated_apps()
@@ -547,34 +604,61 @@ class AppAssimilationService:
             self._save_assimilated_apps()
 
             # 5) Build
-            run(["apktool", "b", out_dir, "-o", unsigned_apk])
+            if apktool_bin:
+                run([apktool_bin, "b", out_dir, "-o", unsigned_apk])
+            else:
+                run(["java", "-jar", os.getenv("APKTOOL_JAR"), "b", out_dir, "-o", unsigned_apk])
             self.assimilated_apps[app_id]["instrumentation_progress"] = 75
             self.assimilated_apps[app_id]["rebuilt_ok"] = True
             self._save_assimilated_apps()
 
-            # 6) Align
-            run(["zipalign", "-p", "4", unsigned_apk, aligned_apk])
-            self.assimilated_apps[app_id]["instrumentation_progress"] = 90
-            self.assimilated_apps[app_id]["aligned_ok"] = True
-            self._save_assimilated_apps()
-
-            # 7) Sign
-            if not (keystore and alias and kspass):
-                raise RuntimeError("signing keystore env not set")
-            run([
-                "apksigner",
-                "sign",
-                "--ks", keystore,
-                "--ks-key-alias", alias,
-                "--ks-pass", f"pass:{kspass}",
-                "--out", signed_apk,
-                aligned_apk,
-            ])
+            # 6) Align & 7) Sign (with fallback)
+            used_uber = False
+            if zipalign_bin and apksigner_bin and keystore and alias and kspass:
+                run([zipalign_bin, "-p", "4", unsigned_apk, aligned_apk])
+                self.assimilated_apps[app_id]["instrumentation_progress"] = 90
+                self.assimilated_apps[app_id]["aligned_ok"] = True
+                self._save_assimilated_apps()
+                run([
+                    apksigner_bin,
+                    "sign",
+                    "--ks", keystore,
+                    "--ks-key-alias", alias,
+                    "--ks-pass", f"pass:{kspass}",
+                    "--out", signed_apk,
+                    aligned_apk,
+                ])
+            else:
+                try:
+                    uber_path = os.path.join(work, "uber-apk-signer.jar")
+                    if not os.path.exists(uber_path):
+                        import urllib.request
+                        urllib.request.urlretrieve(
+                            os.getenv(
+                                "CHAOS_UBER_APK_SIGNER_URL",
+                                "https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar",
+                            ),
+                            uber_path,
+                        )
+                        log.append(f"Downloaded uber-apk-signer -> {uber_path}")
+                    out_signed_dir = os.path.join(work, "uber_out")
+                    os.makedirs(out_signed_dir, exist_ok=True)
+                    run(["java", "-jar", uber_path, "-a", unsigned_apk, "-o", out_signed_dir])
+                    for f in os.listdir(out_signed_dir):
+                        if f.endswith(".apk"):
+                            shutil.copyfile(os.path.join(out_signed_dir, f), signed_apk)
+                            break
+                    used_uber = True
+                    self.assimilated_apps[app_id]["instrumentation_progress"] = 95
+                    self._save_assimilated_apps()
+                except Exception as s_e:
+                    raise RuntimeError(f"Fallback sign failed: {s_e}")
 
             # Replace binary path
             self.assimilated_apps[app_id]["binary_path"] = signed_apk
             self.assimilated_apps[app_id]["chaos_instrumented"] = True
             self.assimilated_apps[app_id]["signed_ok"] = True
+            self.assimilated_apps[app_id]["signer"] = "uber-apk-signer" if used_uber else "apksigner"
             try:
                 self.assimilated_apps[app_id]["instrumented_apk_sha256"] = self._sha256(signed_apk)
             except Exception:
