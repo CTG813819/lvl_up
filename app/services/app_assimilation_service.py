@@ -428,6 +428,137 @@ class AppAssimilationService:
         if not bp or not os.path.exists(bp):
             return None
         return {"path": bp, "type": bt or "unknown"}
+
+    # ---------- APK Chaos Instrumentation ----------
+    async def instrument_apk_with_chaos_splash(self, app_id: str) -> Dict[str, Any]:
+        """Best-effort APK instrumentation to inject a Chaos splash.
+        Requires apktool, zipalign, apksigner on PATH and a keystore configured via env:
+        - CHAOS_APK_KEYSTORE, CHAOS_APK_ALIAS, CHAOS_APK_KSPASS
+        Optionally CHAOS_SPLASH_IMAGE (path to PNG) for the splash icon.
+        """
+        app = self.assimilated_apps.get(app_id)
+        if not app:
+            return {"status": "error", "message": "app not found"}
+        binary = app.get("binary_path")
+        if not binary or not os.path.exists(binary):
+            return {"status": "error", "message": "binary not available"}
+
+        if app.get("binary_type") != "apk":
+            return {"status": "skipped", "message": "not an APK"}
+
+        if os.getenv("CHAOS_APK_INSTRUMENT", "1") not in ("1", "true", "TRUE", "yes", "on"):
+            return {"status": "skipped", "message": "instrumentation disabled"}
+
+        work = tempfile.mkdtemp(prefix="apk_chaos_")
+        out_dir = os.path.join(work, "out")
+        unsigned_apk = os.path.join(work, "unsigned.apk")
+        aligned_apk = os.path.join(work, "aligned.apk")
+        signed_apk = os.path.join(work, "chaos_signed.apk")
+
+        keystore = os.getenv("CHAOS_APK_KEYSTORE")
+        alias = os.getenv("CHAOS_APK_ALIAS")
+        kspass = os.getenv("CHAOS_APK_KSPASS")
+        splash_src = os.getenv("CHAOS_SPLASH_IMAGE")
+
+        log: List[str] = []
+
+        def run(cmd: list[str]) -> None:
+            p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            log.append("$ " + " ".join(cmd))
+            log.append(p.stdout)
+            if p.returncode != 0:
+                raise RuntimeError(f"command failed: {' '.join(cmd)}")
+
+        try:
+            # 1) Decode
+            run(["apktool", "d", "-f", "-o", out_dir, binary])
+
+            # 2) Place chaos splash drawable
+            drawable_dir = os.path.join(out_dir, "res", "drawable-nodpi")
+            os.makedirs(drawable_dir, exist_ok=True)
+            chaos_png = os.path.join(drawable_dir, "chaos_splash.png")
+            if splash_src and os.path.exists(splash_src):
+                shutil.copyfile(splash_src, chaos_png)
+            else:
+                # Create a minimal placeholder if no image provided
+                with open(chaos_png, "wb") as f:
+                    f.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x20\x00\x00\x00\x20\x08\x06\x00\x00\x00szz\xf4\x00\x00\x00\x0cIDATx\xdaed\x01\x01\x00\x00\x08\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00IEND\xaeB`\x82")
+
+            # 3) Add splash theme
+            values_dir = os.path.join(out_dir, "res", "values")
+            os.makedirs(values_dir, exist_ok=True)
+            styles_xml = os.path.join(values_dir, "styles.xml")
+            style_block = (
+                """
+<resources>
+    <style name="ChaosSplashTheme" parent="Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/chaos_splash</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
+""".strip()
+            )
+            if os.path.exists(styles_xml):
+                with open(styles_xml, "a", encoding="utf-8") as f:
+                    f.write("\n" + style_block + "\n")
+            else:
+                with open(styles_xml, "w", encoding="utf-8") as f:
+                    f.write(style_block)
+
+            # 4) Patch AndroidManifest.xml application theme if not set
+            manifest_path = os.path.join(out_dir, "AndroidManifest.xml")
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = f.read()
+                if "ChaosSplashTheme" not in manifest:
+                    manifest = manifest.replace(
+                        "<application",
+                        "<application android:theme=\"@style/ChaosSplashTheme\"",
+                        1,
+                    )
+                    with open(manifest_path, "w", encoding="utf-8") as f:
+                        f.write(manifest)
+            except Exception:
+                pass
+
+            # 5) Build
+            run(["apktool", "b", out_dir, "-o", unsigned_apk])
+
+            # 6) Align
+            run(["zipalign", "-p", "4", unsigned_apk, aligned_apk])
+
+            # 7) Sign
+            if not (keystore and alias and kspass):
+                raise RuntimeError("signing keystore env not set")
+            run([
+                "apksigner",
+                "sign",
+                "--ks", keystore,
+                "--ks-key-alias", alias,
+                "--ks-pass", f"pass:{kspass}",
+                "--out", signed_apk,
+                aligned_apk,
+            ])
+
+            # Replace binary path
+            self.assimilated_apps[app_id]["binary_path"] = signed_apk
+            self.assimilated_apps[app_id]["chaos_instrumented"] = True
+            self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log)[-6000:]
+            self._save_assimilated_apps()
+            return {"status": "success", "signed_apk": signed_apk}
+        except Exception as e:
+            self.assimilated_apps[app_id]["chaos_instrumented"] = False
+            self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log + [f"ERROR: {e}"])[-6000:]
+            self._save_assimilated_apps()
+            return {"status": "error", "message": str(e)}
+        finally:
+            # keep the signed APK in temp dir; Railway ephemeral FS is fine for single deployment
+            try:
+                if os.path.exists(out_dir):
+                    shutil.rmtree(out_dir, ignore_errors=True)
+            except Exception:
+                pass
     
     async def _start_real_time_monitoring(self, app_id: str):
         """Start real-time monitoring and chaos code application"""
@@ -520,7 +651,8 @@ class AppAssimilationService:
                     "assimilation_timestamp": app_data["assimilation_timestamp"],
                     "chaos_integration_status": app_data["chaos_integration_status"],
                     "synthetic_code_status": app_data["synthetic_code_status"],
-                    "integration_progress": app_data["real_time_monitoring"]["integration_progress"]
+                    "integration_progress": app_data["real_time_monitoring"]["integration_progress"],
+                    "chaos_instrumented": bool(app_data.get("chaos_instrumented", False)),
                 })
         
         return user_apps

@@ -119,8 +119,8 @@ class QuantumChaosService:
             }
             
             # Live learning progress update
-            self.learning_progress = min(self.learning_progress + 0.15, 1.0)
-            self.quantum_complexity = min(self.quantum_complexity + 0.1, 2.0)
+            self.learning_progress = round(self.learning_progress + 0.15, 3)
+            self.quantum_complexity = round(self.quantum_complexity + 0.1, 3)
             
             logger.info("✅ Quantum chaos code generated successfully", 
                        chaos_id=chaos_id, 

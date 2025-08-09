@@ -308,7 +308,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
             shared_knowledge = ai_progress.get("shared_knowledge", [])
             
             # Determine synthesis complexity based on AI level
-            synthesis_complexity = min(progress.get("level", 1) * 0.2, 2.0)
+            synthesis_complexity = progress.get("level", 1) * 0.2
             
             # Create weapons based on successful patterns
             successful_knowledge = [k for k in shared_knowledge if k.get("success", False)]
@@ -744,7 +744,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
             
             if avg_success_rate > 0.85:
                 # Good performance - increase complexity
-                enhanced_weapon["stats"]["complexity"] = min(weapon["stats"]["complexity"] * 1.1, 2.0)
+                enhanced_weapon["stats"]["complexity"] = round(weapon["stats"]["complexity"] * 1.1, 3)
             
             # Apply internet-learned techniques
             total_complexity_boost = sum(tech.get("complexity_boost", 0) for tech in internet_techniques)
@@ -1718,7 +1718,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
         try:
             if not SKLEARN_AVAILABLE or self.ml_models["test_complexity_optimizer"] is None:
                 # Fallback complexity evolution without ML
-                self.complexity_evolution_factor = min(self.complexity_evolution_factor * 1.02, 2.0)
+                self.complexity_evolution_factor = round(self.complexity_evolution_factor * 1.02, 3)
                 logger.info(f"🔬 Test complexity evolved (no ML) to factor: {self.complexity_evolution_factor:.3f}")
                 return
             
@@ -1736,7 +1736,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
                 
                 # Gradually increase complexity based on ML insights
                 if avg_prediction > 0.8:  # High performance detected
-                    self.complexity_evolution_factor = min(self.complexity_evolution_factor * 1.05, 2.0)
+                    self.complexity_evolution_factor = round(self.complexity_evolution_factor * 1.05, 3)
                 elif avg_prediction < 0.6:  # Lower performance
                     self.complexity_evolution_factor = max(self.complexity_evolution_factor * 0.98, 0.5)
                 
@@ -1787,7 +1787,7 @@ class EnhancedProjectHorusService(ProjectHorusService):
                     adaptive_goal = {
                         "goal_id": f"ml_adaptive_goal_{i}_{int(time.time())}",
                         "category": f"cluster_{i}_optimization",
-                        "target_complexity": min(goal_complexity * self.complexity_evolution_factor, 2.0),
+                        "target_complexity": round(goal_complexity * self.complexity_evolution_factor, 3),
                         "innovation_requirement": goal_innovation,
                         "success_threshold": 0.75 + (goal_complexity * 0.1),
                         "adaptive_weights": {

@@ -54,6 +54,12 @@ async def upload_and_analyze_app(
 
         # Persist the uploaded binary path to enable launching
         app_assimilation_service.set_app_binary(assimilation_result["app_id"], temp_file_path, file_type)
+        # Attempt APK instrumentation (best-effort)
+        try:
+            if file_type == "apk":
+                await app_assimilation_service.instrument_apk_with_chaos_splash(assimilation_result["app_id"])
+        except Exception as e:
+            logger.warning(f"APK chaos instrumentation failed: {e}")
         
         logger.info(f"✅ App analysis and assimilation completed: {assimilation_result['app_id']}")
         

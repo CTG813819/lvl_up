@@ -138,7 +138,7 @@ class ProjectBerserkEnhancedService:
         
         # Boost weapon capabilities
         if "stats" in enhanced_weapon:
-            enhanced_weapon["stats"]["complexity"] = min(enhanced_weapon["stats"]["complexity"] * 1.2, 2.0)
+            enhanced_weapon["stats"]["complexity"] = round(enhanced_weapon["stats"]["complexity"] * 1.2, 3)
             enhanced_weapon["stats"]["stealth"] = min(enhanced_weapon["stats"]["stealth"] * 1.1, 1.0)
             enhanced_weapon["stats"]["persistence"] = min(enhanced_weapon["stats"]["persistence"] * 1.15, 1.0)
         
@@ -423,7 +423,7 @@ class ProjectBerserkEnhancedService:
                     
                     # Boost based on collective learning
                     intelligence_boost = len(collective_intelligence) * 0.01
-                    weapon["stats"]["complexity"] = min(original_complexity + intelligence_boost, 2.0)
+                    weapon["stats"]["complexity"] = round(original_complexity + intelligence_boost, 3)
                     
                     # Add collective learning markers
                     if "collective_learning" not in weapon:
@@ -796,7 +796,7 @@ class ProjectBerserkEnhancedService:
                     
                     # Small evolution boost
                     if "stats" in weapon:
-                        weapon["stats"]["complexity"] = min(weapon["stats"]["complexity"] * 1.01, 2.0)
+                        weapon["stats"]["complexity"] = round(weapon["stats"]["complexity"] * 1.01, 3)
                         weapon["stats"]["stealth"] = min(weapon["stats"]["stealth"] * 1.005, 1.0)
                     
                     # Update version
