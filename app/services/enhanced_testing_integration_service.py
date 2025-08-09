@@ -43,6 +43,10 @@ class EnhancedTestingIntegrationService:
             "collaborative_testing_results": []
         }
 
+        # Rich device blueprints synthesized from internet learning and past simulations
+        self.device_blueprints: Dict[str, Dict[str, Any]] = {}
+        self.blueprint_generation_count: int = 0
+
         # Difficulty progression tracking
         self.difficulty_levels = {
             "basic": {"completed": 0, "passed": 0, "failed": 0},
@@ -77,6 +81,7 @@ class EnhancedTestingIntegrationService:
             asyncio.create_task(self._background_internet_learning())
             asyncio.create_task(self._background_docker_simulation_cycle())
             asyncio.create_task(self._background_testing_progression())
+            asyncio.create_task(self._background_blueprint_generation())
             
             self.initialized = True
             logger.info("✅ Enhanced Testing Integration Service initialized")
@@ -117,6 +122,23 @@ class EnhancedTestingIntegrationService:
             except Exception as e:
                 logger.error(f"Error in background testing progression: {e}")
                 await asyncio.sleep(120)
+
+    async def _background_blueprint_generation(self):
+        """Continuously generate and enrich device blueprints from learning data.
+        This operates entirely in simulation mode and does not require Docker.
+        """
+        while True:
+            try:
+                live_systems = await self._get_live_system_representations()
+                for sys in live_systems:
+                    blueprint = self._generate_device_blueprint_from_learning(sys)
+                    blueprint_id = blueprint["blueprint_id"]
+                    self.device_blueprints[blueprint_id] = blueprint
+                self.blueprint_generation_count += 1
+                await asyncio.sleep(180)  # Refresh every 3 minutes
+            except Exception as e:
+                logger.error(f"Error generating device blueprints: {e}")
+                await asyncio.sleep(60)
 
     async def _learn_from_internet(self):
         """Learn from the internet with live data fetching"""
@@ -296,6 +318,10 @@ class EnhancedTestingIntegrationService:
             
             # Get live system representations from internet learning
             live_systems = await self._get_live_system_representations()
+            # Ensure we have blueprints ready for these systems
+            for sys in live_systems:
+                bp = self._generate_device_blueprint_from_learning(sys)
+                self.device_blueprints[bp["blueprint_id"]] = bp
             
             # Test weapons against live systems
             for system in live_systems:
@@ -409,6 +435,114 @@ class EnhancedTestingIntegrationService:
             })
         
         return live_systems
+
+    def _generate_device_blueprint_from_learning(self, system: Dict[str, Any]) -> Dict[str, Any]:
+        """Synthesize a high-fidelity device blueprint from learning caches and system metadata.
+        RORO: receive system object, return blueprint object.
+        """
+        now = datetime.utcnow().isoformat()
+        os_name = system.get("os", "unknown")
+        sys_type = system.get("type", "unknown")
+        blueprint_id = f"BP_{sys_type}_{os_name}_{hash(os_name + now) & 0xfffffff}"
+
+        code_templates = self._synthesize_code_templates(system)
+
+        network_stack = {
+            "interfaces": system.get("network_interfaces", []),
+            "open_ports": [22, 80, 443, 5555][: random.randint(2, 4)],
+            "protocols": ["TCP", "UDP", "ICMP"],
+            "firewall_rules": [
+                {"port": 22, "action": "allow"},
+                {"port": 23, "action": "deny"},
+            ],
+        }
+
+        security_posture = {
+            "features": system.get("security_features", []),
+            "known_vulnerabilities": system.get("vulnerability_points", []),
+            "av_presence": sys_type == "desktop",
+            "selinux_enforcing": "SELinux" in system.get("security_features", []),
+        }
+
+        software_inventory = {
+            "services": system.get("running_services", []),
+            "packages": [
+                {"name": "openssl", "version": "1.1.1"},
+                {"name": "curl", "version": "8.2.1"},
+            ],
+            "package_manager": "apt" if "Ubuntu" in os_name or os_name == "debian:11" else "apk" if "alpine" in os_name.lower() else "unknown",
+        }
+
+        persistence_surface = {
+            "registry_keys": [
+                r"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+            ] if sys_type == "desktop" and os_name.startswith("Windows") else [],
+            "cron_jobs": ["@reboot /usr/local/bin/agent"] if sys_type in ("desktop", "iot") else [],
+            "launchd_plists": ["com.example.agent.plist"] if os_name.startswith("iOS") or os_name.startswith("macOS") else [],
+        }
+
+        cryptography_context = {
+            "standards": ["AES-256-GCM", "RSA-4096", "TLS1.3"],
+            "weaknesses": ["IV_reuse", "padding_oracle"] if "AES" in system.get("security_features", []) else [],
+        }
+
+        return {
+            "blueprint_id": blueprint_id,
+            "system": system,
+            "created_at": now,
+            "code_templates": code_templates,
+            "network_stack": network_stack,
+            "security_posture": security_posture,
+            "software_inventory": software_inventory,
+            "persistence_surface": persistence_surface,
+            "cryptography_context": cryptography_context,
+        }
+
+    def _synthesize_code_templates(self, system: Dict[str, Any]) -> Dict[str, str]:
+        """Produce pseudo-code templates for init, network, persistence and crypto ops for a system."""
+        os_name = system.get("os", "unknown")
+        sys_type = system.get("type", "unknown")
+        init_code = f"""
+# init_{os_name.lower()}
+def initialize_system(target):
+    load_kernel_modules()
+    start_core_services(target)
+    return True
+""".strip()
+
+        network_code = f"""
+# network_stack_{sys_type}
+def configure_network(ifaces):
+    for iface in ifaces:
+        bring_up(iface)
+    open_ports = [22, 80, 443]
+    return open_ports
+""".strip()
+
+        persistence_code = (
+            "write_registry_run_key()" if sys_type == "desktop" and os_name.startswith("Windows") else "install_cron_job()"
+        )
+
+        crypto_code = """
+def secure_channel(data):
+    return aes_gcm_encrypt(data, key_rotate_daily())
+""".strip()
+
+        return {
+            "init": init_code,
+            "network": network_code,
+            "persistence": persistence_code,
+            "crypto": crypto_code,
+        }
+
+    async def get_device_blueprints(self) -> Dict[str, Any]:
+        """Expose current device blueprints for frontend/testing."""
+        return {
+            "count": len(self.device_blueprints),
+            "generation_cycles": self.blueprint_generation_count,
+            "blueprints": list(self.device_blueprints.values())[:25],
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
     async def _test_weapon_against_live_system(self, weapon: Dict[str, Any], system: Dict[str, Any], ai_type: str) -> Dict[str, Any]:
         """Test weapon against live system representation"""
