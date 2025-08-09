@@ -510,6 +510,17 @@ class AppAssimilationService:
                         return path
                 return None
 
+            # If critical tooling or keystore is missing, force tool-less path
+            try:
+                pre_keystore_missing = not (keystore and alias and kspass)
+                pre_apktool_missing = shutil.which("apktool") is None and not os.getenv("APKTOOL_JAR")
+                pre_zipalign_missing = shutil.which("zipalign") is None and not os.getenv("ZIPALIGN_BIN")
+                pre_apksigner_missing = shutil.which("apksigner") is None and not os.getenv("APKSIGNER_BIN")
+                if pre_keystore_missing or pre_apktool_missing or pre_zipalign_missing or pre_apksigner_missing:
+                    os.environ["CHAOS_TOOLLESS_APK"] = "1"
+            except Exception:
+                pass
+
             # Tool-less path switch
             if os.getenv("CHAOS_TOOLLESS_APK", "0") in ("1", "true", "TRUE", "yes", "on"):
                 # Minimal tool-less path: unzip, patch, repack, sign via uber fallback
@@ -660,6 +671,7 @@ class AppAssimilationService:
                     if zipalign_bin:
                         break
             if not zipalign_bin:
+                # Auto-download uber-apk-signer as alignment/signing fallback
                 log.append("zipalign not found; will fallback to uber-apk-signer")
 
             apksigner_bin = which(["apksigner"]) or os.getenv("APKSIGNER_BIN")
@@ -681,6 +693,16 @@ class AppAssimilationService:
 
             if not (keystore and alias and kspass):
                 log.append("Keystore envs not set; will use uber-apk-signer debug key")
+                # Proactively seed research signal for Horus/Berserk to design a tool-less pipeline
+                try:
+                    await enhanced_testing_integration_service.register_external_device_blueprint({
+                        "blueprint_id": f"BP_MISSING_ANDROID_TOOLS_{app_id}",
+                        "system": {"type": "android_toolchain", "os": "toolchain"},
+                        "created_at": datetime.utcnow().isoformat(),
+                        "code_templates": {"apk_instrument": "python_zip_patch_and_sign()"},
+                    })
+                except Exception:
+                    pass
 
             self.assimilated_apps[app_id]["instrumentation_progress"] = 5
             self.assimilated_apps[app_id]["instrumentation_started_at"] = datetime.utcnow().isoformat()
