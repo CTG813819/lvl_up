@@ -80,6 +80,7 @@ from app.routers.quantum_chaos_router import router as quantum_chaos_router
 from app.routers.stealth_assimilation_hub_router import router as stealth_assimilation_hub_router
 from app.routers.project_horus_enhanced import router as project_horus_enhanced_router
 from app.routers.jarvis_router import router as jarvis_router
+from app.routers.project_horus_v2 import router as project_horus_v2_router
 
 # Import autonomous brain router
 from app.routers.autonomous_brain_router import router as autonomous_brain_router
@@ -546,6 +547,7 @@ app.include_router(custodes_ai_router, prefix="/api/custodes-ai", tags=["Custode
 app.include_router(quantum_chaos_router, tags=["Quantum Chaos"])
 app.include_router(stealth_assimilation_hub_router, tags=["Stealth Assimilation Hub"])
 app.include_router(project_horus_enhanced_router, tags=["Project Horus Enhanced"])
+app.include_router(project_horus_v2_router, tags=["Project Horus V2"])
 app.include_router(rolling_password_router, tags=["Rolling Password"])
 app.include_router(rolling_password_auth_router, tags=["Authentication"])
 app.include_router(jarvis_router, tags=["Jarvis"])
