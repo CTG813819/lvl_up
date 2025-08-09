@@ -112,10 +112,19 @@ async def get_docker_simulation_results() -> Dict[str, Any]:
     try:
         status = await enhanced_testing_integration_service.get_comprehensive_testing_status()
         
+        docker_items = status["recent_test_results"].get("docker_simulations", [])
+        total_runs = status["testing_status"].get("docker_simulations_run", 0)
+
         return {
             "success": True,
-            "docker_simulations": status["recent_test_results"]["docker_simulations"],
-            "total_simulations": status["testing_status"]["docker_simulations_run"],
+            # Alias expected by some frontends
+            "docker_simulation_results": {
+                "items": docker_items,
+                "total_simulations": total_runs,
+            },
+            # Back-compat keys
+            "docker_simulations": docker_items,
+            "total_simulations": total_runs,
             "message": "Docker simulation results retrieved successfully"
         }
     except Exception as e:
@@ -129,17 +138,44 @@ async def get_weapon_test_results() -> Dict[str, Any]:
     try:
         status = await enhanced_testing_integration_service.get_comprehensive_testing_status()
         
+        horus_items = status["recent_test_results"].get("horus", [])
+        berserk_items = status["recent_test_results"].get("berserk", [])
+        result_wrapper = {
+            "horus": horus_items,
+            "berserk": berserk_items,
+            "horus_tests_completed": status["testing_status"].get("horus_tests_completed", 0),
+            "berserk_tests_completed": status["testing_status"].get("berserk_tests_completed", 0),
+        }
+
         return {
             "success": True,
-            "horus_results": status["recent_test_results"]["horus"],
-            "berserk_results": status["recent_test_results"]["berserk"],
-            "horus_tests_completed": status["testing_status"]["horus_tests_completed"],
-            "berserk_tests_completed": status["testing_status"]["berserk_tests_completed"],
+            # Alias expected by some frontends
+            "weapon_test_results": result_wrapper,
+            # Back-compat keys
+            "horus_results": horus_items,
+            "berserk_results": berserk_items,
+            "horus_tests_completed": result_wrapper["horus_tests_completed"],
+            "berserk_tests_completed": result_wrapper["berserk_tests_completed"],
             "message": "Weapon test results retrieved successfully"
         }
     except Exception as e:
         logger.error(f"Error getting weapon test results: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting weapon test results: {str(e)}")
+
+
+@router.get("/device-blueprints")
+async def get_device_blueprints() -> Dict[str, Any]:
+    """Expose synthesized device blueprints for realistic simulations."""
+    try:
+        bp = await enhanced_testing_integration_service.get_device_blueprints()
+        return {
+            "success": True,
+            "device_blueprints": bp,
+            "message": "Device blueprints retrieved successfully",
+        }
+    except Exception as e:
+        logger.error(f"Error getting device blueprints: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting device blueprints: {str(e)}")
 
 
 @router.get("/difficulty-progression")
