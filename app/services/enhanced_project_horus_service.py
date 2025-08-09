@@ -39,6 +39,17 @@ except ImportError:
     SKLEARN_AVAILABLE = False
 
 from .project_horus_service import ProjectHorusService
+# Import autonomous brains used to generate autonomous chaos code
+try:
+    from .autonomous_ai_brain_service import (
+        horus_autonomous_brain,
+        berserk_autonomous_brain,
+    )
+except Exception as _e:
+    horus_autonomous_brain = None
+    berserk_autonomous_brain = None
+    logger = structlog.get_logger()
+    logger.warning("Autonomous AI brains unavailable", error=str(_e))
 from .ai_adversarial_integration_service import ai_adversarial_integration_service
 
 logger = structlog.get_logger()
@@ -822,9 +833,15 @@ class EnhancedProjectHorusService(ProjectHorusService):
         try:
             logger.info("⚔️ Generating weapons with autonomous chaos code")
             
-            # Get autonomous chaos code from both brains
-            horus_chaos_code = await horus_autonomous_brain.create_autonomous_chaos_code()
-            berserk_chaos_code = await berserk_autonomous_brain.create_autonomous_chaos_code()
+            # Get autonomous chaos code from both brains (fallback to basic code if unavailable)
+            horus_chaos_code = (
+                await horus_autonomous_brain.create_autonomous_chaos_code()
+                if horus_autonomous_brain else {"original_syntax": {}, "original_functions": {}, "original_keywords": set(), "original_data_types": {}, "originality_score": 0.5, "complexity": 0.5}
+            )
+            berserk_chaos_code = (
+                await berserk_autonomous_brain.create_autonomous_chaos_code()
+                if berserk_autonomous_brain else {"original_syntax": {}, "original_functions": {}, "original_keywords": set(), "original_data_types": {}, "originality_score": 0.5, "complexity": 0.5}
+            )
             
             # Generate weapons using autonomous chaos code
             horus_weapons = await self._generate_weapons_from_autonomous_chaos(horus_chaos_code, "horus")
