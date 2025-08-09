@@ -88,6 +88,7 @@ from app.routers.autonomous_brain_router import router as autonomous_brain_route
 # Import enhanced testing router
 from app.routers.enhanced_testing_router import router as enhanced_testing_router
 from app.routers.chaos_toolkit_router import router as chaos_toolkit_router
+from app.services.chaos_execution_service import chaos_execution_service
 
 # Import AI integration router
 from app.routers.ai_integration_router import router as ai_integration_router
@@ -220,6 +221,12 @@ async def lifespan(app: FastAPI):
             logger.info(f"✅ Chaos Toolkit registered: {toolkit_result.get('registered')} constructs")
         except Exception as e:
             logger.warning(f"Chaos Toolkit init failed: {e}")
+        try:
+            # touch execution service to ensure it's imported and ready
+            _ = chaos_execution_service.default_timeout
+            logger.info("✅ Chaos Execution Service ready")
+        except Exception as e:
+            logger.warning(f"Chaos Execution Service init failed: {e}")
         
         # Initialize additional services from app/main.py
         proposal_cycle_service = await ProposalCycleService.initialize()

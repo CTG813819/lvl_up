@@ -364,10 +364,10 @@ async def get_live_system_status() -> Dict[str, Any]:
 
 @router.post("/chaos-spec/suggest")
 async def suggest_chaos_spec(
+    background_tasks: BackgroundTasks,
     payload: Dict[str, Any] = None,
     spec: str | None = Form(None),
     file: UploadFile | None = File(None),
-    background_tasks: BackgroundTasks | None = None,
 ) -> Dict[str, Any]:
     """Accept a user suggestion for chaos language/code features and plan implementation.
     - verifies overlap with existing constructs
