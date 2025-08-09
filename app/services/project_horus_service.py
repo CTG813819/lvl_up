@@ -51,6 +51,15 @@ class ProjectHorusService:
         self.chaos_repositories = []
         self.test_environments = {}
         
+        # Initialize code knowledge base
+        self.code_knowledge_base = {
+            "ai_ml": [],
+            "frameworks": [],
+            "security": [],
+            "quantum": [],
+            "chaos": []
+        }
+        
         # Initialize quantum chaos integration
         self._initialize_quantum_chaos()
         

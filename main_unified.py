@@ -216,6 +216,17 @@ async def lifespan(app: FastAPI):
         token_usage_service = await TokenUsageService.initialize()
         scheduled_notification_service = await ScheduledNotificationService.initialize()
         logger.info("✅ Additional services initialized")
+
+        # Initialize enhanced testing integration so Docker simulations, internet learning,
+        # and progressive testing cycles run continuously and feed frontend status
+        try:
+            from app.services.enhanced_testing_integration_service import (
+                enhanced_testing_integration_service,
+            )
+            await enhanced_testing_integration_service.initialize()
+            logger.info("✅ Enhanced Testing Integration Service initialized and running")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Enhanced Testing Integration Service: {e}")
         
         # Initialize new AI services
         logger.info("🤖 Initializing specialized AI services: Project Horus, Olympic AI, Collaborative AI, Custodes AI")
