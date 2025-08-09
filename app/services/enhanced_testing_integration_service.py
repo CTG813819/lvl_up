@@ -16,6 +16,8 @@ from .autonomous_ai_brain_service import horus_autonomous_brain, berserk_autonom
 from .enhanced_project_horus_service import enhanced_project_horus_service
 from .project_berserk_enhanced_service import project_berserk_enhanced_service
 from .autonomous_integration_service import autonomous_integration_service
+from .enhanced_project_horus_service import enhanced_project_horus_service
+from .jarvis_service import jarvis_service
 
 logger = structlog.get_logger()
 
@@ -118,6 +120,20 @@ class EnhancedTestingIntegrationService:
         while True:
             try:
                 await self._progressive_testing_cycle()
+                # Feed Jarvis with integrated signals from the latest state
+                try:
+                    horus_report = await enhanced_project_horus_service.get_weapon_synthesis_report()
+                    chaos_doc = await enhanced_project_horus_service.get_chaos_language_documentation()
+                    jarvis_service.integrate_signals({
+                        "horus": {
+                            "total_weapons": horus_report.get("total_weapons", 0),
+                            "average_complexity": horus_report.get("average_complexity", 0.0),
+                        },
+                        "chaos": {"version": chaos_doc.get("version", "2.x")},
+                        "internet_digest": "continuous-learning-cycle",
+                    })
+                except Exception as e:
+                    logger.warning(f"Jarvis integration skipped: {e}")
                 await asyncio.sleep(600)  # Check progression every 10 minutes
             except Exception as e:
                 logger.error(f"Error in background testing progression: {e}")
@@ -319,6 +335,7 @@ class EnhancedTestingIntegrationService:
             # Ensure fresh autonomous weapons are generated for this cycle
             try:
                 await enhanced_project_horus_service.generate_weapons_with_autonomous_chaos_code()
+                await enhanced_project_horus_service.evolve_existing_weapons()
             except Exception as e:
                 logger.warning(f"Weapon generation skipped: {e}")
 
