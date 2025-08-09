@@ -316,6 +316,12 @@ class EnhancedTestingIntegrationService:
         try:
             logger.info("🐳 Starting live Docker simulation cycle")
             
+            # Ensure fresh autonomous weapons are generated for this cycle
+            try:
+                await enhanced_project_horus_service.generate_weapons_with_autonomous_chaos_code()
+            except Exception as e:
+                logger.warning(f"Weapon generation skipped: {e}")
+
             # Get live system representations from internet learning
             live_systems = await self._get_live_system_representations()
             # Ensure we have blueprints ready for these systems
