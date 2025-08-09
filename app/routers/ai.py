@@ -65,3 +65,9 @@ async def get_ai_cycle_status():
         }
     except Exception as e:
         return {"status": "error", "message": str(e)} 
+
+
+@router.post("/cycle")
+async def post_ai_cycle_status():
+    """POST alias for AI cycle to avoid 405 when clients POST."""
+    return await get_ai_cycle_status()

@@ -417,6 +417,11 @@ class AppAssimilationService:
         if app_id in self.assimilated_apps:
             self.assimilated_apps[app_id]["binary_path"] = binary_path
             self.assimilated_apps[app_id]["binary_type"] = file_type
+            # track original hash
+            try:
+                self.assimilated_apps[app_id]["original_apk_sha256"] = self._sha256(binary_path)
+            except Exception:
+                pass
             self._save_assimilated_apps()
 
     def get_app_binary(self, app_id: str) -> Optional[Dict[str, str]]:
@@ -470,8 +475,14 @@ class AppAssimilationService:
                 raise RuntimeError(f"command failed: {' '.join(cmd)}")
 
         try:
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 5
+            self.assimilated_apps[app_id]["instrumentation_started_at"] = datetime.utcnow().isoformat()
+            self._save_assimilated_apps()
             # 1) Decode
             run(["apktool", "d", "-f", "-o", out_dir, binary])
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 15
+            self.assimilated_apps[app_id]["decode_ok"] = True
+            self._save_assimilated_apps()
 
             # 2) Place chaos splash drawable
             drawable_dir = os.path.join(out_dir, "res", "drawable-nodpi")
@@ -483,6 +494,9 @@ class AppAssimilationService:
                 # Create a minimal placeholder if no image provided
                 with open(chaos_png, "wb") as f:
                     f.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x20\x00\x00\x00\x20\x08\x06\x00\x00\x00szz\xf4\x00\x00\x00\x0cIDATx\xdaed\x01\x01\x00\x00\x08\x00\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x00\x00IEND\xaeB`\x82")
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 30
+            self.assimilated_apps[app_id]["splash_added"] = True
+            self._save_assimilated_apps()
 
             # 3) Add splash theme
             values_dir = os.path.join(out_dir, "res", "values")
@@ -505,6 +519,9 @@ class AppAssimilationService:
             else:
                 with open(styles_xml, "w", encoding="utf-8") as f:
                     f.write(style_block)
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 45
+            self.assimilated_apps[app_id]["styles_patched"] = True
+            self._save_assimilated_apps()
 
             # 4) Patch AndroidManifest.xml application theme if not set
             manifest_path = os.path.join(out_dir, "AndroidManifest.xml")
@@ -521,12 +538,21 @@ class AppAssimilationService:
                         f.write(manifest)
             except Exception:
                 pass
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 55
+            self.assimilated_apps[app_id]["manifest_patched"] = True
+            self._save_assimilated_apps()
 
             # 5) Build
             run(["apktool", "b", out_dir, "-o", unsigned_apk])
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 75
+            self.assimilated_apps[app_id]["rebuilt_ok"] = True
+            self._save_assimilated_apps()
 
             # 6) Align
             run(["zipalign", "-p", "4", unsigned_apk, aligned_apk])
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 90
+            self.assimilated_apps[app_id]["aligned_ok"] = True
+            self._save_assimilated_apps()
 
             # 7) Sign
             if not (keystore and alias and kspass):
@@ -544,12 +570,20 @@ class AppAssimilationService:
             # Replace binary path
             self.assimilated_apps[app_id]["binary_path"] = signed_apk
             self.assimilated_apps[app_id]["chaos_instrumented"] = True
+            self.assimilated_apps[app_id]["signed_ok"] = True
+            try:
+                self.assimilated_apps[app_id]["instrumented_apk_sha256"] = self._sha256(signed_apk)
+            except Exception:
+                pass
+            self.assimilated_apps[app_id]["instrumentation_progress"] = 100
+            self.assimilated_apps[app_id]["instrumentation_finished_at"] = datetime.utcnow().isoformat()
             self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log)[-6000:]
             self._save_assimilated_apps()
             return {"status": "success", "signed_apk": signed_apk}
         except Exception as e:
             self.assimilated_apps[app_id]["chaos_instrumented"] = False
             self.assimilated_apps[app_id]["instrumentation_log"] = "\n".join(log + [f"ERROR: {e}"])[-6000:]
+            self.assimilated_apps[app_id]["instrumentation_finished_at"] = datetime.utcnow().isoformat()
             self._save_assimilated_apps()
             return {"status": "error", "message": str(e)}
         finally:
@@ -559,6 +593,14 @@ class AppAssimilationService:
                     shutil.rmtree(out_dir, ignore_errors=True)
             except Exception:
                 pass
+
+    def _sha256(self, path: str) -> str:
+        import hashlib
+        h = hashlib.sha256()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                h.update(chunk)
+        return h.hexdigest()
     
     async def _start_real_time_monitoring(self, app_id: str):
         """Start real-time monitoring and chaos code application"""
