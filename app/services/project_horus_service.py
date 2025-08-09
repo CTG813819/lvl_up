@@ -746,6 +746,14 @@ class ProjectHorusService:
     async def get_project_horus_status(self) -> Dict[str, Any]:
         """Get comprehensive Project Horus status with quantum chaos integration"""
         try:
+            # Ensure minimal initialization to avoid None-related errors
+            if self.chaos_repositories is None:
+                self.chaos_repositories = []
+            if self.failed_attacks is None:
+                self.failed_attacks = {}
+            if self.assimilated_systems is None:
+                self.assimilated_systems = {}
+
             return {
                 "status": "active",
                 "quantum_chaos_integration": self.quantum_chaos_service is not None,

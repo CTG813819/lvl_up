@@ -87,34 +87,43 @@ async def get_adversarial_progress() -> Dict[str, Any]:
 
 @router.get("/horus/weapon-synthesis-report")
 async def get_weapon_synthesis_report() -> Dict[str, Any]:
-    """Get LIVE weapon synthesis report from Project Horus with NEW weapon generation"""
+    """Get LIVE weapon synthesis report from Project Horus with NEW weapon generation.
+
+    If live learning/evolution fails, still return current synthesis report instead of 500.
+    """
     try:
-        # LIVE WEAPON GENERATION - Create new weapons each time
         logger.info("🚀 LIVE: Generating new weapons from AI learning...")
-        
-        # Learn from all AI types and synthesize new weapons
         ai_types = ["imperium", "conquest", "sandbox", "guardian"]
         for ai_type in ai_types:
-            await enhanced_project_horus_service.learn_from_ai_experiences([ai_type])
-        
-        # Generate additional synthetic weapons based on internet learning
-        await enhanced_project_horus_service.evolve_chaos_language()
-        
-        # Get updated synthesis report with new weapons
+            try:
+                await enhanced_project_horus_service.learn_from_ai_experiences([ai_type])
+            except Exception as sub_e:
+                logger.warning("Horus learn_from_ai_experiences failed", ai_type=ai_type, error=str(sub_e))
+        try:
+            await enhanced_project_horus_service.evolve_chaos_language()
+        except Exception as sub_e:
+            logger.warning("Horus evolve_chaos_language failed", error=str(sub_e))
         report = await enhanced_project_horus_service.get_weapon_synthesis_report()
-        
         logger.info(f"🔥 LIVE: Generated {report.get('total_weapons', 0)} weapons total")
-        
         return {
             "status": "success",
             "synthesis_report": report,
             "generation_timestamp": datetime.utcnow().isoformat(),
             "live_generation": True
         }
-        
     except Exception as e:
-        logger.error(f"Error generating LIVE weapon synthesis report: {e}")
-        raise HTTPException(status_code=500, detail=f"LIVE weapon synthesis failed: {str(e)}")
+        logger.error(f"Error generating LIVE weapon synthesis report, returning current report: {e}")
+        try:
+            report = await enhanced_project_horus_service.get_weapon_synthesis_report()
+            return {
+                "status": "success",
+                "synthesis_report": report,
+                "generation_timestamp": datetime.utcnow().isoformat(),
+                "live_generation": False
+            }
+        except Exception as inner:
+            logger.error(f"Failed to fetch existing synthesis report: {inner}")
+            raise HTTPException(status_code=500, detail=f"Weapon synthesis unavailable: {inner}")
 
 
 @router.post("/berserk/deploy-weapon")
