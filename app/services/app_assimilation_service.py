@@ -493,7 +493,21 @@ class AppAssimilationService:
                 if apktool_jar and os.path.exists(apktool_jar):
                     apktool_bin = None  # we'll call via java -jar
                 else:
-                    raise RuntimeError("apktool not found (install apktool or set APKTOOL_JAR)")
+                    # Attempt auto-download of apktool jar
+                    try:
+                        apktool_jar = os.path.join(work, "apktool.jar")
+                        import urllib.request
+                        jar_url = os.getenv(
+                            "CHAOS_APKTOOL_JAR_URL",
+                            "https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.9.3.jar",
+                        )
+                        urllib.request.urlretrieve(jar_url, apktool_jar)
+                        os.environ["APKTOOL_JAR"] = apktool_jar
+                        apktool_bin = None
+                        log.append(f"Downloaded apktool jar -> {apktool_jar}")
+                    except Exception as dl_e:
+                        log.append(f"Failed to auto-download apktool jar: {dl_e}")
+                        raise RuntimeError("apktool not found and auto-download failed")
 
             zipalign_bin = which(["zipalign"]) or os.getenv("ZIPALIGN_BIN")
             if not zipalign_bin:
@@ -511,7 +525,7 @@ class AppAssimilationService:
                     if zipalign_bin:
                         break
             if not zipalign_bin:
-                raise RuntimeError("zipalign not found (install Android build-tools or set ZIPALIGN_BIN)")
+                log.append("zipalign not found; will fallback to uber-apk-signer")
 
             apksigner_bin = which(["apksigner"]) or os.getenv("APKSIGNER_BIN")
             if not apksigner_bin:
@@ -528,10 +542,10 @@ class AppAssimilationService:
                     if apksigner_bin:
                         break
             if not apksigner_bin:
-                raise RuntimeError("apksigner not found (install Android build-tools or set APKSIGNER_BIN)")
+                log.append("apksigner not found; will fallback to uber-apk-signer")
 
             if not (keystore and alias and kspass):
-                raise RuntimeError("keystore envs (CHAOS_APK_KEYSTORE/ALIAS/KSPASS) not set")
+                log.append("Keystore envs not set; will use uber-apk-signer debug key")
 
             self.assimilated_apps[app_id]["instrumentation_progress"] = 5
             self.assimilated_apps[app_id]["instrumentation_started_at"] = datetime.utcnow().isoformat()
