@@ -456,10 +456,10 @@ async def create_indexes():
                         """
                     ))
                 except Exception as _e:
-                    -- non-fatal
-                    NULL;
+                    # handled in Python: ignore non-fatal migration errors
+                    logger.warning("ChaosCodeRecord column rename skipped or failed", error=str(_e))
 
-                -- Helpful indexes for chaos_code_records
+                # Helpful indexes for chaos_code_records
                 await conn.execute(text("""
                     CREATE INDEX IF NOT EXISTS idx_chaos_code_records_chaos_id 
                     ON chaos_code_records(chaos_id)
