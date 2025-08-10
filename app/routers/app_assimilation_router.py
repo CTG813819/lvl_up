@@ -12,9 +12,9 @@ from datetime import datetime
 
 from ..services.app_assimilation_service import get_app_assimilation_service
 from fastapi import BackgroundTasks
-from ..dependencies import get_current_user
+from ..core.database import get_db
 import asyncio
-from ..models.sql_models import User
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/app-assimilation", tags=["app-assimilation"])
@@ -353,7 +353,7 @@ async def rename_app(app_id: str, payload: Dict[str, Any], user_id: str = "defau
         raise HTTPException(status_code=500, detail=f"Failed to rename app: {str(e)}")
 
 @router.post("/retry/{app_id}")
-async def retry_app_assimilation(app_id: str, current_user: User = Depends(get_current_user)):
+async def retry_app_assimilation(app_id: str, db: AsyncSession = Depends(get_db)):
     """Retry app assimilation process"""
     try:
         logger.info(f"🔄 Retrying app assimilation for app: {app_id}")
