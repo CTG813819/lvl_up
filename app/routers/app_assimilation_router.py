@@ -1,9 +1,9 @@
 """
 App Assimilation Router - Handles APK/iOS file upload and assimilation
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from fastapi.responses import JSONResponse, FileResponse
-from typing import Dict, Any, List
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, BackgroundTasks
+from fastapi.responses import JSONResponse
+from typing import Dict, Any, List, Optional
 import structlog
 import os
 import tempfile
@@ -12,6 +12,9 @@ from datetime import datetime
 
 from ..services.app_assimilation_service import get_app_assimilation_service
 from fastapi import BackgroundTasks
+from ..dependencies import get_current_user
+import asyncio
+from ..models.sql_models import User
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/app-assimilation", tags=["app-assimilation"])
@@ -348,6 +351,50 @@ async def rename_app(app_id: str, payload: Dict[str, Any], user_id: str = "defau
     except Exception as e:
         logger.error(f"❌ Failed to rename app: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to rename app: {str(e)}")
+
+@router.post("/retry/{app_id}")
+async def retry_app_assimilation(app_id: str, current_user: User = Depends(get_current_user)):
+    """Retry app assimilation process"""
+    try:
+        logger.info(f"🔄 Retrying app assimilation for app: {app_id}")
+        
+        # Get the current app data
+        app_assimilation_service = get_app_assimilation_service()
+        app_data = app_assimilation_service.assimilated_apps.get(app_id)
+        if not app_data:
+            raise HTTPException(status_code=404, detail="App not found")
+        
+        # Reset the assimilation status
+        app_data["real_time_monitoring"]["integration_progress"] = 0
+        app_data["chaos_integration_status"] = "pending"
+        app_data["synthetic_code_status"] = "pending"
+        app_data["real_time_monitoring"]["chaos_code_applied"] = False
+        app_data["real_time_monitoring"]["synthetic_code_applied"] = False
+        
+        # Remove any previous error information
+        if "self_healing_info" in app_data:
+            del app_data["self_healing_info"]
+        
+        # Save the reset state
+        app_assimilation_service._save_assimilated_apps()
+        
+        # Start the assimilation process again
+        asyncio.create_task(app_assimilation_service._start_real_time_monitoring(app_id))
+        
+        return {
+            "status": "success",
+            "message": "App assimilation restarted successfully",
+            "data": {
+                "app_id": app_id,
+                "status": "restarting"
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to retry app assimilation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retry app assimilation: {str(e)}")
 
 @router.get("/integration-progress/{app_id}")
 async def get_integration_progress(app_id: str, user_id: str = "default_user") -> Dict[str, Any]:

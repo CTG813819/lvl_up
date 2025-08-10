@@ -134,6 +134,43 @@ async def get_docker_simulation_results() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error getting Docker simulation results: {str(e)}")
 
 
+@router.post("/report-incident")
+async def report_incident(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Frontend/backend unified incident reporter that emits a research blueprint
+    for Horus/Berserk to analyze and design self-healing/tool-less improvements.
+
+    Expected payload keys:
+    - category: e.g. "apk_toolchain_missing", "ui_overflow", "network_error"
+    - message: human-readable summary
+    - component: e.g. "frontend.guild", "backend.assimilation"
+    - context: arbitrary dict with details (optional)
+    """
+    try:
+        category = str(payload.get("category", "unknown")).strip() or "unknown"
+        message = str(payload.get("message", ""))
+        component = str(payload.get("component", "unknown"))
+        context = payload.get("context") or {}
+
+        blueprint = {
+            "blueprint_id": f"BP_INCIDENT_{category.upper()}_{int(datetime.utcnow().timestamp())}",
+            "system": {
+                "type": "incident",
+                "os": component,
+            },
+            "created_at": datetime.utcnow().isoformat(),
+            "code_templates": {
+                "remediation": f"auto_design_tooling('{category}')",
+                "notes": message[:180],
+            },
+            "context": context,
+        }
+        await enhanced_testing_integration_service.register_external_device_blueprint(blueprint)
+        return {"success": True, "blueprint": blueprint, "message": "Incident recorded"}
+    except Exception as e:
+        logger.error(f"Error reporting incident: {e}")
+        raise HTTPException(status_code=500, detail=f"Error reporting incident: {str(e)}")
+
+
 @router.get("/weapon-test-results")
 async def get_weapon_test_results() -> Dict[str, Any]:
     """Get weapon test results for both Horus and Berserk"""

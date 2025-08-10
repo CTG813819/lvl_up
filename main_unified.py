@@ -133,6 +133,9 @@ from app.services.autonomous_integration_service import autonomous_integration_s
 # Initialize enhanced testing integration service
 from app.services.enhanced_testing_integration_service import enhanced_testing_integration_service
 
+# Initialize chaos language service
+from app.services.chaos_language_service import chaos_language_service
+
 # Initialize rolling password service
 from app.services.rolling_password_service import RollingPasswordService
 
@@ -217,16 +220,38 @@ async def lifespan(app: FastAPI):
         # Initialize Chaos Toolkit constructs early so they are available to all AIs
         try:
             from app.services.chaos_toolkit_service import chaos_toolkit_service
-            toolkit_result = await chaos_toolkit_service.register_base_tools()
-            logger.info(f"✅ Chaos Toolkit registered: {toolkit_result.get('registered')} constructs")
+            await chaos_toolkit_service.initialize()
+            logger.info("✅ Chaos Toolkit Service initialized")
         except Exception as e:
-            logger.warning(f"Chaos Toolkit init failed: {e}")
+            logger.warning(f"⚠️ Chaos Toolkit Service initialization failed: {e}")
+        
+        # Initialize Enhanced Testing Integration Service (required for app assimilation)
         try:
-            # touch execution service to ensure it's imported and ready
-            _ = chaos_execution_service.default_timeout
-            logger.info("✅ Chaos Execution Service ready")
+            if hasattr(enhanced_testing_integration_service, 'initialize'):
+                await enhanced_testing_integration_service.initialize()
+                logger.info("✅ Enhanced Testing Integration Service initialized")
+            else:
+                logger.warning("⚠️ Enhanced Testing Integration Service has no initialize method")
         except Exception as e:
-            logger.warning(f"Chaos Execution Service init failed: {e}")
+            logger.warning(f"⚠️ Enhanced Testing Integration Service initialization failed: {e}")
+        
+        # Initialize Chaos Language Service (required for app assimilation)
+        try:
+            if hasattr(chaos_language_service, 'initialize'):
+                await chaos_language_service.initialize()
+                logger.info("✅ Chaos Language Service initialized")
+            else:
+                logger.warning("⚠️ Chaos Language Service has no initialize method")
+        except Exception as e:
+            logger.warning(f"⚠️ Chaos Language Service initialization failed: {e}")
+        
+        # Initialize App Assimilation Service (depends on above services)
+        try:
+            from app.services.app_assimilation_service import get_app_assimilation_service
+            app_assimilation_service = get_app_assimilation_service()
+            logger.info("✅ App Assimilation Service initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ App Assimilation Service initialization failed: {e}")
         
         # Initialize additional services from app/main.py
         proposal_cycle_service = await ProposalCycleService.initialize()
