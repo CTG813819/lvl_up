@@ -611,7 +611,7 @@ class AutonomousAIBrain:
             self.improvement_milestones.append({
                 "improvement": improvement["target"],
                 "type": improvement["type"],
-                "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat(),
                 "success": True
             })
             

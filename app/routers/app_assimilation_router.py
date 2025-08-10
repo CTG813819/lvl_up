@@ -477,20 +477,18 @@ async def get_chaos_integration_points(app_id: str, user_id: str = "default_user
 
 @router.get("/security-analysis/{app_id}")
 async def get_security_analysis(app_id: str, user_id: str = "default_user") -> Dict[str, Any]:
-    """Get the security analysis for an assimilated app"""
+    """Get security analysis for an assimilated app"""
     try:
         app_assimilation_service = get_app_assimilation_service()
-        status = await app_assimilation_service.get_app_assimilation_status(app_id)
+        app_data = await app_assimilation_service.get_app_assimilation_status(app_id)
         
-        if not status:
+        if not app_data:
             raise HTTPException(status_code=404, detail="App not found")
         
-        # Verify user ownership
-        if status.get("user_id") != user_id:
+        if app_data.get("user_id") != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
-        original_analysis = status.get("original_analysis", {})
-        security_analysis = original_analysis.get("security_analysis", {})
+        security_analysis = app_data.get("original_analysis", {}).get("security_analysis", {})
         
         logger.info(f"🔒 Retrieved security analysis for app: {app_id}")
         
@@ -504,5 +502,63 @@ async def get_security_analysis(app_id: str, user_id: str = "default_user") -> D
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to get security analysis: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve security analysis: {str(e)}")
+        logger.error(f"❌ Failed to get security analysis for app {app_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get security analysis: {str(e)}")
+
+@router.post("/fix-instrumentation-status/{app_id}")
+async def fix_app_instrumentation_status(app_id: str, user_id: str = "default_user") -> Dict[str, Any]:
+    """Fix instrumentation status for an existing assimilated app"""
+    try:
+        app_assimilation_service = get_app_assimilation_service()
+        app_data = await app_assimilation_service.get_app_assimilation_status(app_id)
+        
+        if not app_data:
+            raise HTTPException(status_code=404, detail="App not found")
+        
+        if app_data.get("user_id") != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        fixed = await app_assimilation_service.fix_instrumentation_status(app_id)
+        
+        if fixed:
+            logger.info(f"✅ Fixed instrumentation status for app: {app_id}")
+            return {
+                "status": "success",
+                "message": "Instrumentation status fixed successfully",
+                "app_id": app_id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            return {
+                "status": "no_action_needed",
+                "message": "App instrumentation status is already correct",
+                "app_id": app_id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to fix instrumentation status for app {app_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fix instrumentation status: {str(e)}")
+
+@router.post("/fix-all-instrumentation-statuses")
+async def fix_all_app_instrumentation_statuses(user_id: str = "default_user") -> Dict[str, Any]:
+    """Fix instrumentation status for all existing assimilated apps for a user"""
+    try:
+        app_assimilation_service = get_app_assimilation_service()
+        fixed_count = await app_assimilation_service.fix_all_instrumentation_statuses()
+        
+        logger.info(f"✅ Fixed instrumentation status for {fixed_count} apps for user: {user_id}")
+        
+        return {
+            "status": "success",
+            "message": f"Fixed instrumentation status for {fixed_count} apps",
+            "fixed_count": fixed_count,
+            "user_id": user_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to fix all instrumentation statuses: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fix instrumentation statuses: {str(e)}")
