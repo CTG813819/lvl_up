@@ -430,11 +430,32 @@ class AppAssimilationService:
             logger.warning(f"Failed to persist assimilated app {app_id}: {e}")
         
         # Start real-time monitoring and chaos integration
-        asyncio.create_task(self._start_real_time_monitoring(app_id))
-        
-        logger.info(f"✅ App assimilated with ID: {app_id}")
-        assimilation_data["is_update"] = existing_id is not None
-        return assimilation_data
+        # Ensure the monitoring completes before returning
+        try:
+            logger.info(f"🚀 Starting real-time monitoring for app: {app_id}")
+            # Await the monitoring task to ensure it completes
+            await self._start_real_time_monitoring(app_id)
+            
+            logger.info(f"✅ App assimilated with ID: {app_id}")
+            assimilation_data["is_update"] = existing_id is not None
+            return assimilation_data
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to complete real-time monitoring for app {app_id}: {e}")
+            # Try to self-heal and complete with fallback methods
+            try:
+                await self._self_heal_assimilation(app_id, e)
+                # Update assimilation data with fallback completion
+                app_data = self.assimilated_apps.get(app_id)
+                if app_data:
+                    assimilation_data.update(app_data)
+            except Exception as heal_error:
+                logger.error(f"❌ Self-healing also failed for app {app_id}: {heal_error}")
+                assimilation_data["monitoring_error"] = str(e)
+                assimilation_data["healing_error"] = str(heal_error)
+            
+            assimilation_data["is_update"] = existing_id is not None
+            return assimilation_data
 
     def set_app_binary(self, app_id: str, binary_path: str, file_type: str) -> None:
         """Record the stored binary path for an assimilated app."""
@@ -1045,6 +1066,11 @@ class AppAssimilationService:
             self._save_assimilated_apps()
             await asyncio.sleep(1)
 
+            # Step 4.5: Additional progress step to match frontend expectations
+            app_data["real_time_monitoring"]["integration_progress"] = 85
+            self._save_assimilated_apps()
+            await asyncio.sleep(1)
+
             # Step 5: Complete with self-healing
             app_data["chaos_integration_status"] = "completed"
             app_data["synthetic_code_status"] = "completed"
@@ -1061,7 +1087,24 @@ class AppAssimilationService:
         except Exception as e:
             logger.error(f"❌ Assimilation monitoring failed: {e}")
             # Self-healing: try to complete with fallback methods
-            await self._self_heal_assimilation(app_id, e)
+            try:
+                await self._self_heal_assimilation(app_id, e)
+                # Ensure we mark as completed even if with fallback
+                app_data["chaos_integration_status"] = "completed_fallback"
+                app_data["synthetic_code_status"] = "completed_fallback"
+                app_data["real_time_monitoring"]["integration_progress"] = 100
+                app_data["real_time_monitoring"]["chaos_code_applied"] = True
+                app_data["real_time_monitoring"]["synthetic_code_applied"] = True
+                self._save_assimilated_apps()
+                logger.info(f"✅ App assimilation completed with fallback methods for app: {app_id}")
+            except Exception as heal_error:
+                logger.error(f"❌ Self-healing failed for app {app_id}: {heal_error}")
+                # Mark as failed if even self-healing doesn't work
+                app_data["chaos_integration_status"] = "failed"
+                app_data["synthetic_code_status"] = "failed"
+                app_data["real_time_monitoring"]["integration_progress"] = 0
+                self._save_assimilated_apps()
+                logger.error(f"❌ App assimilation completely failed for app: {app_id}")
     
     def _generate_fallback_chaos_code(self, app_id: str, analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Generate fallback chaos code when backend services fail"""

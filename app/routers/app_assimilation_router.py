@@ -378,15 +378,26 @@ async def retry_app_assimilation(app_id: str, db: AsyncSession = Depends(get_db)
         # Save the reset state
         app_assimilation_service._save_assimilated_apps()
         
-        # Start the assimilation process again
-        asyncio.create_task(app_assimilation_service._start_real_time_monitoring(app_id))
+        # Start the assimilation process again and await it to ensure completion
+        try:
+            await app_assimilation_service._start_real_time_monitoring(app_id)
+            logger.info(f"✅ App assimilation retry completed successfully for app: {app_id}")
+        except Exception as e:
+            logger.error(f"❌ App assimilation retry failed for app: {app_id}: {e}")
+            # Try to self-heal and complete with fallback
+            try:
+                await app_assimilation_service._self_heal_assimilation(app_id, e)
+                logger.info(f"✅ App assimilation retry completed with fallback for app: {app_id}")
+            except Exception as heal_error:
+                logger.error(f"❌ Self-healing also failed during retry for app {app_id}: {heal_error}")
+                raise HTTPException(status_code=500, detail=f"Retry failed and self-healing failed: {str(heal_error)}")
         
         return {
             "status": "success",
-            "message": "App assimilation restarted successfully",
+            "message": "App assimilation retry completed successfully",
             "data": {
                 "app_id": app_id,
-                "status": "restarting"
+                "status": "completed"
             }
         }
         

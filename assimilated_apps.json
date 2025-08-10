@@ -1,0 +1,122 @@
+{
+  "assimilated_test_user_123_20250810_081536": {
+    "app_id": "assimilated_test_user_123_20250810_081536",
+    "user_id": "test_user_123",
+    "original_analysis": {
+      "file_type": "apk",
+      "package_info": {
+        "package_name": "test.app"
+      },
+      "security_analysis": {
+        "sensitive_permissions": []
+      },
+      "services": [],
+      "chaos_integration_points": []
+    },
+    "assimilation_timestamp": "2025-08-10T08:15:36.092599",
+    "chaos_integration_status": "completed",
+    "synthetic_code_status": "completed",
+    "frontend_integration": {
+      "side_menu_entry": true,
+      "runnable": true,
+      "deletable": true
+    },
+    "real_time_monitoring": {
+      "enabled": true,
+      "chaos_code_applied": true,
+      "synthetic_code_applied": true,
+      "integration_progress": 100
+    },
+    "improvement_suggestions": [],
+    "applied_suggestions": [],
+    "is_update": false,
+    "chaos_code": {
+      "code": "CHAOS.FALLBACK.APK.2822.1754810223",
+      "type": "fallback_app_assimilation",
+      "target": "APP_assimilated_test_user_123_20250810_081536",
+      "timestamp": "2025-08-10T08:17:03.749256",
+      "status": "active",
+      "source": "self_healing",
+      "description": "Fallback chaos code for apk app assimilation",
+      "executable": true,
+      "complexity": 1.0,
+      "weapon_category": "app_assimilation",
+      "origin": "project_horus_self_healing"
+    }
+  },
+  "assimilated_test_user_123_20250810_082122": {
+    "app_id": "assimilated_test_user_123_20250810_082122",
+    "user_id": "test_user_123",
+    "original_analysis": {
+      "file_type": "apk",
+      "file_path": "/tmp/test.apk",
+      "file_size": 1048576,
+      "package_info": {
+        "package_name": "com.test.app",
+        "version_name": "1.0.0",
+        "version_code": "1"
+      },
+      "security_analysis": {
+        "encryption_used": false,
+        "obfuscation_detected": false,
+        "native_code_present": false,
+        "sensitive_permissions": [
+          "CAMERA",
+          "LOCATION"
+        ],
+        "vulnerability_score": 0.3,
+        "chaos_integration_difficulty": "medium"
+      },
+      "chaos_integration_points": [
+        {
+          "type": "activity",
+          "name": "MainActivity",
+          "complexity": 1.0
+        },
+        {
+          "type": "service",
+          "name": "BackgroundService",
+          "complexity": 1.5
+        }
+      ],
+      "services": [
+        "BackgroundService",
+        "DataSyncService"
+      ],
+      "permissions": [
+        "INTERNET",
+        "CAMERA",
+        "LOCATION"
+      ]
+    },
+    "assimilation_timestamp": "2025-08-10T08:21:22.920961",
+    "chaos_integration_status": "completed",
+    "synthetic_code_status": "completed",
+    "frontend_integration": {
+      "side_menu_entry": true,
+      "runnable": true,
+      "deletable": true
+    },
+    "real_time_monitoring": {
+      "enabled": true,
+      "chaos_code_applied": true,
+      "synthetic_code_applied": true,
+      "integration_progress": 100
+    },
+    "improvement_suggestions": [],
+    "applied_suggestions": [],
+    "chaos_code": {
+      "code": "CHAOS.FALLBACK.APK.30867.1754810484",
+      "type": "fallback_app_assimilation",
+      "target": "APP_assimilated_test_user_123_20250810_082122",
+      "timestamp": "2025-08-10T08:21:24.928925",
+      "status": "active",
+      "source": "self_healing",
+      "description": "Fallback chaos code for apk app assimilation",
+      "executable": true,
+      "complexity": 1.0,
+      "weapon_category": "app_assimilation",
+      "origin": "project_horus_self_healing"
+    }
+  }
+}
